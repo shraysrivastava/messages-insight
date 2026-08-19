@@ -83,7 +83,9 @@ lied to is worse than a red one.
 Keep this honest. An empty list is the goal.
 
 - [ ] Her name in `questions/config.toml` (`meta.p2`) is still `TODO`
-- [ ] Python 3.12 not yet installed — system Python is 3.9, `tomllib` needs 3.11+
+- [ ] `chat.db` not yet extracted — needs Full Disk Access. Everything downstream
+      of `corpus.json` is verified against a synthetic corpus until then.
+- [x] ~~Python 3.11+~~ — 3.14 installed, `.venv` created, full stack verified
 
 ---
 
@@ -94,4 +96,8 @@ remember whether something got done.
 
 ```
 2026-08-18  Stage 0 closed. Plan, design, and a 156-question bank written.
+2026-08-18  Stage 1 build complete (12/16). schema, game+round log, lexicon,
+            resolvers, compile, extract, mine, validate, status. 54 tests green.
+            Compiled dataset verified playable in the POC server end to end.
+            Remaining: S1.4/M1.1-M1.3 all need chat.db.
 ```

@@ -43,18 +43,29 @@ against a checklist someone remembered to tick. Then:
 | see what's done | [`docs/STATUS.md`](docs/STATUS.md) |
 | understand the data contract | [`docs/HANDOVER.md`](docs/HANDOVER.md) §2 |
 
-## Run the POC right now
-
-Nothing above is built yet. The proof of concept is, and it plays a full game on
-fake data:
+## Play it right now
 
 ```bash
-pip install fastapi "uvicorn[standard]" segno
-python3 poc/make_fake_data.py --out poc/game_data.json
-python3 poc/server.py --data poc/game_data.json --seconds 25 --rounds 14
+make setup     # .venv on python 3.14, everything installed
+make play      # builds a fake dataset and serves a real game
 ```
 
-Open the first printed URL on a laptop, scan the QR with a phone.
+Open the first printed URL on a laptop, scan the QR with a phone. That's the
+whole pipeline — synthetic corpus, compiled through the real compiler, played by
+the real server. No message of yours is involved.
+
+## Then the real thing
+
+Your terminal needs Full Disk Access (System Settings > Privacy & Security).
+
+```bash
+make chats                                  # find her chat identifier
+make corpus CHAT="+15551234567" P1=Shray P2=Her
+make compile
+make real
+```
+
+`make` on its own prints the status dashboard; `make help` lists every target.
 
 ## The one rule
 
