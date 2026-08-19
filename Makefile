@@ -25,8 +25,11 @@ demo: demo_corpus.json  ## build the safe fake dataset end to end
 demo_corpus.json:
 	@$(PY) tools/make_demo_corpus.py --out demo_corpus.json
 
-play: demo         ## play the demo dataset locally right now
+play: demo         ## play the demo (fake) dataset
 	$(PY) poc/server.py --data datasets/demo.json
+
+serve:             ## serve any dataset:  make serve DATA=datasets/test.json
+	$(PY) poc/server.py --data $(DATA) --rounds $(ROUNDS) --seconds $(SECONDS)
 
 # ── the real thing. Needs Full Disk Access for your terminal. ──────────────
 
@@ -39,6 +42,9 @@ DATASET ?= datasets/real.json
 # questions/config.toml. These just keep the command short.
 P1 ?= Me
 P2 ?= Her
+DATA    ?= datasets/test.json
+ROUNDS  ?= 10
+SECONDS ?= 25
 
 corpus:            ## chat.db -> $(CORPUS)   (CHAT=... P1=... P2=...)
 	@test -n "$(CHAT)" || (echo "usage: make corpus CHAT='+1555…' P1=Me P2=Them"; exit 1)
