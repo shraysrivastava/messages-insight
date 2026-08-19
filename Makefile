@@ -33,18 +33,28 @@ play: demo         ## play the demo dataset locally right now
 chats:             ## list your iMessage threads, to find the identifier
 	@$(PY) tools/extract.py --list
 
-corpus:            ## chat.db -> corpus.json   (pass CHAT=..., P1=..., P2=...)
-	@test -n "$(CHAT)" || (echo "usage: make corpus CHAT='+1555…' P1=Shray P2=Her"; exit 1)
-	@$(PY) tools/extract.py --chat "$(CHAT)" --p1 "$(P1)" --p2 "$(P2)" --out corpus.json
+CORPUS ?= corpus.json
+DATASET ?= datasets/real.json
 
-mine: corpus.json  ## corpus.json -> candidates.json
-	@$(PY) tools/mine.py --corpus corpus.json --out candidates.json
+corpus:            ## chat.db -> $(CORPUS)   (CHAT=... P1=... P2=...)
+	@test -n "$(CHAT)" || (echo "usage: make corpus CHAT='+1555…' P1=Me P2=Them"; exit 1)
+	@$(PY) tools/extract.py --chat "$(CHAT)" --p1 "$(P1)" --p2 "$(P2)" --out $(CORPUS)
 
-compile:           ## questions/ + corpus.json -> datasets/real.json
-	@$(PY) tools/compile.py --corpus corpus.json --out datasets/real.json
+mine:              ## $(CORPUS) -> candidates.json
+	@$(PY) tools/mine.py --corpus $(CORPUS) --out candidates.json
+
+compile:           ## questions/ + $(CORPUS) -> $(DATASET)
+	@$(PY) tools/compile.py --corpus $(CORPUS) --out $(DATASET)
 
 real: compile      ## play the real dataset locally
-	$(PY) poc/server.py --data datasets/real.json
+	$(PY) poc/server.py --data $(DATASET)
+
+# A whole thread end to end, into throwaway files. For testing on someone
+# who isn't her:  make try CHAT="+1555..." P1=Me P2=Dave
+try:
+	@$(MAKE) corpus CORPUS=test_corpus.json CHAT="$(CHAT)" P1="$(P1)" P2="$(P2)"
+	@$(MAKE) compile CORPUS=test_corpus.json DATASET=datasets/test.json
+	@$(PY) poc/server.py --data datasets/test.json
 
 clean:
 	rm -f demo_corpus.json candidates.json

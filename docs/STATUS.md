@@ -82,8 +82,8 @@ lied to is worse than a red one.
 
 Keep this honest. An empty list is the goal.
 
-- [ ] Her name in `questions/config.toml` (`meta.p2`) is still `TODO`
-- [ ] `chat.db` not yet extracted — needs Full Disk Access. Everything downstream
+- [x] ~~Full Disk Access~~ — granted to Terminal.app
+- [ ] `chat.db` not yet extracted. Everything downstream
       of `corpus.json` is verified against a synthetic corpus until then.
 - [x] ~~Python 3.11+~~ — 3.14 installed, `.venv` created, full stack verified
 

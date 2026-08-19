@@ -3,6 +3,8 @@ chat.db*
 *.sqlite
 corpus.json
 *_corpus.json
+test_corpus.json
+datasets/test.json
 candidates.json
 questions/mine.toml
 questions/inbox.md

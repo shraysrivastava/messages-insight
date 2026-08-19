@@ -150,7 +150,8 @@ def guard(q: dict, res, cfg: dict, months: int, rep: Report) -> bool:
 
 # ── the pipeline ──────────────────────────────────────────────────────────
 
-def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report):
+def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report,
+                    names: tuple[str | None, str | None] = (None, None)):
     with open(os.path.join(qdir, "config.toml"), "rb") as f:
         cfg = tomllib.load(f)
     with open(os.path.join(qdir, "lexicons.toml"), "rb") as f:
@@ -160,8 +161,18 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
 
     meta_cfg = cfg.get("meta", {})
     meta = dict(corpus.meta)
-    meta["p1"] = meta_cfg.get("p1", meta["p1"])
-    meta["p2"] = meta_cfg.get("p2", meta["p2"])
+
+    def _name(key: str, override: str | None, fallback: str) -> str:
+        """Precedence: --p1/--p2 flag, then config.toml, then whatever the
+        corpus recorded at extraction. A config value of TODO counts as unset,
+        so a throwaway test thread compiles without editing config."""
+        if override:
+            return override
+        v = str(meta_cfg.get(key, "")).strip()
+        return fallback if not v or v.upper() == "TODO" else v
+
+    meta["p1"] = _name("p1", names[0], meta["p1"])
+    meta["p2"] = _name("p2", names[1], meta["p2"])
     meta["rounds"] = meta_cfg.get("rounds", 14)
     meta["seconds"] = float(meta_cfg.get("seconds", 25))
     meta.pop("first_ts", None)
@@ -310,6 +321,8 @@ def main() -> None:
     ap.add_argument("--questions", default=os.path.join(ROOT, "questions"))
     ap.add_argument("--out", default="datasets/real.json")
     ap.add_argument("--types", help="override the playable set, comma separated")
+    ap.add_argument("--p1", help="override the player names (else config.toml, else corpus)")
+    ap.add_argument("--p2")
     ap.add_argument("--verbose", action="store_true", help="list every dropped question")
     args = ap.parse_args()
 
@@ -322,7 +335,8 @@ def main() -> None:
 
     playable = set(args.types.split(",")) if args.types else set(PLAYABLE)
     rep = Report()
-    meta, questions = compile_dataset(args.corpus, args.questions, playable, rep)
+    meta, questions = compile_dataset(args.corpus, args.questions, playable, rep,
+                                      names=(args.p1, args.p2))
 
     try:
         data = Dataset.model_validate({"meta": meta, "questions": questions})
