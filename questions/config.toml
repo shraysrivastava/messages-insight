@@ -1,0 +1,86 @@
+# ══════════════════════════════════════════════════════════════════════════
+#  READ RECEIPTS — QUESTION SYSTEM CONFIG
+# ══════════════════════════════════════════════════════════════════════════
+#
+#  questions/
+#  ├── config.toml     ← you are here. names, dealing rules, dedup policy
+#  ├── lexicons.toml   robust phrase sets. one block powers many questions
+#  ├── mine.toml       YOUR QUESTIONS. priority. hand-written.
+#  ├── auto/           generated questions. filler. lowest priority.
+#  │   ├── who.toml           who-says-more    (binary)
+#  │   ├── numbers.toml       counts           (number)
+#  │   ├── percentages.toml   shares           (percent)
+#  │   ├── firsts.toml        first time we…   (month)
+#  │   ├── life.toml          topic coverage   (mixed)
+#  │   ├── messages.toml      curate.py targets (binary/choice)
+#  │   └── finale.toml        wagers + mutuals
+#  └── inbox.md        raw idea dump → becomes mine.toml
+#
+#  PROVENANCE IS THE DIRECTORY. Anything in mine.toml is yours and gets
+#  priority. Anything in auto/ is generated and yields to yours. There is no
+#  field to remember and no way to get it wrong.
+#
+#  Compile:
+#      python3 tools/compile.py --out datasets/real.json
+# ══════════════════════════════════════════════════════════════════════════
+
+[meta]
+p1 = "Shray"
+p2 = "Nilu"                    # ← her name
+rounds = 14
+seconds = 25
+
+
+# ── DEALING ───────────────────────────────────────────────────────────────
+# How a 14-round deck gets built from a bank of 150+.
+
+[deal]
+# Aim for this share of every game to come from mine.toml. The dealer fills
+# to this target first, then tops up from auto/. If you've written 30
+# questions, ~9 of every 14 rounds are yours.
+authored_share = 0.65
+
+# Relative sampling weight once the target is met. Yours are 4× as likely to
+# be picked for the remaining slots.
+weight_mine = 4
+weight_auto = 1
+
+# Never let one `kind` dominate a single game.
+max_per_kind = 3
+
+# Prefer questions that haven't come up in recent games, using history.jsonl.
+# This is what makes five replays feel like five different games.
+freshness = true
+freshness_window = 3           # games to look back over
+
+# Always end on a Final Receipt if any wager questions are available.
+final_receipt = true
+
+
+# ── DEDUPLICATION ─────────────────────────────────────────────────────────
+# You will write questions that overlap mine. Yours wins, every time.
+
+[dedup]
+# Every question has a `topic`, defaulting to its `id`. Two questions sharing
+# a topic are duplicates — the auto/ one is dropped silently.
+on_collision = "prefer_mine"
+
+# Beyond exact topics, compile.py compares prompts. Above this similarity it
+# reports the pair so you can decide. It never auto-drops on fuzzy matches —
+# too easy to lose a question you wanted.
+fuzzy_threshold = 0.82
+
+# If two of YOUR questions collide, that's an error, not a silent drop.
+mine_collision = "error"
+
+
+# ── FAIRNESS GUARDS ───────────────────────────────────────────────────────
+# compile.py refuses to ship questions that aren't actually answerable.
+# Override per question with the same key names.
+
+[guards]
+min_margin = 1.25              # who_* questions closer than this are coin flips
+min_answer = 20                # number answers below this score degenerately
+min_hits = 3                   # resolvers returning fewer matches are dropped
+month_edge_pct = 0.10          # month answers in the first/last 10% are guessable
+require_reveal = true          # a question with a TODO reveal never ships

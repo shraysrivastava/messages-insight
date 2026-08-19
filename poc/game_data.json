@@ -1,0 +1,424 @@
+{
+ "meta": {
+  "p1": "Alex",
+  "p2": "Sam",
+  "months": [
+   "2021-03",
+   "2021-04",
+   "2021-05",
+   "2021-06",
+   "2021-07",
+   "2021-08",
+   "2021-09",
+   "2021-10",
+   "2021-11",
+   "2021-12",
+   "2022-01",
+   "2022-02",
+   "2022-03",
+   "2022-04",
+   "2022-05",
+   "2022-06",
+   "2022-07",
+   "2022-08",
+   "2022-09",
+   "2022-10",
+   "2022-11",
+   "2022-12",
+   "2023-01",
+   "2023-02",
+   "2023-03",
+   "2023-04",
+   "2023-05",
+   "2023-06",
+   "2023-07",
+   "2023-08",
+   "2023-09",
+   "2023-10",
+   "2023-11",
+   "2023-12",
+   "2024-01",
+   "2024-02",
+   "2024-03",
+   "2024-04",
+   "2024-05",
+   "2024-06",
+   "2024-07",
+   "2024-08",
+   "2024-09",
+   "2024-10",
+   "2024-11",
+   "2024-12",
+   "2025-01",
+   "2025-02",
+   "2025-03",
+   "2025-04",
+   "2025-05",
+   "2025-06",
+   "2025-07",
+   "2025-08",
+   "2025-09",
+   "2025-10",
+   "2025-11",
+   "2025-12",
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06",
+   "2026-07",
+   "2026-08"
+  ],
+  "rounds": 12,
+  "total": 48213,
+  "first": "March 2021",
+  "last": "August 2026"
+ },
+ "questions": [
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "you were right about the shoes and i hate admitting it",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 1,
+   "reveal": "Sam · July 2025"
+  },
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "found an old picture of us from that first summer and im emotional",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 0,
+   "reveal": "Alex · March 2025"
+  },
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "why did nobody tell me the season finale was going to do that",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 0,
+   "reveal": "Alex · March 2024"
+  },
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "sorry i fell asleep mid sentence apparently that was very rude of me",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 0,
+   "reveal": "Alex · March 2025"
+  },
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "i cannot stop thinking about those dumplings we had on tuesday",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 1,
+   "reveal": "Sam · July 2026"
+  },
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "please remind me to actually book the tickets this time",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 0,
+   "reveal": "Alex · October 2021"
+  },
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "im making the pasta tonight the one with too much lemon",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 0,
+   "reveal": "Alex · March 2021"
+  },
+  {
+   "type": "binary",
+   "kind": "Who said it",
+   "prompt": "Who sent this?",
+   "text": "i told my mom about the thing and she is unreasonably excited",
+   "options": [
+    "Alex",
+    "Sam"
+   ],
+   "answer": 0,
+   "reveal": "Alex · October 2021"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Sam sent this. What's the missing word?",
+   "text": "you were right about the ▁▁▁▁▁ and i hate admitting it",
+   "options": [
+    "thing",
+    "shoes",
+    "weekend",
+    "judgmentally"
+   ],
+   "answer": 1,
+   "reveal": "“you were right about the shoes and i hate admitting it”"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Sam sent this. What's the missing word?",
+   "text": "ok but you have to ▁▁▁▁▁ the second one was better than the first",
+   "options": [
+    "admit",
+    "obsessed",
+    "something",
+    "third"
+   ],
+   "answer": 0,
+   "reveal": "“ok but you have to admit the second one was better than the first”"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Sam sent this. What's the missing word?",
+   "text": "the cat next door was on our windowsill again ▁▁▁▁▁ at me judgmentally",
+   "options": [
+    "completely",
+    "because",
+    "admitting",
+    "staring"
+   ],
+   "answer": 3,
+   "reveal": "“the cat next door was on our windowsill again staring at me judgmentally”"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Sam sent this. What's the missing word?",
+   "text": "im on the ▁▁▁▁▁ now should be home in like forty minutes",
+   "options": [
+    "train",
+    "laughing",
+    "lemon",
+    "about"
+   ],
+   "answer": 0,
+   "reveal": "“im on the train now should be home in like forty minutes”"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Alex sent this. What's the missing word?",
+   "text": "come ▁▁▁▁▁ i have something ridiculous to show you right now",
+   "options": [
+    "outside",
+    "remind",
+    "never",
+    "judgmentally"
+   ],
+   "answer": 0,
+   "reveal": "“come outside i have something ridiculous to show you right now”"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Sam sent this. What's the missing word?",
+   "text": "come ▁▁▁▁▁ i have something ridiculous to show you right now",
+   "options": [
+    "charger",
+    "minutes",
+    "outside",
+    "excited"
+   ],
+   "answer": 2,
+   "reveal": "“come outside i have something ridiculous to show you right now”"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Sam sent this. What's the missing word?",
+   "text": "can we please go back to that place with the tiny ▁▁▁▁▁",
+   "options": [
+    "chairs",
+    "judgmentally",
+    "watching",
+    "thinking"
+   ],
+   "answer": 0,
+   "reveal": "“can we please go back to that place with the tiny chairs”"
+  },
+  {
+   "type": "choice",
+   "kind": "Fill in the blank",
+   "prompt": "Alex sent this. What's the missing word?",
+   "text": "▁▁▁▁▁ obsessed with the playlist you made me last weekend",
+   "options": [
+    "genuinely",
+    "letting",
+    "sorry",
+    "shoes"
+   ],
+   "answer": 0,
+   "reveal": "“genuinely obsessed with the playlist you made me last weekend”"
+  },
+  {
+   "type": "number",
+   "kind": "Guess the number",
+   "prompt": "How many messages have we sent each other, total?",
+   "answer": 48213,
+   "reveal": "48,213 messages across 1,982 days."
+  },
+  {
+   "type": "number",
+   "kind": "Guess the number",
+   "prompt": "What's the most messages we've sent in a single day?",
+   "answer": 412,
+   "reveal": "412, on a Tuesday for no clear reason."
+  },
+  {
+   "type": "number",
+   "kind": "Guess the number",
+   "prompt": "How many messages have we sent between midnight and 5am?",
+   "answer": 3104,
+   "reveal": "3,104. Nothing good happens after 2am."
+  },
+  {
+   "type": "number",
+   "kind": "Guess the number",
+   "prompt": "How many times have we said “I love you”?",
+   "answer": 1877,
+   "reveal": "1,877 times, and counting."
+  },
+  {
+   "type": "number",
+   "kind": "Guess the number",
+   "prompt": "How many times have we said “Sorry”?",
+   "answer": 964,
+   "reveal": "964 apologies, give or take."
+  },
+  {
+   "type": "month",
+   "kind": "First time we said it",
+   "prompt": "When did one of us first say “I love you”?",
+   "text": "can we please go back to that place with the tiny chairs",
+   "answer": 3,
+   "reveal": "Sam, 2021-06"
+  },
+  {
+   "type": "month",
+   "kind": "First time we said it",
+   "prompt": "When did one of us first say “Miss you”?",
+   "text": "please remind me to actually book the tickets this time",
+   "answer": 13,
+   "reveal": "Alex, 2022-04"
+  },
+  {
+   "type": "month",
+   "kind": "First time we said it",
+   "prompt": "When did one of us first say “Good morning”?",
+   "text": "watching that documentary you told me about and youre completely right",
+   "answer": 0,
+   "reveal": "Alex, 2021-03"
+  },
+  {
+   "type": "month",
+   "kind": "First time we said it",
+   "prompt": "When did one of us first say “Goodnight”?",
+   "text": "reading your text from this morning again because it made my whole day",
+   "answer": 7,
+   "reveal": "Alex, 2021-10"
+  },
+  {
+   "type": "month",
+   "kind": "First time we said it",
+   "prompt": "When did one of us first say “Promise”?",
+   "text": "please remind me to actually book the tickets this time",
+   "answer": 12,
+   "reveal": "Sam, 2022-03"
+  },
+  {
+   "type": "month",
+   "kind": "Guess the date",
+   "prompt": "Sam sent this. When?",
+   "text": "im on the train now should be home in like forty minutes",
+   "answer": 37,
+   "reveal": "2024-04"
+  },
+  {
+   "type": "month",
+   "kind": "Guess the date",
+   "prompt": "Alex sent this. When?",
+   "text": "i told my mom about the thing and she is unreasonably excited",
+   "answer": 9,
+   "reveal": "2021-12"
+  },
+  {
+   "type": "month",
+   "kind": "Guess the date",
+   "prompt": "Alex sent this. When?",
+   "text": "please remind me to actually book the tickets this time",
+   "answer": 31,
+   "reveal": "2023-10"
+  },
+  {
+   "type": "month",
+   "kind": "Guess the date",
+   "prompt": "Sam sent this. When?",
+   "text": "please remind me to actually book the tickets this time",
+   "answer": 47,
+   "reveal": "2025-02"
+  },
+  {
+   "type": "month",
+   "kind": "Guess the date",
+   "prompt": "Alex sent this. When?",
+   "text": "found an old picture of us from that first summer and im emotional",
+   "answer": 58,
+   "reveal": "2026-01"
+  },
+  {
+   "type": "month",
+   "kind": "Guess the date",
+   "prompt": "Alex sent this. When?",
+   "text": "genuinely obsessed with the playlist you made me last weekend",
+   "answer": 61,
+   "reveal": "2026-04"
+  },
+  {
+   "type": "choice",
+   "kind": "Top of the charts",
+   "prompt": "Which emoji have we used the most?",
+   "options": [
+    "🥺",
+    "🫠",
+    "😂",
+    "😭"
+   ],
+   "answer": 0,
+   "reveal": "🥺 — 2,411 times. Runner-up: 🫠 at 1,802."
+  }
+ ]
+}

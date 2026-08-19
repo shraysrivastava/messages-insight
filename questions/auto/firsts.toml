@@ -1,0 +1,189 @@
+# auto/firsts.toml — FIRST TIME WE SAID IT  ·  month  ·  self-resolving
+#
+# The most generative archetype in the project: one lexicon = one finished
+# question, with the real message and its date filled in automatically.
+# With the density histogram behind the slider (DESIGN.md §2.3) these are the
+# best-looking rounds in the game.
+#
+# compile.py drops any resolving into the first or last 10% of the timeline —
+# guessable from the slider range alone.
+
+[[q]]
+id = "first-love-you"
+type = "month"
+kind = "First time we said it"
+area = "milestones"
+prompt = "When did one of us first say “I love you”?"
+answer = { first_use = "love_you" }
+reveal = "{month}. The first time either of us risked it."
+status = "ready"
+
+[[q]]
+id = "first-goodnight"
+type = "month"
+kind = "First time we said it"
+area = "habits"
+prompt = "When did “goodnight” first show up?"
+answer = { first_use = "goodnight" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-miss-you"
+type = "month"
+kind = "Soft launch"
+area = "long-distance"
+prompt = "When did one of us first admit to missing the other?"
+answer = { first_use = "miss_you" }
+reveal = "{month}. Earlier than either of us would have guessed."
+status = "ready"
+
+[[q]]
+id = "first-compliment"
+type = "month"
+kind = "Soft launch"
+area = "affection"
+prompt = "When did the first real compliment land?"
+answer = { first_use = "compliment" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-our-place"
+type = "month"
+kind = "Soft launch"
+area = "milestones"
+prompt = "When did we first say “our place”?"
+answer = { first_use = "our_place" }
+reveal = "{month}. Nobody announced it. It just started."
+status = "ready"
+
+[[q]]
+id = "first-move-in"
+type = "month"
+kind = "Deep cut"
+area = "milestones"
+prompt = "When did we first talk about living together?"
+answer = { first_use = "move_in" }
+reveal = "{month}. Said long before it actually happened."
+status = "ready"
+
+[[q]]
+id = "first-marriage"
+type = "month"
+kind = "Deep cut"
+area = "milestones"
+prompt = "When did the m-word first appear in this thread?"
+answer = { first_use = "marriage" }
+reveal = "{month}. Filed, at the time, under joking."
+status = "ready"
+
+[[q]]
+id = "first-parents"
+type = "month"
+kind = "Ancient history"
+area = "people"
+prompt = "When did one of us first bring up the other meeting their parents?"
+answer = { first_use = "parents" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-friends"
+type = "month"
+kind = "Ancient history"
+area = "people"
+prompt = "When did we first talk about meeting each other's friends?"
+answer = { first_use = "friends" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-future"
+type = "month"
+kind = "First time we said it"
+area = "milestones"
+prompt = "When did we first talk about the far future — “one day”, “someday”?"
+answer = { first_use = "future" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-travel"
+type = "month"
+kind = "The archive"
+area = "travel"
+prompt = "When did we first plan a trip together?"
+answer = { first_use = "travel" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-obsessed"
+type = "month"
+kind = "Chronically online"
+area = "language"
+prompt = "When did “obsessed” enter the vocabulary?"
+answer = { first_use = "obsessed" }
+reveal = "{month}. It has never left."
+status = "ready"
+
+[[q]]
+id = "first-forever"
+type = "month"
+kind = "First time we said it"
+area = "milestones"
+prompt = "When did the word “forever” first get used, unironically?"
+answer = { first_use = "forever" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-gift"
+type = "month"
+kind = "Deep cut"
+area = "milestones"
+prompt = "When did we first talk about giving each other a present?"
+answer = { first_use = "gifts" }
+reveal = "{month}."
+status = "ready"
+
+[[q]]
+id = "first-pet-name"
+type = "month"
+kind = "Soft launch"
+area = "affection"
+prompt = "When did the first pet name appear?"
+answer = { first_use = "pet_names" }
+reveal = "{month}."
+status = "draft"                     # unblocks when lex.pet_names is filled
+
+[[q]]
+id = "first-inside-joke"
+type = "month"
+kind = "Deep cut"
+area = "humor"
+prompt = "TODO — when did [the inside joke] first appear?"
+answer = { first_use = "inside_jokes" }
+reveal = "{month}. It's been load-bearing ever since."
+status = "draft"
+
+[[q]]
+id = "busiest-month"
+type = "month"
+kind = "The archive"
+area = "archive"
+prompt = "Which month did we text the most?"
+answer = { busiest_month = true }
+reveal = "{month}. Whatever was going on, we had a great deal to say about it."
+status = "ready"
+
+[[q]]
+id = "quietest-month"
+type = "month"
+kind = "The archive"
+area = "archive"
+prompt = "And which month did we text the least?"
+answer = { quietest_month = true }
+reveal = "{month}. The quiet months are usually the ones with a story behind them."
+status = "ready"

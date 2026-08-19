@@ -1,0 +1,91 @@
+# auto/percentages.toml — SHARES  ·  percent  ·  needs the `percent` type
+# (PLAN.md Stage 3, ~30 min). Until it exists compile.py skips these and says so.
+# Renders as a two-colour tug-of-war bar — the most legible input in the game.
+
+[[q]]
+id = "share-of-messages"
+type = "percent"
+kind = "By the numbers"
+area = "archive"
+prompt = "Of our {total:,} messages, what share did {p1} send?"
+answer = { share_of_messages = "p1" }
+unit = "%"
+reveal = "{answer}%. She has out-texted you every single year."
+status = "ready"
+
+[[q]]
+id = "share-days-covered"
+type = "percent"
+kind = "Receipts"
+area = "habits"
+prompt = "Out of every day in the last five years, on what share did we text at all?"
+answer = { share_days_covered = true }
+unit = "%"
+reveal = "{answer}%. That's the whole game, really."
+status = "ready"
+
+[[q]]
+id = "share-after-midnight"
+type = "percent"
+kind = "Chronically online"
+area = "sleep"
+prompt = "What share of our messages were sent after midnight?"
+answer = { share_between = [0, 5] }
+unit = "%"
+reveal = "{answer}%. A meaningful fraction of this relationship happened tired."
+status = "ready"
+
+[[q]]
+id = "share-one-word"
+type = "percent"
+kind = "Petty grievances"
+area = "language"
+prompt = "What share of our messages are a single word?"
+answer = { share_one_word = true }
+unit = "%"
+reveal = "{answer}%. Efficiency."
+status = "ready"
+
+[[q]]
+id = "share-with-emoji"
+type = "percent"
+kind = "By the numbers"
+area = "language"
+prompt = "What share of our messages contain at least one emoji?"
+answer = { share_with_emoji = true }
+unit = "%"
+reveal = "{answer}%."
+status = "ready"
+
+[[q]]
+id = "share-quick-reply"
+type = "percent"
+kind = "Character witness"
+area = "habits"
+prompt = "What share of {p1}'s messages did {p2} reply to within a minute?"
+answer = { share_quick_reply = true, by = "p2", within_seconds = 60 }
+unit = "%"
+reveal = "{answer}%. Attention is the sincerest form of affection."
+status = "ready"
+
+[[q]]
+id = "share-weekend"
+type = "percent"
+kind = "The archive"
+area = "habits"
+prompt = "What share of our texting happens on weekends?"
+answer = { share_weekend = true }
+unit = "%"
+reveal = "{answer}%. Weekdays are for logistics."
+status = "ready"
+
+[[q]]
+id = "share-questions"
+type = "percent"
+kind = "Character witness"
+area = "language"
+prompt = "What share of our messages are questions?"
+answer = { share_questions = true }
+unit = "%"
+reveal = "{answer}%. Five years and still asking."
+status = "ready"

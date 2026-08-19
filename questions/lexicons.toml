@@ -1,0 +1,272 @@
+# ══════════════════════════════════════════════════════════════════════════
+#  LEXICONS — the robustness layer
+# ══════════════════════════════════════════════════════════════════════════
+#
+#  Naive substring matching undercounts everything. "i love you" misses ily,
+#  i love u, iloveyou, and "i loveeee youuu". compile.py does three things:
+#
+#  1. NORMALISE every message: NFKC, lowercase, apostrophes dropped (so "I'm"
+#     and "im" unify), emoji stripped of variation selectors and skin tones
+#     (❤️ → ❤), punctuation gone, whitespace collapsed.
+#
+#  2. EXPAND every phrase into a tolerant regex, automatically:
+#        "i love you"  →  \bi+\s*l+o+v+e+\s*y+o+u+\b
+#     every letter may repeat, every space is optional, word boundaries hold.
+#     Catches "iloveyou" and "i loveeee youuu"; still refuses "i love your
+#     hair". You never write a regex — you write the phrase.
+#
+#  3. LEXICONS for what regex can't reach: real synonyms and abbreviations.
+#
+#  Counting counts MESSAGES containing ≥1 match, so overlapping variants
+#  ("love you" inside "i love you") never double-count. Use
+#  mode = "occurrences" on a question for raw hits.
+#
+#  KEYS
+#    any        list of phrases. auto-expanded as above.
+#    regex      escape hatch for patterns phrases can't express.
+#    emoji      matched after normalisation, skin-tone and VS16 agnostic.
+#    exclude    kills false positives. checked before `any`.
+#    at_start   only match at the beginning of a message. use for words that
+#               are innocent mid-sentence ("morning" vs "this morning").
+#
+#  A lexicon is the cheapest thing in this project — one block can power four
+#  questions across four different mechanics. Add freely.
+# ══════════════════════════════════════════════════════════════════════════
+
+
+# ── AFFECTION ─────────────────────────────────────────────────────────────
+
+[lex.love_you]
+label = "I love you"
+any = ["i love you", "i love u", "ily", "ilysm", "ily2", "ilu", "iluvu",
+       "love you", "love u", "luv you", "luv u", "love ya", "i heart you",
+       "i <3 you", "<3 you", "love youuu"]
+exclude = ["i love your", "love your", "id love to", "would love to",
+           "i love it", "i love that", "i love this", "i love how",
+           "i love when", "love it when"]
+
+[lex.miss_you]
+any = ["miss you", "miss u", "missing you", "missin you", "miss ya",
+       "i miss you", "i miss u", "misses you", "missed you", "miss u so much",
+       "wish you were here"]
+
+[lex.pet_names]
+label = "pet names"
+any = ["TODO"]                 # ← babe, bub, whatever you actually call her
+status = "draft"
+
+[lex.compliment]
+any = ["youre so", "you are so", "so proud of you", "im proud of you",
+       "you look", "gorgeous", "beautiful", "handsome", "cutest", "prettiest",
+       "smartest", "youre the best", "best thing", "so lucky", "im lucky"]
+
+[lex.hearts]
+emoji = ["❤", "❤️", "🩷", "💕", "💗", "💖", "💘", "💝", "🥰", "😍", "♥", "🫶"]
+
+[lex.forever]
+any = ["forever", "4ever", "4eva", "always and forever", "for life",
+       "rest of my life", "rest of our lives", "the long haul"]
+
+
+# ── DAILY RHYTHM ──────────────────────────────────────────────────────────
+
+[lex.goodnight]
+any = ["goodnight", "good night", "goodnite", "good nite", "gnight", "gn",
+       "nighty night", "night night", "nini", "sweet dreams", "sleep well",
+       "sleep tight", "sleep good", "get some sleep", "going to bed"]
+exclude = ["last night", "tonight", "the night", "all night", "night out",
+           "friday night", "saturday night"]
+
+[lex.good_morning]
+any = ["good morning", "goodmorning", "gm", "gmorning", "gud morning",
+       "mornin", "morning", "rise and shine", "morning sunshine"]
+at_start = true
+
+[lex.sleep]
+any = ["tired", "exhausted", "so sleepy", "sleepy", "nap", "napping",
+       "cant sleep", "couldnt sleep", "insomnia", "up all night", "passed out",
+       "knocked out", "running on", "no sleep", "wired"]
+
+[lex.coffee]
+any = ["coffee", "latte", "espresso", "matcha", "iced coffee", "cold brew",
+       "caffeine", "cappuccino", "americano", "need coffee"]
+
+[lex.food]
+any = ["hungry", "starving", "dinner", "lunch", "breakfast", "brunch",
+       "order in", "takeout", "cooking", "cook", "food", "eat", "snack",
+       "leftovers", "groceries", "what do you want to eat"]
+
+
+# ── LOGISTICS AND FRICTION ────────────────────────────────────────────────
+
+[lex.sorry]
+label = "sorry"
+any = ["sorry", "sry", "srry", "soz", "im sorry", "so sorry", "my bad",
+       "my fault", "apologies", "i apologize", "i apologise", "forgive me",
+       "didnt mean to", "didnt mean it", "that was on me", "i was wrong"]
+exclude = ["sorry not sorry", "feel sorry for", "sorry state"]
+
+[lex.thank_you]
+any = ["thank you", "thanks", "thank u", "thx", "thnx", "ty", "tysm", "tyvm",
+       "thanku", "appreciate it", "appreciate you", "much appreciated",
+       "youre the best", "life saver"]
+
+[lex.lateness]
+any = ["running late", "be there in", "omw", "on my way", "sorry im late",
+       "five minutes", "almost there", "just left", "leaving now",
+       "stuck in", "ten minutes out"]
+
+[lex.driving]
+any = ["traffic", "parking", "driving", "uber", "lyft", "the subway",
+       "the train", "my car", "gas station", "highway", "detour", "rush hour"]
+
+[lex.money]
+any = ["venmo", "zelle", "paid you", "i got it", "split it", "rent",
+       "expensive", "im broke", "budget", "how much was", "it cost",
+       "worth it", "on sale", "refund"]
+
+[lex.reassurance]
+any = ["its ok", "its okay", "dont worry", "no worries", "ill be there",
+       "im here", "you got this", "breathe", "itll be fine", "im with you",
+       "take your time", "whenever youre ready"]
+
+
+# ── LONG DISTANCE ─────────────────────────────────────────────────────────
+
+[lex.long_distance]
+label = "long distance"
+any = ["facetime", "ft me", "video call", "call me", "time zone", "timezone",
+       "when do you land", "see you in", "countdown", "next visit",
+       "plane ticket", "how many days", "one more week", "cant wait to see you"]
+
+[lex.travel]
+any = ["flight", "flying", "the airport", "landed", "boarding", "layover",
+       "tsa", "suitcase", "packing", "road trip", "hotel", "airbnb",
+       "passport", "checked in", "delayed", "my gate"]
+
+[lex.plans]
+any = ["lets go", "we should", "next time", "book it", "tickets", "planning",
+       "cant wait to", "put it on the calendar", "are you free", "what if we"]
+
+
+# ── PEOPLE ────────────────────────────────────────────────────────────────
+
+[lex.parents]
+any = ["my mom", "my mum", "my dad", "my parents", "my family", "meet my mom",
+       "meet my parents", "your mom", "your parents", "moms house", "my sister",
+       "my brother"]
+
+[lex.friends]
+any = ["my friend", "hang out", "the party", "dinner with", "group chat",
+       "everyone else", "she asked about you", "he asked about you",
+       "told them about you"]
+
+[lex.pets]
+any = ["the dog", "the cat", "puppy", "kitten", "walk him", "walk her",
+       "the vet", "good boy", "good girl", "he misses you", "she misses you"]
+
+
+# ── MILESTONES ────────────────────────────────────────────────────────────
+
+[lex.move_in]
+any = ["move in", "moving in", "live together", "living together",
+       "get a place", "find a place", "our lease", "sign the lease",
+       "same apartment", "same city", "move here", "move there"]
+
+[lex.marriage]
+label = "the m-word"
+any = ["marry", "married", "marriage", "propose", "proposal", "engaged",
+       "engagement", "fiance", "fiancee", "wife", "husband", "the ring",
+       "wedding"]
+
+[lex.our_place]
+any = ["our place", "our apartment", "our apt", "our house", "our home",
+       "our room", "our bed", "our couch", "coming home to you", "home to you"]
+
+[lex.future]
+any = ["one day", "someday", "when we", "our kids", "our future", "grow old",
+       "ten years", "five years from now", "the rest of my life",
+       "for a long time"]
+
+[lex.holidays]
+any = ["christmas", "thanksgiving", "new years", "valentines", "halloween",
+       "my birthday", "your birthday", "easter", "diwali", "eid", "hanukkah",
+       "the fourth", "anniversary"]
+
+[lex.gifts]
+any = ["present", "your gift", "wrapped it", "surprise for you",
+       "got you something", "cant wait to give", "you shouldnt have",
+       "opened it", "did you like it"]
+
+
+# ── THE WAY WE TALK ───────────────────────────────────────────────────────
+
+[lex.lol]
+any = ["lol", "lolz", "lolol", "loool"]
+
+[lex.haha]
+regex = ["\\b(a?h[aeiu]){2,}h?\\b"]
+any = ["hah", "heh"]
+
+[lex.laughing]
+any = ["lol", "lmao", "lmfao", "rofl", "im dead", "im dying", "im crying",
+       "im screaming", "im wheezing", "cant breathe", "dead", "screaming",
+       "not the", "im weak"]
+regex = ["\\b(a?h[aeiu]){2,}h?\\b"]
+emoji = ["😂", "😭", "💀", "🤣", "😹"]
+
+[lex.please]
+any = ["please", "pls", "plz", "plss", "pretty please", "begging you"]
+
+[lex.wait]
+any = ["wait", "hold on", "hold up", "hang on", "one sec", "one second"]
+at_start = true
+
+[lex.literally]
+any = ["literally", "litrally", "litterally", "legit", "genuinely", "actually"]
+
+[lex.obsessed]
+any = ["obsessed", "obsessing", "obsession", "cant stop thinking about",
+       "living for", "in love with this"]
+
+[lex.affirm]
+any = ["ok", "okay", "k", "kk", "sure", "yeah", "yea", "yup", "yep", "ya",
+       "mhm", "bet", "sounds good", "word", "fine"]
+
+[lex.crying_emoji]
+emoji = ["😭"]
+
+[lex.inside_jokes]
+label = "the inside joke"
+any = ["TODO"]                 # ← the phrase that means nothing to anyone else
+status = "draft"
+
+
+# ── THE WORLD ─────────────────────────────────────────────────────────────
+
+[lex.work]
+any = ["my meeting", "my boss", "deadline", "promotion", "the interview",
+       "quit my job", "my job", "standup", "wfh", "work thing", "overtime",
+       "my coworker", "performance review", "got the offer"]
+
+[lex.sick]
+any = ["im sick", "fever", "the flu", "a cold", "throwing up", "threw up",
+       "the doctor", "urgent care", "feel better", "meds", "medicine",
+       "headache", "migraine", "food poisoning"]
+
+[lex.weather]
+any = ["raining", "the rain", "snowing", "the snow", "freezing", "so hot",
+       "humid", "the storm", "so sunny", "cold out", "beautiful out",
+       "downpour"]
+
+[lex.music]
+any = ["playlist", "this song", "spotify", "the concert", "the album",
+       "listening to", "on repeat", "the aux", "sent you a song", "vinyl"]
+
+[lex.tv]
+any = ["the episode", "the season", "the finale", "watching", "the show",
+       "the movie", "netflix", "binged", "no spoilers", "one more episode"]
+
+[lex.photos]
+any = ["that pic", "this picture", "a photo", "selfie", "send me a pic",
+       "camera roll", "delete that", "post it", "in my photos"]

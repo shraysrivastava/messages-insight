@@ -1,0 +1,311 @@
+# auto/messages.toml — REAL MESSAGES  ·  binary / choice  ·  curate.py fills these
+#
+# These are SLOTS, not finished questions. `status = "mine"` means curate.py
+# will drop a real message into `text` (and options, and answer) when you accept
+# a candidate. The compiler skips any that are still empty.
+#
+# This is also where PRESENTATION FORMAT varies. Same four mechanics, six very
+# different-looking rounds:
+#
+#   bubble      one message, centred                    (who-said-it)
+#   blank       one message with a word knocked out     (fill in the blank)
+#   compare     two bubbles, A above B                  (which came first)
+#   thread      three messages, ask about the middle    (what happened next)
+#   redacted    one message, several words knocked out  (deep cut)
+#   timestamp   no text at all, just a time and a date  (cold open)
+#
+# `format` is a rendering hint for the host screen. Unknown values fall back to
+# `bubble`, so adding one never breaks the game.
+
+# ── WHO SAID IT ───────────────────────────────────────────────────────────
+
+[[q]]
+id = "who-said-1"
+type = "binary"
+kind = "Who said it"
+area = "language"
+format = "bubble"
+prompt = "Who sent this?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it" }
+reveal = "{winner} · {date}"
+status = "mine"
+
+[[q]]
+id = "who-said-2"
+type = "binary"
+kind = "Who said it"
+area = "language"
+format = "bubble"
+prompt = "Who sent this?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it" }
+reveal = "{winner} · {date}"
+status = "mine"
+
+[[q]]
+id = "who-said-3"
+type = "binary"
+kind = "Deep cut"
+area = "humor"
+format = "bubble"
+prompt = "Who sent this?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it" }
+reveal = "{winner} · {date}"
+status = "mine"
+
+[[q]]
+id = "who-said-4"
+type = "binary"
+kind = "Deep cut"
+area = "humor"
+format = "bubble"
+prompt = "Who sent this?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it" }
+reveal = "{winner} · {date}"
+status = "mine"
+
+[[q]]
+id = "who-said-5"
+type = "binary"
+kind = "Ancient history"
+area = "archive"
+format = "bubble"
+prompt = "Year one. Who sent this?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it", before = "2022-03" }
+reveal = "{winner} · {date}. We were so young."
+status = "mine"
+
+[[q]]
+id = "who-said-6"
+type = "binary"
+kind = "Ancient history"
+area = "archive"
+format = "bubble"
+prompt = "Year one. Who sent this?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it", before = "2022-03" }
+reveal = "{winner} · {date}"
+status = "mine"
+
+[[q]]
+id = "who-said-7"
+type = "binary"
+kind = "The archive"
+area = "archive"
+format = "bubble"
+prompt = "Who sent this, and what were they even talking about?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it" }
+reveal = "{winner} · {date}. Neither of us remembers the context."
+status = "mine"
+
+[[q]]
+id = "who-said-8"
+type = "binary"
+kind = "Petty grievances"
+area = "conflict"
+format = "bubble"
+prompt = "Who was complaining here?"
+options = ["{p1}", "{p2}"]
+source = { mine = "complaint" }
+reveal = "{winner} · {date}"
+status = "mine"
+
+[[q]]
+id = "who-apologised"
+type = "binary"
+kind = "Damning evidence"
+area = "conflict"
+format = "bubble"
+prompt = "Somebody caved first. Who?"
+options = ["{p1}", "{p2}"]
+source = { mine = "apology", lex = "sorry" }
+reveal = "{winner}, {date}. For the record."
+status = "mine"
+
+[[q]]
+id = "who-said-3am"
+type = "binary"
+kind = "Chronically online"
+area = "sleep"
+format = "timestamp"
+prompt = "Sent at 3:41am. Who was awake?"
+options = ["{p1}", "{p2}"]
+source = { mine = "who_said_it", hours = [2, 5] }
+reveal = "{winner}, {date}. Nothing good is said at 3am."
+status = "mine"
+
+[[q]]
+id = "who-said-longest"
+type = "binary"
+kind = "Petty grievances"
+area = "conflict"
+format = "bubble"
+prompt = "Who wrote the essay?"
+options = ["{p1}", "{p2}"]
+source = { mine = "longest" }
+reveal = "{winner}, {date}. TODO — and the reply was three words."
+status = "mine"
+
+# ── FILL IN THE BLANK ─────────────────────────────────────────────────────
+
+[[q]]
+id = "blank-1"
+type = "choice"
+kind = "Fill in the blank"
+area = "language"
+format = "blank"
+prompt = "{p2} sent this. What's the missing word?"
+source = { mine = "fill_blank", by = "p2" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "blank-2"
+type = "choice"
+kind = "Fill in the blank"
+area = "language"
+format = "blank"
+prompt = "{p1} sent this. What's the missing word?"
+source = { mine = "fill_blank", by = "p1" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "blank-3"
+type = "choice"
+kind = "Fill in the blank"
+area = "language"
+format = "blank"
+prompt = "What's the missing word?"
+source = { mine = "fill_blank" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "blank-4"
+type = "choice"
+kind = "Deep cut"
+area = "humor"
+format = "blank"
+prompt = "What's the missing word?"
+source = { mine = "fill_blank" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "blank-5"
+type = "choice"
+kind = "Ancient history"
+area = "archive"
+format = "blank"
+prompt = "Year one. What's the missing word?"
+source = { mine = "fill_blank", before = "2022-03" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "blank-emoji-1"
+type = "choice"
+kind = "Chronically online"
+area = "language"
+format = "blank"
+prompt = "Which emoji goes here?"
+source = { mine = "fill_emoji" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "redacted-1"
+type = "choice"
+kind = "Deep cut"
+area = "humor"
+format = "redacted"
+prompt = "Three words are missing. What's the first one?"
+source = { mine = "redact", blanks = 3 }
+reveal = "{month}. The whole message, unredacted."
+status = "mine"
+
+# ── THREADS AND COMPARISONS ───────────────────────────────────────────────
+
+[[q]]
+id = "what-happened-next-1"
+type = "choice"
+kind = "Deep cut"
+area = "humor"
+format = "thread"
+prompt = "{p1} sent this. What did {p2} reply?"
+source = { mine = "reply", by = "p1" }
+reveal = "TODO — this is the one worth writing properly."
+status = "mine"
+
+[[q]]
+id = "what-happened-next-2"
+type = "choice"
+kind = "Damning evidence"
+area = "conflict"
+format = "thread"
+prompt = "{p2} sent this. What did {p1} reply?"
+source = { mine = "reply", by = "p2" }
+reveal = "“{answer}”. You both know it. You both do it."
+status = "mine"
+
+[[q]]
+id = "reply-roulette"
+type = "choice"
+kind = "The archive"
+area = "humor"
+format = "thread"
+prompt = "This was the reply. What was the message?"
+source = { mine = "reply_inverted" }
+reveal = "“{answer}”. You both know it. You both do it."
+status = "mine"
+
+[[q]]
+id = "which-came-first-auto"
+type = "binary"
+kind = "Ancient history"
+area = "archive"
+format = "compare"
+prompt = "Which of these came first?"
+options = ["A", "B"]
+source = { mine = "compare_dates", spread_months = 12 }
+reveal = "TODO — ideally the mundane one wins by several months."
+status = "mine"
+
+[[q]]
+id = "date-this-1"
+type = "month"
+kind = "Ancient history"
+area = "archive"
+format = "bubble"
+prompt = "When was this sent?"
+source = { mine = "datable" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "date-this-2"
+type = "month"
+kind = "Deep cut"
+area = "archive"
+format = "bubble"
+prompt = "When was this sent?"
+source = { mine = "datable" }
+reveal = "{month}."
+status = "mine"
+
+[[q]]
+id = "date-this-3"
+type = "month"
+kind = "The archive"
+area = "archive"
+format = "bubble"
+prompt = "When was this sent?"
+source = { mine = "datable" }
+reveal = "{month}."
+status = "mine"

@@ -1,0 +1,28 @@
+# ── REAL DATA. Never commit any of this. ──────────────────────────────────
+chat.db*
+*.sqlite
+corpus.json
+*_corpus.json
+candidates.json
+questions/mine.toml
+questions/inbox.md
+datasets/real.json
+data/
+.env
+
+# Ciphertext IS committed on purpose — see docs/PLAN.md §4:
+#   !datasets/real.json.enc
+#   !questions/mine.toml.enc
+
+# ── Python ────────────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# ── OS / editor ───────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+*.swp

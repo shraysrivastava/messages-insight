@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>Read Receipts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Karla:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/app.css">
+<style>
+  body{display:flex;justify-content:center}
+  #app{
+    position:relative;z-index:1;
+    width:100%;max-width:460px;min-height:100vh;
+    padding:calc(18px + env(safe-area-inset-top)) 20px
+            calc(28px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;
+  }
+
+  .bar{
+    display:flex;align-items:center;gap:10px;
+    padding-bottom:15px;border-bottom:1px solid var(--line);margin-bottom:20px;
+  }
+  .bar .me{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+  .bar .me .dot{width:10px;height:10px;border-radius:50%;background:currentColor}
+  .bar .rd{margin-left:auto;font-family:var(--mono);font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .bar .sc{font-family:var(--mono);font-size:15px;font-weight:700}
+
+  .stage{flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px}
+
+  h1.big{font-family:var(--display);font-weight:900;letter-spacing:-.03em;
+    line-height:.95;font-size:clamp(40px,13vw,58px)}
+  .lede{color:var(--muted);font-size:16px;max-width:32ch}
+
+  .prompt{font-family:var(--display);font-variation-settings:"opsz" 40;
+    font-weight:600;font-size:23px;line-height:1.22;letter-spacing:-.01em}
+  .bubble{font-size:16px;line-height:1.45}
+
+  .opts{display:flex;flex-direction:column;gap:9px}
+  .opts button.emoji{font-size:32px;text-align:center;padding:16px}
+
+  .slider-val{font-family:var(--mono);font-size:25px;font-weight:700;text-align:center}
+
+  .count{font-family:var(--display);font-weight:900;font-size:clamp(90px,32vw,150px);
+    text-align:center;line-height:1;letter-spacing:-.05em;
+    animation:tick .9s cubic-bezier(.2,1.2,.3,1) both}
+  @keyframes tick{from{opacity:0;transform:scale(.55)}60%{opacity:1}to{opacity:.15;transform:scale(1.2)}}
+
+  .verdict{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+  .verdict .pts{font-family:var(--mono);font-weight:700;font-size:52px;line-height:1}
+  .verdict .lab{font-family:var(--display);font-weight:900;font-size:30px;letter-spacing:-.02em}
+  .verdict .sub{color:var(--muted);font-size:15px}
+
+  .truth{border-left:2px solid currentColor;padding-left:14px;font-size:15px;line-height:1.45}
+  .truth .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+
+  .mini{display:flex;flex-direction:column;gap:8px}
+  .mini .row{display:flex;align-items:center;gap:11px;background:var(--raised);
+    border-radius:13px;padding:12px 15px;font-size:15px}
+  .mini .row .nm{flex:1;font-weight:700}
+  .mini .row .sc{font-family:var(--mono);font-weight:700}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="/static/shared.js"></script>
+<script>
+const app = document.getElementById("app");
+let S = null, me = null, pending = null, lastKey = "";
+
+/* stable id so a refresh or a locked screen doesn't lose your score */
+let myId = sessionStorage.getItem("rr_id");
+if (!myId) {
+  myId = Math.random().toString(36).slice(2, 10);
+  sessionStorage.setItem("rr_id", myId);
+}
+let myName = sessionStorage.getItem("rr_name") || "";
+
+function onOpenExtra() {
+  if (myName) send({ t: "join", id: myId, name: myName });
+}
+
+/* ------------------------------------------------------------------ chrome */
+
+function bar() {
+  const b = h("div", "bar");
+  if (me) {
+    const who = h("div", "me");
+    who.style.color = me.color;
+    who.append(h("span", "dot"), textNode(me.name, "var(--cream)"));
+    b.append(who, h("div", "sc", String(me.score)));
+    b.querySelector(".sc").style.color = me.color;
+  }
+  if (S.phase !== "lobby" && S.phase !== "final") {
+    b.append(h("div", "rd", `Round ${S.round + 1}/${S.rounds}`));
+  }
+  return b;
+}
+
+function stage(...kids) {
+  const s = h("div", "stage fade");
+  s.append(...kids.filter(Boolean));
+  return s;
+}
+
+function paint(...kids) {
+  app.replaceChildren();
+  if (me) app.append(bar());
+  app.append(stage(...kids));
+}
+
+/* ------------------------------------------------------------------- views */
+
+function joinView() {
+  const title = h("h1", "big");
+  title.append(document.createTextNode("Read"), h("br"),
+               document.createTextNode("Receipts"));
+  const lede = h("p", "lede", "Put in a name. Your partner sees it on the big screen.");
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Your name";
+  input.maxLength = 18;
+  input.autocomplete = "off";
+
+  const go = h("button", "cta", "I'm in");
+  go.disabled = true;
+  input.oninput = () => { go.disabled = !input.value.trim(); };
+  input.onkeydown = e => { if (e.key === "Enter" && input.value.trim()) go.click(); };
+  go.onclick = () => {
+    myName = input.value.trim();
+    sessionStorage.setItem("rr_name", myName);
+    send({ t: "join", id: myId, name: myName });
+  };
+
+  app.replaceChildren();
+  app.append(stage(title, lede, input, go));
+  setTimeout(() => input.focus(), 120);
+}
+
+function lobbyView() {
+  const dots = h("div", "dots");
+  dots.append(h("i"), h("i"), h("i"));
+  const head = h("h2", "prompt", "You're in.");
+  const lede = h("p", "lede",
+    S.players.length > 1
+      ? "Everyone's here. Waiting on the host to start."
+      : "Waiting for the other phone to join.");
+
+  const mini = h("div", "mini");
+  S.players.forEach(p => {
+    const row = h("div", "row");
+    row.style.color = p.color;
+    row.append(h("span", "dot"), textNode(p.name, "var(--cream)", "nm"));
+    row.querySelector(".dot").style.cssText =
+      "width:10px;height:10px;border-radius:50%;background:currentColor";
+    mini.append(row);
+  });
+
+  paint(dots, head, lede, mini);
+}
+
+function countdownView() {
+  const left = Math.max(1, Math.ceil(3 - (Date.now() / 1000 - S.now)));
+  paint(h("div", "count", String(left)));
+  setTimeout(() => { if (S.phase === "countdown") countdownView(); }, 900);
+}
+
+function questionView() {
+  const q = S.question;
+  const key = `${S.round}:${S.phase}`;
+  const locked = S.answered.includes(myId);
+
+  if (locked) return lockedView();
+  if (key === lastKey && app.querySelector(".opts, input, .slider-val")) return;
+  lastKey = key;
+  pending = null;
+
+  const tint = me ? me.color : "var(--cream)";
+  const kids = [h("div", "eyebrow", q.kind), h("h2", "prompt", q.prompt)];
+  if (q.text) kids.push(h("div", "bubble", q.text));
+
+  const lock = h("button", "cta", "Lock it in");
+  lock.disabled = true;
+  const enable = v => { pending = v; lock.disabled = false; };
+
+  if (q.options) {
+    const wrap = h("div", "opts");
+    const isEmoji = q.options.every(o => o.length <= 3 && !/[a-z0-9]/i.test(o));
+    q.options.forEach((opt, i) => {
+      const b = h("button", isEmoji ? "emoji" : null, opt);
+      b.style.color = q.type === "binary"
+        ? (i === 0 ? "var(--p1,#F2A65A)" : "#8B8CE8")
+        : tint;
+      b.onclick = () => {
+        wrap.querySelectorAll("button").forEach(x => x.classList.remove("sel"));
+        b.classList.add("sel");
+        enable(i);
+      };
+      wrap.append(b);
+    });
+    kids.push(wrap);
+  } else if (q.type === "number") {
+    const inp = document.createElement("input");
+    inp.type = "number"; inp.inputMode = "numeric"; inp.placeholder = "0";
+    inp.style.color = tint;
+    inp.oninput = () => {
+      const v = parseInt(inp.value, 10);
+      if (Number.isFinite(v) && v >= 0) enable(v);
+      else { pending = null; lock.disabled = true; }
+    };
+    kids.push(inp);
+  } else if (q.type === "month") {
+    const months = S.meta.months;
+    const mid = Math.floor(months.length / 2);
+    const out = h("div", "slider-val", monthLabel(months[mid]));
+    out.style.color = tint;
+    const sl = document.createElement("input");
+    sl.type = "range"; sl.min = 0; sl.max = months.length - 1; sl.value = mid;
+    sl.style.color = tint;
+    sl.setAttribute("aria-label", "Pick a month");
+    sl.oninput = () => { out.textContent = monthLabel(months[sl.value]);
+                         enable(parseInt(sl.value, 10)); };
+    const ends = h("div", "ends");
+    ends.append(h("span", null, monthLabel(months[0])),
+                h("span", null, monthLabel(months[months.length - 1])));
+    const box = h("div");
+    box.append(out, sl, ends);
+    kids.push(box);
+    enable(mid);
+  }
+
+  const timer = h("div", "timer");
+  const fill = h("span");
+  timer.append(fill);
+  kids.push(timer);
+
+  lock.onclick = () => {
+    send({ t: "answer", id: myId, value: pending });
+    lockedView();
+  };
+  kids.push(lock);
+
+  paint(...kids);
+  runTimer(timer, fill);
+}
+
+function lockedView() {
+  lastKey = "";
+  const dots = h("div", "dots");
+  dots.append(h("i"), h("i"), h("i"));
+  const head = h("h2", "prompt", "Locked in.");
+  const others = S.players.filter(p => p.id !== myId && !S.answered.includes(p.id));
+  const lede = h("p", "lede",
+    others.length ? `Waiting on ${others.map(p => p.name).join(", ")}…`
+                  : "Everyone's answered. Look up.");
+  const timer = h("div", "timer");
+  const fill = h("span");
+  timer.append(fill);
+  paint(dots, head, lede, S.endsAt ? timer : null);
+  if (S.endsAt) runTimer(timer, fill);
+}
+
+function revealView() {
+  lastKey = "";
+  const q = S.question;
+  const mine = me && me.last ? me.last : null;
+  const pts = mine ? mine.points : 0;
+  const acc = mine ? mine.accuracy : 0;
+
+  const v = h("div", "verdict");
+  const label = acc >= 0.99 ? "Nailed it"
+              : acc >= 0.5 ? "Close"
+              : acc > 0 ? "Not quite"
+              : "Nope";
+  const p = h("div", "pts", "+" + pts);
+  p.style.color = pts > 0 ? "var(--right)" : "var(--wrong)";
+  v.append(p, h("div", "lab", label));
+  v.append(h("div", "sub", "You said " + shownGuess(q, mine ? mine.answer : null, S)));
+
+  const truth = h("div", "truth");
+  truth.style.color = me ? me.color : "var(--cream)";
+  truth.append(h("div", "lab", "The truth"),
+               textNode(q.reveal, "var(--cream)"));
+
+  const mini = h("div", "mini");
+  S.players.forEach((pl, i) => {
+    const row = h("div", "row");
+    row.style.color = pl.color;
+    row.append(textNode(`#${i + 1}`, "var(--muted)"),
+               textNode(pl.name, "var(--cream)", "nm"),
+               h("div", "sc", String(pl.score)));
+    mini.append(row);
+  });
+
+  paint(v, truth, mini);
+}
+
+function finalView() {
+  const order = S.players;
+  const won = order.length && order[0].id === myId;
+  const tie = order.length > 1 && order[0].score === order[1].score;
+
+  const head = h("h1", "big", tie ? "Dead heat." : won ? "You win." : "You lost.");
+  const lede = h("p", "lede", won && !tie
+    ? "Superior recall. Insufferable about it, presumably."
+    : tie ? "Suspiciously well matched."
+          : "The receipts don't lie.");
+
+  const mini = h("div", "mini");
+  order.forEach((pl, i) => {
+    const row = h("div", "row");
+    row.style.color = pl.color;
+    row.append(textNode(`#${i + 1}`, "var(--muted)"),
+               textNode(pl.name, "var(--cream)", "nm"),
+               h("div", "sc", pl.score.toLocaleString()));
+    mini.append(row);
+  });
+
+  paint(head, lede, mini);
+}
+
+/* ------------------------------------------------------------------- timer */
+
+let raf = null;
+function runTimer(bar, fill) {
+  cancelAnimationFrame(raf);
+  if (!S.endsAt) return;
+  const total = S.seconds * 1000;
+  const skew = Date.now() - S.now * 1000;
+  const endsAt = S.endsAt * 1000 + skew;
+  const step = () => {
+    const left = Math.max(0, endsAt - Date.now());
+    fill.style.transform = `scaleX(${left / total})`;
+    bar.classList.toggle("urgent", left < total * 0.28);
+    if (left > 0 && document.body.contains(bar)) raf = requestAnimationFrame(step);
+  };
+  step();
+}
+
+/* ------------------------------------------------------------------ router */
+
+connect("player", s => {
+  S = s;
+  me = s.players.find(p => p.id === myId) || null;
+
+  if (!me) return joinView();
+  if (s.phase === "lobby") return lobbyView();
+  if (s.phase === "countdown") { lastKey = ""; return countdownView(); }
+  if (s.phase === "question") return questionView();
+  if (s.phase === "reveal") return revealView();
+  if (s.phase === "final") return finalView();
+});
+</script>
+</body>
+</html>

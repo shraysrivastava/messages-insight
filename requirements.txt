@@ -1,0 +1,11 @@
+# Runtime
+fastapi>=0.115
+uvicorn[standard]>=0.30
+segno>=1.6                # QR for the join link
+cryptography>=42          # seal.py — Fernet + scrypt
+
+# Authoring tools (local only)
+pytypedstream>=0.1        # decodes attributedBody; without it we byte-walk
+
+# Dev
+pytest>=8

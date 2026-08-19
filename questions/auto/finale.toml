@@ -1,0 +1,103 @@
+# auto/finale.toml — WAGERS AND MUTUALS
+#
+# `wager` needs the Final Receipt phase (PLAN.md Stage 3, ~2h).
+# `mutual` needs the Same Page mechanic (Stage 4, ~4h).
+# Until each exists compile.py skips them and tells you what it dropped.
+#
+# THE BEST ONES SHOULD BE YOURS. These are scaffolding — put your real
+# Final Receipt questions in mine.toml, where they get priority.
+
+# ── FINAL RECEIPT ─────────────────────────────────────────────────────────
+# One per game, always last. Guessable but not certain — binary or choice,
+# never number. The reveal is the last thing either of you reads that night.
+
+[[q]]
+id = "final-first-message"
+type = "wager"
+kind = "Final receipt"
+area = "milestones"
+format = "bubble"
+prompt = "Final Receipt. Who sent the very first message between us?"
+source = { first_message = true }
+options = ["{p1}", "{p2}"]
+reveal = "{winner}. {date}. Five years ago tonight."
+status = "ready"
+
+[[q]]
+id = "final-love-you-first"
+type = "wager"
+kind = "Final receipt"
+area = "milestones"
+format = "bubble"
+prompt = "Final Receipt. Who said “I love you” first?"
+answer = { first_use_sender = "love_you" }
+options = ["{p1}", "{p2}"]
+reveal = "{winner} said it first, on {date}. Some things you don't forget."
+status = "ready"
+
+[[q]]
+id = "final-longest-day"
+type = "wager"
+kind = "Final receipt"
+area = "archive"
+prompt = "Final Receipt. Our loudest day ever — was it a good day or a bad one?"
+options = ["Good", "Bad"]
+answer = 0
+reveal = "TODO — {date}, and what happened."
+status = "draft"
+
+# ── SAME PAGE ─────────────────────────────────────────────────────────────
+# No correct answer. You both answer; you score if you MATCH. The only
+# category in the game that's about the two of you rather than one of you
+# beating the other.
+
+[[q]]
+id = "same-page-best-year"
+type = "mutual"
+kind = "Same page"
+area = "milestones"
+prompt = "Which year was our best year?"
+options = ["2021", "2022", "2023", "2024"]
+reveal = "Match, and it's settled. Miss, and you've each been quietly living a different favourite year."
+status = "ready"
+
+[[q]]
+id = "same-page-overused"
+type = "mutual"
+kind = "Same page"
+area = "language"
+prompt = "Which word do we both overuse the most?"
+answer = { top_word = 4 }
+reveal = "“{answer}”. You both know it. You both do it."
+status = "ready"
+
+[[q]]
+id = "same-page-worst-habit"
+type = "mutual"
+kind = "Same page"
+area = "habits"
+prompt = "Whose texting habit is more annoying?"
+options = ["{p1}'s", "{p2}'s"]
+reveal = "No wrong answer here. Only an awkward one."
+status = "ready"
+
+[[q]]
+id = "same-page-next-trip"
+type = "mutual"
+kind = "Same page"
+area = "travel"
+prompt = "Where should we go next?"
+options = ["TODO", "TODO", "TODO", "TODO"]
+reveal = "TODO — and if you match, book it."
+status = "draft"
+
+[[q]]
+id = "same-page-most-us"
+type = "mutual"
+kind = "Same page"
+area = "affection"
+format = "compare"
+prompt = "Which of these messages is the most “us”?"
+options = ["TODO", "TODO", "TODO", "TODO"]
+reveal = "“{answer}”. You both know it. You both do it."
+status = "draft"

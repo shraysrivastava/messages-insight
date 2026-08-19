@@ -1,0 +1,379 @@
+# auto/who.toml — WHO SAYS IT MORE  ·  binary  ·  all self-resolving
+#
+# Reliably the funniest category, because the split is always more lopsided
+# than either of you expects. compile.py drops any where the margin is under
+# 1.25× — a near-tie is a coin flip wearing a question costume.
+
+[[q]]
+id = "more-lol"
+type = "binary"
+kind = "Character witness"
+area = "language"
+prompt = "Who has typed “lol” more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "lol" }
+reveal = "{winner}. {n1} to {n2}. Not close, and never was."
+status = "ready"
+
+[[q]]
+id = "more-haha"
+type = "binary"
+kind = "Chronically online"
+area = "humor"
+prompt = "Who laughs in text more — “haha” in all its forms?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "haha" }
+reveal = "{winner}, {n1} times to {n2}. The average length climbs every year."
+status = "ready"
+
+[[q]]
+id = "more-sorry"
+type = "binary"
+kind = "Damning evidence"
+area = "conflict"
+prompt = "Who has apologised more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "sorry" }
+reveal = "{winner}: {n1} apologies. {loser}: {n2}. Draw your own conclusions."
+status = "ready"
+
+[[q]]
+id = "more-thanks"
+type = "binary"
+kind = "Character witness"
+area = "affection"
+prompt = "Who says thank you more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "thank_you" }
+reveal = "{winner}, {n1} to {n2}. Gratitude is not evenly distributed in this house."
+status = "ready"
+
+[[q]]
+id = "more-compliments"
+type = "binary"
+kind = "Soft launch"
+area = "affection"
+prompt = "Who gives more compliments?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "compliment" }
+reveal = "{winner}, {n1} times to {n2}."
+status = "ready"
+
+[[q]]
+id = "more-reassurance"
+type = "binary"
+kind = "Character witness"
+area = "affection"
+prompt = "Who is more likely to say “don't worry, I've got you”?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "reassurance" }
+reveal = "{winner}, {n1} times. Somebody is the calm one and it was never in doubt."
+status = "ready"
+
+[[q]]
+id = "more-please"
+type = "binary"
+kind = "Character witness"
+area = "language"
+prompt = "Who says “please” more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "please" }
+reveal = "{winner}, {n1} to {n2}. Politeness is a personality trait and one of us has it."
+status = "ready"
+
+[[q]]
+id = "more-wait"
+type = "binary"
+kind = "Chronically online"
+area = "language"
+prompt = "Who starts more messages with “wait”?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "wait" }
+reveal = "{winner}. {n1} times, every one the start of a whole thing."
+status = "ready"
+
+[[q]]
+id = "more-literally"
+type = "binary"
+kind = "Chronically online"
+area = "language"
+prompt = "Who says “literally” more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "literally" }
+reveal = "{winner}: {n1}. Literally."
+status = "ready"
+
+[[q]]
+id = "more-miss-you"
+type = "binary"
+kind = "Soft launch"
+area = "long-distance"
+prompt = "Who has said “miss you” more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "miss_you" }
+reveal = "{winner}, {n1} times to {n2}. Somebody's the sentimental one."
+status = "ready"
+
+[[q]]
+id = "more-love-you"
+type = "binary"
+kind = "Receipts"
+area = "affection"
+prompt = "Who has said “I love you” more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "love_you" }
+reveal = "{winner}: {n1}. {loser}: {n2}. This is now a permanent record."
+status = "ready"
+
+[[q]]
+id = "more-goodnight"
+type = "binary"
+kind = "Soft launch"
+area = "habits"
+prompt = "Who says goodnight first more often?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "goodnight" }
+reveal = "{winner}, {n1} nights to {n2}."
+status = "ready"
+
+[[q]]
+id = "more-obsessed"
+type = "binary"
+kind = "Chronically online"
+area = "language"
+prompt = "Who is more likely to be “obsessed” with something?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "obsessed" }
+reveal = "{winner}, {n1} times. About {n1} different things."
+status = "ready"
+
+[[q]]
+id = "more-food"
+type = "binary"
+kind = "Petty grievances"
+area = "food"
+prompt = "Who brings up food more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "food" }
+reveal = "{winner}: {n1} mentions. A relationship is mostly deciding where to eat."
+status = "ready"
+
+[[q]]
+id = "more-coffee"
+type = "binary"
+kind = "Chronically online"
+area = "food"
+prompt = "Who talks about coffee more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "coffee" }
+reveal = "{winner}, {n1} times. A personality built on caffeine."
+status = "ready"
+
+[[q]]
+id = "more-tired"
+type = "binary"
+kind = "Petty grievances"
+area = "sleep"
+prompt = "Who complains about being tired more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "sleep" }
+reveal = "{winner}: {n1} times exhausted. {loser} managed {n2}."
+status = "ready"
+
+[[q]]
+id = "more-work"
+type = "binary"
+kind = "Petty grievances"
+area = "work"
+prompt = "Who brings work into the chat more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "work" }
+reveal = "{winner}, {n1} times. Log off."
+status = "ready"
+
+[[q]]
+id = "more-late"
+type = "binary"
+kind = "Damning evidence"
+area = "logistics"
+prompt = "Who has said “on my way” more — while not being on their way?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "lateness" }
+reveal = "{winner}, {n1} times. Statistically, a lie."
+status = "ready"
+
+[[q]]
+id = "more-weather"
+type = "binary"
+kind = "The archive"
+area = "weather"
+prompt = "Who talks about the weather more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "weather" }
+reveal = "{winner}, {n1} times. Two states, two forecasts, one running commentary."
+status = "ready"
+
+[[q]]
+id = "more-plans"
+type = "binary"
+kind = "Character witness"
+area = "milestones"
+prompt = "Who proposes plans more — “we should”, “let's go”?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "plans" }
+reveal = "{winner}, {n1} times. Roughly {n2} of which happened."
+status = "ready"
+
+[[q]]
+id = "more-photos"
+type = "binary"
+kind = "The archive"
+area = "media"
+prompt = "Who asks for pictures more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "photos" }
+reveal = "{winner}, {n1} times."
+status = "ready"
+
+[[q]]
+id = "more-hearts"
+type = "binary"
+kind = "By the numbers"
+area = "affection"
+prompt = "Who sends more hearts?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "hearts" }
+reveal = "{winner}, {n1} to {n2}."
+status = "ready"
+
+[[q]]
+id = "more-emoji"
+type = "binary"
+kind = "By the numbers"
+area = "language"
+prompt = "Who uses more emoji overall?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "more_emoji" }
+reveal = "{winner}, by a mile."
+status = "ready"
+
+[[q]]
+id = "more-caps"
+type = "binary"
+kind = "Petty grievances"
+area = "language"
+prompt = "Who SHOUTS in all caps more?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "all_caps" }
+reveal = "{winner}. {n1} messages in full caps, every one urgent about nothing."
+status = "ready"
+
+[[q]]
+id = "more-exclaim"
+type = "binary"
+kind = "Character witness"
+area = "language"
+prompt = "Who uses more exclamation marks?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "exclamations" }
+reveal = "{winner}, {n1} of them. Enthusiasm is free."
+status = "ready"
+
+[[q]]
+id = "more-double-text"
+type = "binary"
+kind = "Petty grievances"
+area = "habits"
+prompt = "Who double-texts more?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "double_texts" }
+reveal = "{winner}, {n1} times. Patience is not one of the five love languages."
+status = "ready"
+
+[[q]]
+id = "more-left-on-read"
+type = "binary"
+kind = "Damning evidence"
+area = "conflict"
+prompt = "Who has left the other on read for longer?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "left_on_read" }
+reveal = "{winner}. We both know exactly which time this is about."
+status = "ready"
+
+[[q]]
+id = "more-first-of-day"
+type = "binary"
+kind = "Cold open"
+area = "habits"
+prompt = "Who texts first in the morning more often?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "first_message_of_day" }
+reveal = "{winner} opens {n1} of our days. {loser} opens {n2}."
+status = "ready"
+
+[[q]]
+id = "more-last-of-day"
+type = "binary"
+kind = "Soft launch"
+area = "habits"
+prompt = "Who gets the last word before bed more often?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "last_message_of_day" }
+reveal = "{winner}, {n1} nights out of {n2}."
+status = "ready"
+
+[[q]]
+id = "more-longer"
+type = "binary"
+kind = "By the numbers"
+area = "language"
+prompt = "Who writes longer messages?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "longer_messages" }
+reveal = "{winner}, averaging {n1} words to {n2}. One of us texts in paragraphs."
+status = "ready"
+
+[[q]]
+id = "more-one-word"
+type = "binary"
+kind = "Petty grievances"
+area = "language"
+prompt = "Who sends more one-word replies?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "one_word_replies" }
+reveal = "{winner}: {n1} one-word replies. “ok” is not a conversation."
+status = "ready"
+
+[[q]]
+id = "more-questions"
+type = "binary"
+kind = "Character witness"
+area = "language"
+prompt = "Who asks more questions?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "more_questions" }
+reveal = "{winner}, {n1} questions to {n2}. Curiosity, or interrogation. Unclear."
+status = "ready"
+
+[[q]]
+id = "more-typos"
+type = "binary"
+kind = "Chronically online"
+area = "language"
+prompt = "Who makes more typos?"
+options = ["{p1}", "{p2}"]
+answer = { who_more = "typos" }
+reveal = "{winner}. {n1} of them, and not one ever corrected."
+status = "ready"
+
+[[q]]
+id = "more-pet-names"
+type = "binary"
+kind = "Soft launch"
+area = "affection"
+prompt = "Who uses pet names more?"
+options = ["{p1}", "{p2}"]
+answer = { who_says_more = "pet_names" }
+reveal = "{winner}, {n1} times to {n2}."
+status = "draft"                     # unblocks when lex.pet_names is filled
