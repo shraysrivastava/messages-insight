@@ -37,6 +37,7 @@ against a checklist someone remembered to tick. Then:
 
 | I want to… | Read |
 | --- | --- |
+| hand this to Claude | [`CLAUDE.md`](CLAUDE.md) — loaded automatically |
 | know what to build next | [`docs/PLAN.md`](docs/PLAN.md) |
 | know what it should feel like | [`docs/DESIGN.md`](docs/DESIGN.md) |
 | write questions | [`docs/QUESTIONS.md`](docs/QUESTIONS.md) → [`questions/inbox.md`](questions/inbox.md) |

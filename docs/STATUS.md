@@ -18,6 +18,36 @@ python3 tools/status.py --bank      just the question bank
 
 ---
 
+## ▶ Resume here
+
+**Stage 1 is closed.** The whole pipeline is proven on a real thread: 7,640
+messages extracted, 43 questions compiled, a full game played in the browser.
+
+Next is **Stage 2 — the ship line.** It splits into two tracks that run in
+parallel:
+
+**Build** — start with `tools/curate.py` (`S2.1`). It's one day of work and it
+blocks the content track entirely; every evening of curation is waiting on it.
+Then `S2.3`–`S2.7`, then deploy.
+
+**Content** — the critical path, and it's his. The bank is 119 shippable but
+**0 from `mine.toml`**, and the dealer wants 9 of every 14 rounds to be his.
+Two ten-minute jobs unblock a lot:
+
+1. Fill `lex.pet_names` and `lex.inside_jokes` in `questions/lexicons.toml` —
+   turns on 3 questions immediately, and every inside-joke phrase after that is
+   a free `month` question.
+2. Dump raw ideas into `questions/inbox.md` in plain English. They come back as
+   finished `mine.toml` blocks.
+
+**Known open threads**
+- The friend-thread test data is in `corpus.json` / `datasets/test.json`. Both
+  gitignored. Re-running `make corpus` with her identifier overwrites it.
+- `questions/mine.toml` is gitignored and therefore unbacked-up. `seal.py`
+  (`S2.6`) should encrypt it alongside the dataset — see PLAN.md §2.
+
+---
+
 ## The five stages
 
 | Stage | Name | Gate — you are done when… |
@@ -40,9 +70,9 @@ lied to is worse than a red one.
 
 ### Stage 1 — Foundations
 
-- [ ] `M1.1` Full Disk Access granted; `extract.py` read the real thread
-- [ ] `M1.2` Skimmed `corpus.json` by eye — text decoded, no tapback junk
-- [ ] `M1.3` Played one full game locally on real data
+- [x] `M1.1` Full Disk Access granted; `extract.py` read the real thread
+- [x] `M1.2` Skimmed `corpus.json` by eye — text decoded, no tapback junk
+- [x] `M1.3` Played one full game locally on real data
 
 ### Stage 2 — MVP
 
@@ -100,4 +130,10 @@ remember whether something got done.
             resolvers, compile, extract, mine, validate, status. 54 tests green.
             Compiled dataset verified playable in the POC server end to end.
             Remaining: S1.4/M1.1-M1.3 all need chat.db.
+2026-08-18  STAGE 1 GATE CLEARED. Extracted a real thread (7,640 messages, 48
+            months, 1 bad char). Compiled 43 questions. Played a full game in
+            the browser. Real data caught 4 bugs the synthetic corpus could not:
+            {winner} rendering "Me", a compliment lexicon matching "if you look
+            at gym data", reveals that assumed their own answer, and prompts
+            hardcoding "five years" on a 4-year thread.
 ```
