@@ -138,6 +138,27 @@ def list_chats(conn) -> None:
 
 # ── extraction ────────────────────────────────────────────────────────────
 
+def count_per_identifier(conn, identifiers: list[str]) -> dict[str, int]:
+    """How many messages each identifier contributes, before merging.
+
+    A five-year thread is usually split across a phone number and an Apple ID.
+    Merging them is the right call, but a typo in one silently halves the corpus
+    and nothing downstream would ever notice — so count them separately first.
+    """
+    out = {}
+    for ident in identifiers:
+        row = conn.execute(
+            """
+            SELECT COUNT(DISTINCT m.ROWID)
+            FROM message m
+            JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
+            JOIN chat c ON c.ROWID = cmj.chat_id
+            WHERE c.chat_identifier = ?
+            """, (ident,)).fetchone()
+        out[ident] = row[0] if row else 0
+    return out
+
+
 def load_messages(conn, identifiers: list[str]) -> list[dict]:
     ph = ",".join("?" for _ in identifiers)
     rows = conn.execute(
@@ -246,6 +267,20 @@ def main() -> None:
             return
         idents = [s.strip() for s in args.chat.split(",") if s.strip()]
         print(f"Reading {', '.join(idents)} ...")
+
+        per = count_per_identifier(conn, idents)
+        if len(idents) > 1:
+            print("  merging:")
+            for ident, n in per.items():
+                mark = "" if n else "   <- nothing found, check for a typo"
+                print(f"    {n:>8,}  {ident}{mark}")
+        empty = [i for i, n in per.items() if n == 0]
+        if empty and len(empty) == len(idents):
+            sys.exit(f"None of {', '.join(empty)} matched a chat. Try --list.")
+        if empty:
+            print(f"\n  WARNING: {', '.join(empty)} matched nothing. Continuing "
+                  f"with the rest — rerun if that was a typo.\n")
+
         messages = load_messages(conn, idents)
     finally:
         conn.close()

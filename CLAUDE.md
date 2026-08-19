@@ -59,6 +59,9 @@ from his first. Don't add a field for this; the filesystem is the mechanism.
   can't inherit it. Anything touching `~/Library/Messages` — i.e. `make chats`
   and `make corpus` — the **user runs in Terminal.app**. Everything downstream
   reads `corpus.json` from the repo and works fine from here.
+- **Her thread is split across a phone number and a Gmail address.** Always pass
+  both, comma separated: `make corpus CHAT="+1555...,her@gmail.com"`. Extraction
+  dedups by message ROWID and prints a per-identifier breakdown.
 - `make setup` rebuilds the venv from `requirements.txt`.
 
 ---

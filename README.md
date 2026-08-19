@@ -61,7 +61,7 @@ Your terminal needs Full Disk Access (System Settings > Privacy & Security).
 
 ```bash
 make chats                                  # find her chat identifier
-make corpus CHAT="+15551234567" P1=Shray P2=Her
+make corpus CHAT="+15551234567,her@gmail.com"     # both, if split
 make compile
 make real
 ```
