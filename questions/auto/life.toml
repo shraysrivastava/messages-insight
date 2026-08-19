@@ -226,7 +226,7 @@ kind = "Occasions"
 area = "milestones"
 prompt = "How many messages mention a holiday, a birthday, or an anniversary?"
 answer = { count = "holidays" }
-reveal = "{answer:,}. Five years of showing up."
+reveal = "{answer:,}. {years} years of showing up."
 status = "ready"
 
 [[q]]
@@ -246,7 +246,7 @@ kind = "Occasions"
 area = "milestones"
 prompt = "When did the first present get mentioned?"
 answer = { first_use = "gifts" }
-reveal = "{month}. The beginning of five years of overthinking presents."
+reveal = "{month}. The beginning of {years} years of overthinking presents."
 status = "ready"
 
 # ── FRICTION ──────────────────────────────────────────────────────────────
@@ -300,7 +300,7 @@ kind = "The archive"
 area = "habits"
 prompt = "Which day of the week do we text most?"
 answer = { busiest_weekday = true }
-reveal = "{answer}. Sunday scaries are real and they are chatty."
+reveal = "{answer}. Every relationship has a day, and that's ours."
 status = "ready"
 
 [[q]]

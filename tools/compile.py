@@ -89,10 +89,13 @@ def render(text: str, ctx: dict, qid: str) -> str:
 
 
 def build_context(meta: dict, res, q: dict, options: list[str] | None) -> dict:
+    """Template vars available to every prompt, text and reveal."""
     ctx = {
         "p1": meta["p1"],
         "p2": meta["p2"],
         "total": meta.get("total", 0),
+        "years": max(1, round(len(meta.get("months", [])) / 12)),
+        "months_n": len(meta.get("months", [])),
         "answer": "",
         "n1": "", "n2": "", "winner": "", "loser": "",
         "date": "", "month": "",
@@ -173,6 +176,9 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
 
     meta["p1"] = _name("p1", names[0], meta["p1"])
     meta["p2"] = _name("p2", names[1], meta["p2"])
+    # Resolvers render {winner}/{loser} from the corpus object, so the override
+    # has to reach it too — otherwise reveals say "Me" instead of your name.
+    corpus.meta["p1"], corpus.meta["p2"] = meta["p1"], meta["p2"]
     meta["rounds"] = meta_cfg.get("rounds", 14)
     meta["seconds"] = float(meta_cfg.get("seconds", 25))
     meta.pop("first_ts", None)

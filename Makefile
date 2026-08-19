@@ -33,12 +33,17 @@ play: demo         ## play the demo dataset locally right now
 chats:             ## list your iMessage threads, to find the identifier
 	@$(PY) tools/extract.py --list
 
-CORPUS ?= corpus.json
+CORPUS  ?= corpus.json
 DATASET ?= datasets/real.json
+# Extraction-time names barely matter — compile.py overrides them from
+# questions/config.toml. These just keep the command short.
+P1 ?= Me
+P2 ?= Her
 
 corpus:            ## chat.db -> $(CORPUS)   (CHAT=... P1=... P2=...)
 	@test -n "$(CHAT)" || (echo "usage: make corpus CHAT='+1555…' P1=Me P2=Them"; exit 1)
 	@$(PY) tools/extract.py --chat "$(CHAT)" --p1 "$(P1)" --p2 "$(P2)" --out $(CORPUS)
+	@echo "  next:  make compile && make real"
 
 mine:              ## $(CORPUS) -> candidates.json
 	@$(PY) tools/mine.py --corpus $(CORPUS) --out candidates.json

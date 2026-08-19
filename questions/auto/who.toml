@@ -221,7 +221,7 @@ area = "milestones"
 prompt = "Who proposes plans more — “we should”, “let's go”?"
 options = ["{p1}", "{p2}"]
 answer = { who_says_more = "plans" }
-reveal = "{winner}, {n1} times. Roughly {n2} of which happened."
+reveal = "{winner}, {n1} times to {n2}. One of us is the ideas department."
 status = "ready"
 
 [[q]]

@@ -56,9 +56,18 @@ any = ["TODO"]                 # ← babe, bub, whatever you actually call her
 status = "draft"
 
 [lex.compliment]
-any = ["youre so", "you are so", "so proud of you", "im proud of you",
-       "you look", "gorgeous", "beautiful", "handsome", "cutest", "prettiest",
-       "smartest", "youre the best", "best thing", "so lucky", "im lucky"]
+# Bare "you look" and "youre so" are not compliments — they matched "if you
+# look at gym data" and would match "youre so late". Every phrase here has to
+# carry the sentiment on its own.
+any = ["you look so", "you look good", "you look great", "you look amazing",
+       "you look beautiful", "you look incredible", "youre so pretty",
+       "youre so cute", "youre so smart", "youre so funny", "youre so good at",
+       "so proud of you", "im proud of you", "proud of you",
+       "gorgeous", "beautiful", "handsome", "cutest", "prettiest", "smartest",
+       "youre the best", "best thing that", "so lucky to have", "im so lucky",
+       "you did amazing", "you crushed it", "nailed it"]
+exclude = ["you look at", "you look into", "you look up", "you look like",
+           "you look for", "youre so late", "youre so annoying"]
 
 [lex.hearts]
 emoji = ["❤", "❤️", "🩷", "💕", "💗", "💖", "💘", "💝", "🥰", "😍", "♥", "🫶"]

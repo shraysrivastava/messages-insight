@@ -9,9 +9,9 @@ id = "total-messages"
 type = "number"
 kind = "By the numbers"
 area = "archive"
-prompt = "How many messages have we sent each other in five years?"
+prompt = "How many messages have we sent each other in {years} years?"
 answer = { total_messages = true }
-reveal = "{answer:,}. Every single day, without a gap you'd notice."
+reveal = "{answer:,} messages in {years} years. Neither of us has ever run out of things to say."
 status = "ready"
 
 [[q]]
@@ -61,7 +61,7 @@ kind = "Character witness"
 area = "affection"
 prompt = "How many times have we thanked each other?"
 answer = { count = "thank_you" }
-reveal = "{answer:,}. Five years of not taking it for granted."
+reveal = "{answer:,}. {years} years of not taking it for granted."
 status = "ready"
 
 [[q]]
@@ -161,7 +161,7 @@ kind = "The archive"
 area = "archive"
 prompt = "What's the longest we've ever gone without texting? (hours)"
 answer = { longest_gap_hours = true }
-reveal = "{answer} hours. The longest silence in five years — and then it ended."
+reveal = "{answer} hours. The longest silence in {years} years — and then it ended."
 status = "ready"
 
 [[q]]
@@ -181,7 +181,7 @@ kind = "Receipts"
 area = "habits"
 prompt = "Longest run of consecutive days we both texted?"
 answer = { longest_streak_days = true }
-reveal = "{answer:,} days in a row."
+reveal = "{answer:,} days in a row, without one of us dropping it."
 status = "ready"
 
 [[q]]
@@ -191,7 +191,7 @@ kind = "By the numbers"
 area = "archive"
 prompt = "On an average day, how many messages do we send each other?"
 answer = { avg_per_day = true }
-reveal = "{answer} a day, every day, for five years."
+reveal = "{answer} a day. Every day, for {years} years."
 status = "ready"
 
 [[q]]

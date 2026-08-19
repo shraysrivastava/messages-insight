@@ -10,7 +10,7 @@ area = "archive"
 prompt = "Of our {total:,} messages, what share did {p1} send?"
 answer = { share_of_messages = "p1" }
 unit = "%"
-reveal = "{answer}%. She has out-texted you every single year."
+reveal = "{answer}%. Which means the other {answer}% belongs to someone else in this chat."
 status = "ready"
 
 [[q]]
@@ -18,7 +18,7 @@ id = "share-days-covered"
 type = "percent"
 kind = "Receipts"
 area = "habits"
-prompt = "Out of every day in the last five years, on what share did we text at all?"
+prompt = "Out of every day in the last {years} years, on what share did we text at all?"
 answer = { share_days_covered = true }
 unit = "%"
 reveal = "{answer}%. That's the whole game, really."
@@ -87,5 +87,5 @@ area = "language"
 prompt = "What share of our messages are questions?"
 answer = { share_questions = true }
 unit = "%"
-reveal = "{answer}%. Five years and still asking."
+reveal = "{answer}%. {years} years in and still asking."
 status = "ready"
