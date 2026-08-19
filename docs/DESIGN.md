@@ -405,16 +405,111 @@ Sound is a disproportionate amount of the "fun" and it's an afternoon.
 - A visible mute toggle on the host screen. Non-negotiable if she's on a call with
   you while playing.
 
-**Motion**, all behind `prefers-reduced-motion` as the POC already does: staggered
-option entrances, spring on the leaderboard re-sort, points flying to the board,
-typing dots everywhere there's a wait, confetti once.
+**Motion.** The POC ships three keyframes — a fade-in, the typing dots, and the
+timer drain. Everything below is specified but *not built*; it lands with the
+stage-3 work, all behind `prefers-reduced-motion`:
+
+| Animation | Where | Stage |
+| --- | --- | --- |
+| Staggered option entrance, 40ms apart | question | `S3.2` |
+| 400ms hold, then answer illuminates | reveal | `S3.2` |
+| Context thread slides in under the answer | reveal | `S3.2` |
+| Reveal line types out behind typing dots | reveal | `S3.2` |
+| Points fly from tile to leaderboard | reveal | `S3.2` |
+| Spring re-sort on the standings bar | standings | `S3.2` |
+| `Delivered` → `Read 9:42 PM` transition | locked | `S3.3` |
+| Superlative cards dealt ~2s apart | end | `S3.4` |
+| Score graph draws left to right | end | `S4.1` |
+| Confetti, once | podium | `S4.1` |
+
+Ten animations, one afternoon each at most, and they're the difference between a
+form and a game. None of them is load-bearing — every one degrades to an instant
+state change.
 
 **Haptics** on phones via `navigator.vibrate` — note this does nothing on iOS
 Safari, so don't design a state that depends on it.
 
 ---
 
-## 7. Accessibility
+## 7. Devices and responsiveness
+
+Two screens, wildly different, at the same time. Getting this wrong doesn't look
+like a bug — it looks like her missing an answer she knew.
+
+### The matrix
+
+| Surface | Range | What has to hold |
+| --- | --- | --- |
+| Host | 13" laptop → 55" TV, possibly AirPlayed | Legible from a sofa. Nothing depends on hover. |
+| Phone | iPhone portrait, occasionally landscape | Every tile thumb-reachable and hittable under time pressure. |
+
+**Never let the phone depend on the big screen.** AirPlay and Chromecast add
+0.3–2s of display latency, so the host screen can lag the server by more than a
+round is worth. The phone must carry the full question text itself — it already
+does, and it must stay that way. This is the constraint most likely to be
+quietly violated by a future "the phone just shows buttons, the TV shows the
+question" simplification.
+
+### Type
+
+Display sizes clamp against the viewport (`clamp(52px,7vw,92px)` for the
+question, `clamp(120px,26vw,300px)` for the countdown) — that was already right
+in the POC. What wasn't: the shared component CSS was fixed pixels, so buttons
+and inputs read identically on a phone and a television. Now fluid too.
+
+The rule: **anything on the host screen scales with the viewport; anything
+purely tactile on the phone stays at a fixed comfortable size.** A 22px button
+label on a TV is right; a 22px button label on a phone is not.
+
+### Touch
+
+- **48px minimum tile height**, 44px in landscape. Apple's floor is 44; a tile
+  missed under time pressure is a scoring bug wearing a CSS costume.
+- `touch-action:manipulation` on buttons — kills the 300ms double-tap-zoom delay,
+  which on a speed-scored game is worth real points.
+- The month slider gets `padding:14px 0` so its hit area is far larger than the
+  4px track. It's the best input in the game and the easiest to fumble.
+- `user-select:none` on anything tappable. A long-press during a timed round pops
+  the iOS selection callout instead of answering.
+
+### iOS specifics
+
+These are not polish; each one is a visible failure on the exact device she'll
+use.
+
+- `100dvh`, not `100%` — the URL bar collapsing mid-question otherwise jumps the
+  layout under her thumb.
+- `env(safe-area-inset-*)` padding on `body`. `player.html` sets
+  `viewport-fit=cover`, which without insets puts the answer tiles under the home
+  indicator and the timer under the notch.
+- `overscroll-behavior:none` — no rubber-band bounce revealing white behind a
+  dark page.
+- `maximum-scale=1` is already set, so a double-tap can't zoom mid-round.
+
+### Breakpoints
+
+Deliberately two, because fluid type does most of the work:
+
+1. `(max-height:520px) and (orientation:landscape)` — phone held sideways.
+   Vertical space collapses, so the chrome shrinks rather than letting tiles
+   scroll off. **A tile you have to scroll to is a tile you don't tap in time.**
+2. `(prefers-reduced-motion:reduce)` — kills every animation and transition.
+
+If a third is ever needed it'll be a narrow host window (hosting from a laptop
+with the browser not maximised). Stack the leaderboard under the question rather
+than beside it.
+
+### Before game night, check on the real devices
+
+- Her phone, portrait and landscape, on the deployed URL — not localhost
+- The actual laptop you'll host from, at the actual screen distance
+- With `Reduce Motion` on in iOS accessibility settings
+- With the browser's text size bumped up two steps
+- On cellular, not WiFi — she may not be on your network
+
+---
+
+## 8. Accessibility
 
 Carrying forward the known gaps from handover §6, since you're adding screens:
 
@@ -429,7 +524,7 @@ Carrying forward the known gaps from handover §6, since you're adding screens:
 
 ---
 
-## 8. The deck — why priority is a design decision
+## 9. The deck — why priority is a design decision
 
 A generated question is a decent question. A question you wrote is a *moment*.
 The dealer knows the difference, and that's a design choice, not just a config
@@ -454,7 +549,7 @@ question has a `topic`, defaulting to its `id`. Write one of yours with the same
 The felt result: the game opens with something only he could have written, the
 filler is invisible, and the last thing she reads that night is his.
 
-## 9. Effort
+## 10. Effort
 
 | Item | Cost | Verdict |
 | --- | --- | --- |
