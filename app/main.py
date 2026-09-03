@@ -70,6 +70,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from app.datasets import Library, Locked
 from app.game import DealRules, Game
 from app.schema import Dataset, load
 
@@ -90,8 +91,9 @@ class Room:
     in Game; this class only decides *when*.
     """
 
-    def __init__(self, game: Game):
+    def __init__(self, game: Game, library: Library | None = None):
         self.game = game
+        self.library = library
         self.sockets: dict[WebSocket, dict] = {}    # ws -> {role, pid}
         self.timer: asyncio.Task | None = None
         self.heart: asyncio.Task | None = None
@@ -119,6 +121,9 @@ class Room:
         snap = self.game.snapshot()
         if not meta or meta.get("role") != "host":
             snap["code"] = None
+            return snap
+        if self.library:
+            snap["datasets"] = self.library.state()
         return snap
 
     async def broadcast(self) -> None:
@@ -200,6 +205,23 @@ class Room:
             self.game.add_player(pid, name).color = color
         await self.broadcast()
 
+    def swap(self, data: Dataset, which: str) -> None:
+        """Put a different dataset behind the same lobby.
+
+        The join code and everyone already on it survive — the phones are in
+        her hand and on the sofa, and making them rejoin because you changed
+        your mind about which game to play would be its own small disaster.
+        """
+        old = self.game
+        fresh = Game(data, rounds=old.rounds if old.rounds != len(old.bank) else None,
+                     seconds=old.seconds, rules=old.rules, rng=old.rng)
+        fresh.code = old.code
+        for pid, p in old.players.items():
+            fresh.add_player(pid, p.name).color = p.color
+        self.game = fresh
+        if self.library:
+            self.library.current = which
+
     # ── one message ───────────────────────────────────────────────────────
 
     async def handle(self, ws: WebSocket, msg: dict) -> None:
@@ -263,6 +285,24 @@ class Room:
             await self.close_question()
         elif kind == "reset":
             await self.restart()
+        elif kind == "dataset":
+            await self.choose(ws, msg)
+
+    async def choose(self, ws: WebSocket, msg: dict) -> None:
+        """Switch datasets. Lobby only — swapping decks mid-game would rewrite
+        the scoreboard's history under everyone."""
+        if not self.library or self.game.phase != "lobby":
+            await self.send(ws, {"t": "denied", "why": "not in the lobby"})
+            return
+        which = str(msg.get("id") or "demo")
+        try:
+            data = self.library.load(which, msg.get("pass"))
+        except Locked as e:
+            await self.send(ws, {"t": "denied", "why": str(e)})
+            await self.send(ws, self.view(self.sockets.get(ws)))
+            return
+        self.swap(data, which)
+        await self.broadcast()
 
     def may_host(self, msg: dict) -> bool:
         """First one in claims it; a reload reclaims it with the token; anyone
@@ -391,8 +431,10 @@ def local_ip() -> str:
         s.close()
 
 
-def build_room(data: Dataset, rounds: int | None, seconds: float | None) -> Room:
-    return Room(Game(data, rounds=rounds, seconds=seconds, rules=DealRules()))
+def build_room(data: Dataset, rounds: int | None, seconds: float | None,
+               library: Library | None = None) -> Room:
+    return Room(Game(data, rounds=rounds, seconds=seconds, rules=DealRules()),
+                library=library)
 
 
 def main() -> None:
@@ -409,9 +451,13 @@ def main() -> None:
         raise SystemExit(f"{R}No dataset at {path}{X}\n"
                          f"  make demo      builds the safe fake one\n"
                          f"  make compile   builds the real one")
-    room = build_room(load(path), args.rounds, args.seconds)
+    library = Library()
+    room = build_room(load(path), args.rounds, args.seconds, library=library)
     g = room.game
     ip = local_ip()
+    sealed = (f"    Real data                 {D}on the host screen, "
+              f"behind the passphrase{X}\n"
+              if any(o["id"] == "real" for o in library.options()) else "")
 
     print(f"""
   {B}Read Receipts{X} is live.
@@ -420,7 +466,7 @@ def main() -> None:
     Phones join at            {G}http://{ip}:{args.port}/play{X}
 
     Join code                 {B}{g.code}{X}   {D}(also in the QR){X}
-
+{sealed}
   {len(g.bank)} questions · {g.rounds} rounds · {g.seconds:.0f}s each
   {D}yours {sum(1 for q in g.bank if q.origin == 'mine')} · """
           f"""generated {sum(1 for q in g.bank if q.origin != 'mine')}{X}

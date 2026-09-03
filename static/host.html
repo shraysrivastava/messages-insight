@@ -215,9 +215,63 @@ function lobby() {
     box.append(c);
   }
 
+  if (S.datasets && S.datasets.options.length > 1) box.append(datasetToggle());
+
   const wrap = h("div", "lobby");
   wrap.append(left, box);
   return main(wrap);
+}
+
+/* The real thread is ciphertext until somebody types the words. Nothing on
+   this server can open it on its own — see app/datasets.py. */
+function datasetToggle() {
+  const d = S.datasets;
+  const box = h("div", "dsbox");
+  box.append(h("div", "eyebrow", "playing"));
+
+  const row = h("div", "dsrow");
+  d.options.forEach(o => {
+    const b = h("button", "ds" + (o.id === d.current ? " on" : ""),
+                o.label + (o.locked && !o.ready ? " 🔒" : ""));
+    b.onclick = () => {
+      if (o.id === d.current) return;
+      if (o.locked && !o.ready) return askPass(o.id);
+      send({ t: "dataset", id: o.id });
+    };
+    row.append(b);
+  });
+  box.append(row);
+  if (dsError) box.append(h("div", "dserr", dsError));
+  return box;
+}
+
+let dsError = "";
+
+function askPass(id) {
+  const veil = h("div", "veil");
+  const sheet = h("div", "sheet");
+  sheet.append(h("div", "eyebrow", "passphrase"));
+  const p = document.createElement("input");
+  p.type = "password";
+  p.autocomplete = "off";
+  p.placeholder = "the words";
+  const go = h("button", "cta", "Unlock");
+  const note = h("div", "dsnote",
+    "Typed once a night. The server keeps no key — close it and it's ciphertext again.");
+  const done = () => veil.remove();
+  go.onclick = () => {
+    if (!p.value) return;
+    dsError = "";
+    send({ t: "dataset", id, pass: p.value });
+    p.value = "";
+    done();
+  };
+  p.onkeydown = e => { if (e.key === "Enter") go.click(); };
+  veil.onclick = e => { if (e.target === veil) done(); };
+  sheet.append(p, go, note);
+  veil.append(sheet);
+  document.body.append(veil);
+  setTimeout(() => p.focus(), 60);
 }
 
 function countdown() {
@@ -371,6 +425,11 @@ function render() {
   else if (S.phase === "question") view.append(question(false));
   else if (S.phase === "reveal") view.append(reveal());
   else if (S.phase === "final") view.append(final());
+}
+
+function onDenied(why) {
+  dsError = why === "could not open" ? "That didn't open it." : why;
+  render();
 }
 
 connect("host", s => {
