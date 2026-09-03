@@ -9,3 +9,5 @@ pytypedstream>=0.1        # decodes attributedBody; without it we byte-walk
 
 # Dev
 pytest>=8
+pytest-asyncio>=0.24     # main.py is a socket server; the tests have to be async
+httpx>=0.27              # fastapi's TestClient rides on it

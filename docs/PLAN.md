@@ -262,9 +262,19 @@ accidental `git add .` at 1am); and the passphrase is both the gate *and* the ke
 so there's no way for one to pass while the other holds. Cost: you type it once
 per game night.
 
-**Join code** (`S2.3`). `Game.code` already generates one that nothing uses. Wire
-it up — a stray visitor sees a join screen instead of your messages. Encode it in
-the QR so her scan skips the typing.
+**Join code** (`S2.3`, **built**). `Game.code` already generates one that nothing
+uses. Wired up: a stray visitor sees a join screen instead of your messages, and
+the QR carries the code so her scan skips the typing.
+
+The code is stripped from the snapshot for every socket that hasn't proved it's
+the host — otherwise the server hands the join code to exactly the visitor it's
+meant to stop. `Game.snapshot()` redacts by *phase*; `Room.view()` redacts by
+*role*. Two different questions, two different places.
+
+The host screen is claimed by the first socket to ask and reclaimed after a
+reload with the token it was issued; the claim is released when no host socket
+is left, so closing the tab doesn't lock the controls away. Reading the code off
+the screen also reclaims it, which is the recovery path.
 
 ---
 
@@ -336,6 +346,7 @@ code you've already tested. One hour now, saves a day in stage 4.
 
 | ID | Task |
 | --- | --- |
+| `S2.0` | `app/main.py` — the real server around `app/game.py` |
 | `S2.1` | `tools/curate.py` |
 | `S2.2` | 60+ shippable questions |
 | `S2.3` | Join code enforced |

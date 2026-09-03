@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play extract corpus mine curate compile seal unseal clean
+.PHONY: status setup test lint demo play extract corpus mine curate compile seal unseal poc clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -26,10 +26,13 @@ demo_corpus.json:
 	@$(PY) tools/make_demo_corpus.py --out demo_corpus.json
 
 play: demo         ## play the demo (fake) dataset
-	$(PY) poc/server.py --data datasets/demo.json
+	$(PY) -m app.main --data datasets/demo.json
 
 serve:             ## serve any dataset:  make serve DATA=datasets/test.json
-	$(PY) poc/server.py --data $(DATA) --rounds $(ROUNDS) --seconds $(SECONDS)
+	$(PY) -m app.main --data $(DATA) --rounds $(ROUNDS) --seconds $(SECONDS)
+
+poc:               ## the original proof of concept, kept runnable as a fallback
+	$(PY) poc/server.py --data datasets/demo.json
 
 # ── the real thing. Needs Full Disk Access for your terminal. ──────────────
 
@@ -71,7 +74,7 @@ unseal:            ## restore questions/mine.toml from its .enc
 	@$(PY) tools/seal.py --open questions/mine.toml.enc --out questions/mine.toml
 
 real: compile      ## play the real dataset locally
-	$(PY) poc/server.py --data $(DATASET)
+	$(PY) -m app.main --data $(DATASET)
 
 # A whole thread end to end, into throwaway files. For testing on someone
 # who isn't her:  make try CHAT="+1555..." P1=Me P2=Dave

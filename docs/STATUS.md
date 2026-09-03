@@ -45,9 +45,13 @@ now two tracks that run in parallel:
 4. Dump raw ideas into `questions/inbox.md` in plain English. They come back as
    finished `mine.toml` blocks.
 
-**Build** — `seal.py` is done (`S2.6`). Left: `S2.3`–`S2.5` (join code,
-client-timestamped answers, socket heartbeat), which all want `app/main.py` —
-the real server around `app/game.py`. Then `S2.8` and deploy.
+**Build** — `app/main.py` is the real server now (`S2.0`), with the join code,
+client-timestamped answers and the heartbeat in it (`S2.3`–`S2.5`), and
+`seal.py` is done (`S2.6`). `make play` runs it; `make poc` still runs the old
+proof of concept if you ever need the fallback.
+
+Left in stage 2: `S2.8` (the demo/real toggle), `S2.10`–`S2.12` (Dockerfile,
+fly.toml, self-hosted fonts), then deploy.
 
 **One thing only you can do:** `make seal`, once you've curated anything worth
 keeping. It asks for a passphrase, writes `datasets/real.json.enc` and
