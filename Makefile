@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play extract corpus mine curate compile clean
+.PHONY: status setup test lint demo play extract corpus mine curate compile seal unseal clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -63,6 +63,12 @@ candidates.json:
 
 compile:           ## questions/ + $(CORPUS) -> $(DATASET)
 	@$(PY) tools/compile.py --corpus $(CORPUS) --out $(DATASET)
+
+seal:              ## encrypt $(DATASET) + questions/mine.toml -> .enc (committed)
+	@$(PY) tools/seal.py --all
+
+unseal:            ## restore questions/mine.toml from its .enc
+	@$(PY) tools/seal.py --open questions/mine.toml.enc --out questions/mine.toml
 
 real: compile      ## play the real dataset locally
 	$(PY) poc/server.py --data $(DATASET)

@@ -45,14 +45,22 @@ now two tracks that run in parallel:
 4. Dump raw ideas into `questions/inbox.md` in plain English. They come back as
    finished `mine.toml` blocks.
 
-**Build** — `S2.3`–`S2.7`: join code, client-timestamped answers, socket
-heartbeat, then `seal.py` and the encrypted dataset. Then deploy.
+**Build** — `seal.py` is done (`S2.6`). Left: `S2.3`–`S2.5` (join code,
+client-timestamped answers, socket heartbeat), which all want `app/main.py` —
+the real server around `app/game.py`. Then `S2.8` and deploy.
+
+**One thing only you can do:** `make seal`, once you've curated anything worth
+keeping. It asks for a passphrase, writes `datasets/real.json.enc` and
+`questions/mine.toml.enc`, and those get committed (`S2.7`). Until you run it,
+every question you write in `curate.py` exists in exactly one place, on one
+laptop, ungitignored and unbacked-up.
 
 **Known open threads**
 - The friend-thread test data is in `corpus.json` / `datasets/test.json`. Both
   gitignored. Re-running `make corpus` with her identifier overwrites it.
-- `questions/mine.toml` is gitignored and therefore unbacked-up. `seal.py`
-  (`S2.6`) should encrypt it alongside the dataset — see PLAN.md §2.
+- `questions/mine.toml` is gitignored and therefore unbacked-up until you run
+  `make seal`, which encrypts it alongside the dataset. The passphrase exists
+  nowhere but your head — `M5.2` is the checkbox for that.
 
 ---
 

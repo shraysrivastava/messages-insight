@@ -242,8 +242,14 @@ Resolvers used by the current bank, for reference when implementing:
 
 ## 4. Getting real data deployed, safely
 
-- `seal.py` (`S2.6`) encrypts `real.json` → `.enc` with a passphrase (Fernet +
-  scrypt, both in `cryptography`). Commit the ciphertext.
+- `seal.py` (`S2.6`, **built**) encrypts `real.json` → `.enc` with a passphrase
+  (Fernet + scrypt, both in `cryptography`). Commit the ciphertext. It seals
+  `questions/mine.toml` the same way, which is what resolves the §2 tension —
+  your own questions get version control and a backup without a word of them
+  going in the clear. `make seal` does both; `make unseal` restores `mine.toml`
+  and refuses to overwrite anything newer than the sealed copy.
+  The envelope carries its own salt and KDF cost, so raising the cost later
+  doesn't strand today's ciphertext.
 - **The server has no key.** Not an env var, not a Fly secret, not on disk.
 - Host toggle: `[ Demo ] [ Real 🔒 ]`. Clicking Real prompts for the passphrase.
   Server derives the key, decrypts into memory, caches for the process lifetime,
