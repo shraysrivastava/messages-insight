@@ -57,14 +57,40 @@ the real server. No message of yours is involved.
 
 ## Then the real thing
 
-Your terminal needs Full Disk Access (System Settings > Privacy & Security).
+Your terminal needs Full Disk Access (System Settings > Privacy & Security),
+and these two commands must run in **Terminal.app** — a terminal inside an
+editor usually can't inherit that permission.
 
 ```bash
-make chats                                  # find her chat identifier
-make corpus CHAT="+15551234567,her@gmail.com"     # both, if split
-make compile
-make real
+make chats                                        # find her chat identifier
+make corpus CHAT="+15551234567,her@gmail.com"     # both, if the thread is split
 ```
+
+Everything after this reads `corpus.json` and works from anywhere.
+
+```bash
+make mine       # corpus -> ~500 ranked candidate questions
+make curate     # a browser page. J reject, K accept, E edit, S search.
+make compile    # questions/ + corpus -> datasets/real.json
+make real       # play it locally
+```
+
+`make curate` is where the game actually gets made. It opens on the first of 26
+slots — questions that are finished apart from the message itself — with the
+best candidates ranked behind each one. Accepts land in `questions/mine.toml`.
+Half an hour of it is a game.
+
+Then lock it up and put it somewhere:
+
+```bash
+make seal       # -> datasets/real.json.enc and questions/mine.toml.enc
+make deploy     # needs flyctl
+fly scale count 1
+```
+
+`fly scale count 1` is not optional. There is no database — the lobby, the deck,
+the scores and the decrypted dataset all live in one process's memory, so two
+machines means two games and a lobby that never fills.
 
 `make` on its own prints the status dashboard; `make help` lists every target.
 
@@ -83,3 +109,6 @@ The real dataset is a searchable archive of a private relationship.
 - `datasets/real.json.enc` does — it's ciphertext, and the server has no key.
 - A deployed instance defaults to demo data. Real data needs a passphrase typed
   on the host screen, which is never stored anywhere.
+- `questions/mine.toml.enc` is committed too, and is the only backup your own
+  questions have. Re-run `make seal` after an evening of curating, or the
+  backup is of the file as it was before you started.
