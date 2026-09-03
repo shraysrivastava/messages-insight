@@ -92,7 +92,10 @@ CHECKS = [
     (3, "S3.7", "wager / Final Receipt",               lambda: _grep("app/game.py", r"wager")),
     (3, "S3.8", "weighted dealing (mine first)",       lambda: _grep("app/game.py", r"authored_share|weight_mine")),
 
-    (4, "S4.1", "score graph",                         lambda: _grep("static/host.html", r"graph|svg") or _grep("poc/static/host.html", r"scoregraph")),
+    # `svg` used to be in this pattern and matched the join QR's /qr.svg —
+    # a dashboard that ticks itself is worse than no dashboard. Name the
+    # function `scoreGraph` when you build it.
+    (4, "S4.1", "score graph",                         lambda: _grep("static/host.html", r"scoreGraph") or _grep("poc/static/host.html", r"scoreGraph")),
     (4, "S4.2", "app/history.py",                      lambda: exists("app/history.py")),
     (4, "S4.3", "history shelf in lobby",              lambda: _grep("static/host.html", r"history") or _grep("poc/static/host.html", r"history")),
     (4, "S4.4", "receipts reel",                       lambda: _grep("static/host.html", r"reel")),
