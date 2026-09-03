@@ -45,13 +45,28 @@ now two tracks that run in parallel:
 4. Dump raw ideas into `questions/inbox.md` in plain English. They come back as
    finished `mine.toml` blocks.
 
-**Build** — `app/main.py` is the real server now (`S2.0`), with the join code,
-client-timestamped answers and the heartbeat in it (`S2.3`–`S2.5`), and
-`seal.py` is done (`S2.6`). `make play` runs it; `make poc` still runs the old
+**Build — everything a script can do is done.** `app/main.py` is the real
+server (`S2.0`) with the join code, client-timestamped answers and the
+heartbeat (`S2.3`–`S2.5`); `seal.py` and the passphrase gate are in
+(`S2.6`, `S2.8`); the Dockerfile, `fly.toml` and self-hosted fonts are
+written (`S2.10`–`S2.12`). `make play` runs it, `make poc` runs the old
 proof of concept if you ever need the fallback.
 
-Left in stage 2: `S2.8` (the demo/real toggle), `S2.10`–`S2.12` (Dockerfile,
-fly.toml, self-hosted fonts), then deploy.
+**Two things left in stage 2, and both need you:**
+
+1. **`make seal`** — needs a passphrase, which only you can choose. Produces
+   `datasets/real.json.enc` (`S2.7`) and backs up `mine.toml` at the same time.
+2. **`make deploy`** — needs `flyctl` and a Fly account. Then
+   **`fly scale count 1`**, which is not optional: the lobby, the deck, the
+   scores and the decrypted dataset all live in one process's memory, so two
+   machines means two games and a lobby that never fills.
+
+The Dockerfile has never been built — Docker's daemon wasn't running here. What
+*was* verified is the thing a Dockerfile usually gets wrong: the app runs from a
+tree containing only the files it copies, with only the runtime dependencies
+installed, and the passphrase gate still opens a sealed dataset from it. Check
+`primary_region = "ord"` in `fly.toml` — it's a guess at the middle of your two
+states.
 
 **One thing only you can do:** `make seal`, once you've curated anything worth
 keeping. It asks for a passphrase, writes `datasets/real.json.enc` and

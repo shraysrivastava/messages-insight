@@ -1,0 +1,19 @@
+# Belt and braces: the Dockerfile copies by name, but a stray `COPY . .` in a
+# future edit should still not put five years of messages in an image.
+corpus.json
+*_corpus.json
+candidates.json
+datasets/real.json
+datasets/test.json
+questions/
+tools/
+!tools/__init__.py
+!tools/seal.py
+tests/
+poc/
+docs/
+.venv/
+.git/
+.pytest_cache/
+__pycache__/
+*.pyc

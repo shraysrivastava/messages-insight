@@ -360,6 +360,11 @@ code you've already tested. One hour now, saves a day in stage 4.
 | `S2.11` | `fly.toml` with `auto_stop_machines = false` |
 | `S2.12` | Fonts self-hosted |
 
+**One machine, always.** There is no database — the lobby, the deck, the scores
+and the decrypted dataset live in one Python object in one process. Two machines
+is two games: she joins one, you host the other, and the lobby never fills.
+`fly scale count 1`, and `fly status` should never show more.
+
 **`S2.11` is the #1 way game night goes wrong.** A lobby sits idle for minutes
 while you both get settled; a machine that scales to zero under it kills the game
 before it starts. Pair with `min_machines_running = 1` and pick a region between

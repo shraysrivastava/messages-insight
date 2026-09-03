@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play extract corpus mine curate compile seal unseal poc clean
+.PHONY: status setup test lint demo play extract corpus mine curate compile seal unseal poc fonts deploy clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -10,7 +10,7 @@ status:            ## what's done, what's left
 setup:             ## create .venv and install everything
 	/opt/homebrew/bin/python3.14 -m venv .venv
 	$(PY) -m pip install -q --upgrade pip
-	$(PY) -m pip install -q -r requirements.txt
+	$(PY) -m pip install -q -r requirements-dev.txt
 	@echo "ready — run 'make demo'"
 
 test:              ## run the test suite
@@ -82,6 +82,16 @@ try:
 	@$(MAKE) corpus CORPUS=test_corpus.json CHAT="$(CHAT)" P1="$(P1)" P2="$(P2)"
 	@$(MAKE) compile CORPUS=test_corpus.json DATASET=datasets/test.json
 	@$(PY) poc/server.py --data datasets/test.json
+
+# ── deploy ────────────────────────────────────────────────────────────────
+
+fonts:             ## vendor the webfonts into static/fonts/
+	@$(PY) tools/fonts.py
+
+deploy: lint       ## push to Fly (needs flyctl, and `fly scale count 1`)
+	@test -f datasets/real.json.enc || echo "  note: no real.json.enc — deploying demo only"
+	fly deploy
+	@echo "  remember: fly status should show exactly ONE machine"
 
 clean:
 	rm -f demo_corpus.json candidates.json

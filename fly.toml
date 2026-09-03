@@ -1,0 +1,64 @@
+# fly.toml — one machine, awake, in the middle.
+#
+#   fly launch --no-deploy --copy-config     first time only
+#   fly deploy
+#   fly scale count 1                        ← not optional. See below.
+#
+# ── The game lives in this process's memory ────────────────────────────────
+#
+# There is no database. The lobby, the deck, the scores and the decrypted
+# dataset are all in one Python object in one machine. Two machines means two
+# games: she joins one, you host the other, and the lobby never fills. Keep the
+# count at exactly one. `fly status` should always show a single machine.
+#
+# ── auto_stop_machines = false is the #1 way game night goes wrong ─────────
+#
+# A lobby sits idle for as long as it takes two people to settle down, find the
+# remote and stop talking. A machine that scales to zero underneath that takes
+# the game with it — the sockets die, the join code changes on restart, and the
+# decrypted dataset is gone with the process, so the passphrase has to be typed
+# again. Pay the few dollars a month and leave it awake.
+
+app = "read-receipts"
+
+# Somewhere between the two of you. Both ends of this thread are on Central
+# time; `ord` (Chicago) is the neutral pick. `fly platform regions` lists the
+# rest — moving it is one line and a redeploy.
+primary_region = "ord"
+
+[build]
+
+[env]
+  PORT = "8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true                # she is typing a passphrase into this
+  auto_start_machines = true
+  auto_stop_machines = false        # see above. This is the important line.
+  min_machines_running = 1
+  processes = ["app"]
+
+  # Two phones and a laptop. The ceiling exists to make a runaway obvious,
+  # not to shed load.
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  # WebSockets are long-lived by design; the heartbeat in app/main.py keeps
+  # them warm every 25s so the proxy doesn't reap an idle lobby.
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "4s"
+
+# Rolling needs two machines to roll between, and there is only ever one.
+[deploy]
+  strategy = "immediate"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"                  # scrypt wants 32MB of it, once a night
