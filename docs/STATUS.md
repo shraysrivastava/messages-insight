@@ -23,22 +23,30 @@ python3 tools/status.py --bank      just the question bank
 **Stage 1 is closed.** The whole pipeline is proven on a real thread: 7,640
 messages extracted, 43 questions compiled, a full game played in the browser.
 
-Next is **Stage 2 — the ship line.** It splits into two tracks that run in
-parallel:
+**`curate.py` is built** (`S2.1`), which unblocks the content track. Stage 2 is
+now two tracks that run in parallel:
 
-**Build** — start with `tools/curate.py` (`S2.1`). It's one day of work and it
-blocks the content track entirely; every evening of curation is waiting on it.
-Then `S2.3`–`S2.7`, then deploy.
+**Content — yours, and the critical path.** The bank is 119 shippable but
+**0 from `mine.toml`**, and the dealer wants 9 of every 14 rounds to be yours.
 
-**Content** — the critical path, and it's his. The bank is 119 shippable but
-**0 from `mine.toml`**, and the dealer wants 9 of every 14 rounds to be his.
-Two ten-minute jobs unblock a lot:
-
-1. Fill `lex.pet_names` and `lex.inside_jokes` in `questions/lexicons.toml` —
+1. `make curate`. A browser opens on the first of 26 slots, each one a finished
+   question missing only a real message, with ~500 proposals ranked behind it.
+   <kbd>J</kbd> reject, <kbd>K</kbd> accept, <kbd>E</kbd> edit. Accepts land in
+   `questions/mine.toml` as finished blocks. Half an hour of this is a game.
+   Four slots (`who-said-longest`, `which-came-first-auto`,
+   `what-happened-next-1`, `work-first-big-news`) ship with `TODO` reveals on
+   purpose — they refuse to save until you write the payoff, and they're the
+   four best rounds in the deck.
+2. <kbd>S</kbd> in that same page searches the whole thread and mints a question
+   from any message in it. This is where the good ones come from.
+3. Fill `lex.pet_names` and `lex.inside_jokes` in `questions/lexicons.toml` —
    turns on 3 questions immediately, and every inside-joke phrase after that is
    a free `month` question.
-2. Dump raw ideas into `questions/inbox.md` in plain English. They come back as
+4. Dump raw ideas into `questions/inbox.md` in plain English. They come back as
    finished `mine.toml` blocks.
+
+**Build** — `S2.3`–`S2.7`: join code, client-timestamped answers, socket
+heartbeat, then `seal.py` and the encrypted dataset. Then deploy.
 
 **Known open threads**
 - The friend-thread test data is in `corpus.json` / `datasets/test.json`. Both

@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>curate · read receipts</title>
+<style>
+/* Same ground as the game, so a question looks roughly like it will on the
+   night. No web fonts: this is localhost and it stays offline. */
+:root{
+  --night:#191325; --raised:#241C36; --sunk:#120E1C;
+  --line:rgba(239,231,222,.09); --cream:#EFE7DE; --muted:#8478A0;
+  --right:#7BD389; --wrong:#E05C6E; --warm:#F2A65A;
+  --display:Georgia,"Iowan Old Style",serif;
+  --body:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--night);color:var(--cream);font-family:var(--body);
+  line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+kbd{
+  font-family:var(--mono);font-size:11px;background:var(--sunk);
+  border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--cream);
+}
+
+/* ---------------------------------------------------------------- shell */
+#app{display:flex;flex-direction:column;height:100%}
+header{border-bottom:1px solid var(--line);padding:14px 22px 12px;flex:0 0 auto}
+.bar{height:3px;background:var(--sunk);border-radius:2px;overflow:hidden;margin-bottom:11px}
+.bar i{display:block;height:100%;background:var(--right);transition:width .3s}
+.hrow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.slotid{font-family:var(--mono);font-size:13px;color:var(--warm)}
+.eyebrow{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);
+}
+.counts{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+main{flex:1 1 auto;display:grid;grid-template-columns:minmax(320px,1fr) minmax(380px,1.15fr);
+     gap:0;min-height:0}
+.pane{padding:18px 22px;overflow-y:auto;min-height:0}
+.pane+.pane{border-left:1px solid var(--line)}
+.paneTitle{margin-bottom:12px}
+
+/* ------------------------------------------------------------- context */
+.msg{display:flex;margin:5px 0}
+.msg .b{
+  max-width:82%;padding:7px 12px;border-radius:15px;font-size:14px;
+  background:var(--raised);color:var(--muted);
+  white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.msg.p1{justify-content:flex-end}
+.msg.p1 .b{border-bottom-right-radius:5px}
+.msg.p2 .b{border-bottom-left-radius:5px}
+.msg.me .b{
+  color:var(--cream);background:#332651;box-shadow:0 0 0 1.5px var(--warm);
+}
+.stamp{font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.7;
+       text-align:center;margin:9px 0 3px}
+
+/* ------------------------------------------------------------ question */
+.card{background:var(--sunk);border:1px solid var(--line);border-radius:16px;padding:18px}
+.prompt{font-family:var(--display);font-size:21px;line-height:1.3;margin:6px 0 14px}
+.bubble{
+  background:var(--raised);border-radius:18px;padding:13px 16px;font-size:16px;
+  white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:14px;
+}
+.bubble.timestamp{text-align:center;font-family:var(--mono);color:var(--muted)}
+.opts{display:grid;gap:7px;margin-bottom:14px}
+.opt{
+  border:1.5px solid var(--line);border-radius:12px;padding:9px 13px;font-size:15px;
+  display:flex;gap:10px;align-items:baseline;
+}
+.opt.correct{border-color:var(--right);color:var(--right)}
+.opt .ix{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.reveal{
+  border-top:1px solid var(--line);padding-top:13px;font-family:var(--display);
+  font-size:16px;font-style:italic;color:var(--cream);opacity:.92;
+}
+.metaRow{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;
+         font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+.note{
+  border-left:2px solid var(--warm);padding:7px 12px;margin:12px 0 0;
+  font-size:13px;color:var(--warm);background:rgba(242,166,90,.07);border-radius:0 8px 8px 0;
+}
+.note.bad{border-color:var(--wrong);color:var(--wrong);background:rgba(224,92,110,.08)}
+.note.ok{border-color:var(--right);color:var(--right);background:rgba(123,211,137,.07)}
+
+/* -------------------------------------------------------------- footer */
+footer{
+  flex:0 0 auto;border-top:1px solid var(--line);padding:9px 22px;
+  display:flex;gap:16px;align-items:center;font-size:12px;color:var(--muted);
+  flex-wrap:wrap;
+}
+footer .sp{margin-left:auto}
+
+/* ------------------------------------------------------------ overlays */
+.veil{
+  position:fixed;inset:0;background:rgba(9,6,16,.82);display:flex;
+  align-items:flex-start;justify-content:center;padding:5vh 20px;z-index:20;
+  backdrop-filter:blur(3px);
+}
+.sheet{
+  background:var(--night);border:1px solid var(--line);border-radius:18px;
+  width:min(760px,100%);max-height:90vh;overflow-y:auto;padding:22px;
+}
+.sheet h2{font-family:var(--display);font-size:20px;font-weight:400;margin-bottom:4px}
+.sheet .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+label{display:block;margin:12px 0 0}
+label span{
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);display:block;margin-bottom:4px;
+}
+input,textarea,select{
+  width:100%;font:inherit;font-size:14px;color:var(--cream);background:var(--sunk);
+  border:1px solid var(--line);border-radius:10px;padding:8px 11px;resize:vertical;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.acts{display:flex;gap:10px;margin-top:18px;align-items:center}
+.btn{
+  border:1px solid var(--line);border-radius:11px;padding:8px 15px;font-size:14px;
+}
+.btn.go{border-color:var(--right);color:var(--right)}
+.hint{font-size:11px;color:var(--muted);margin-top:5px}
+
+/* -------------------------------------------------------------- search */
+.hit{
+  padding:9px 12px;border-radius:11px;border:1px solid transparent;cursor:pointer;
+  display:flex;gap:12px;align-items:baseline;
+}
+.hit.on{border-color:var(--warm);background:var(--raised)}
+.hit .who{font-family:var(--mono);font-size:10px;color:var(--muted);flex:0 0 62px}
+.hit .tx{flex:1;font-size:14px;overflow-wrap:anywhere}
+.hit .dt{font-family:var(--mono);font-size:10px;color:var(--muted);flex:0 0 auto}
+.hit mark{background:rgba(242,166,90,.28);color:var(--warm);border-radius:3px}
+
+.empty{color:var(--muted);font-size:14px;padding:30px 0;text-align:center}
+.done{font-family:var(--display);font-size:26px;text-align:center;padding:60px 20px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="bar"><i id="prog" style="width:0"></i></div>
+    <div class="hrow">
+      <span class="slotid" id="slotid">—</span>
+      <span class="eyebrow" id="slotlabel"></span>
+      <span class="counts" id="counts"></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="pane">
+      <div class="eyebrow paneTitle">the thread, either side</div>
+      <div id="context"></div>
+    </section>
+    <section class="pane">
+      <div class="eyebrow paneTitle">what she would see</div>
+      <div id="question"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span><kbd>J</kbd> reject</span>
+    <span><kbd>K</kbd> accept</span>
+    <span><kbd>E</kbd> edit</span>
+    <span><kbd>N</kbd> skip slot</span>
+    <span><kbd>U</kbd> undo</span>
+    <span><kbd>S</kbd> search</span>
+    <span class="sp" id="tail"></span>
+  </footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let view = null;         // last /api/state payload
+let card = null;         // the thing on screen (from a slot, or from search)
+let overlay = null;      // 'edit' | 'search' | 'help' | null
+let flash = null;
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function api(path, body) {
+  const r = await fetch(path, {
+    method: body === undefined ? "GET" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body || {}),
+  });
+  return r.json();
+}
+
+function take(v) {
+  if (v.error) flash = { bad: true, msg: v.error };
+  view = v;
+  card = v.card;
+  render();
+}
+
+// ------------------------------------------------------------------ render
+
+function render() {
+  if (!view) return;
+  const p = view.progress;
+  $("#prog").style.width = (p.slots ? (p.filled / p.slots) * 100 : 100) + "%";
+  $("#counts").textContent =
+    `${p.filled}/${p.slots} slots · ${p.accepted} accepted · ` +
+    `${p.reviewed} judged of ${p.candidates}`;
+  $("#tail").innerHTML = flash
+    ? `<span style="color:var(--${flash.bad ? "wrong" : "right"})">${esc(flash.msg)}</span>`
+    : `<span>writing to ${esc(view.mine)}</span>`;
+
+  if (!card) {
+    $("#slotid").textContent = "—";
+    $("#slotlabel").textContent = "";
+    $("#context").innerHTML = "";
+    $("#question").innerHTML =
+      `<div class="done">Every slot is filled or skipped.<br>
+       <span style="font-size:14px;color:var(--muted);font-family:var(--body)">
+       Press <kbd>S</kbd> to keep going in search, or run
+       <code>make compile</code>.</span></div>`;
+    return;
+  }
+
+  const s = card.slot, c = card.cand, pv = card.preview, b = card.block;
+  $("#slotid").textContent = s.id || "from search";
+  $("#slotlabel").textContent =
+    `${s.label} · ${s.type} · ${s.format}` + (s.remaining ? ` · ${s.remaining} left` : "");
+
+  $("#context").innerHTML = c.context.map(m => `
+    <div class="msg ${m.from} ${m.self ? "me" : ""}">
+      <div class="b">${esc(m.text)}</div>
+    </div>`).join("") +
+    `<div class="stamp">${esc(c.sender)} · ${esc(c.date)} · ${esc(c.time)}</div>`;
+
+  const opts = (pv.options || []).map((o, i) => `
+    <div class="opt ${i === b.answer ? "correct" : ""}">
+      <span class="ix">${i === b.answer ? "✓" : String.fromCharCode(65 + i)}</span>
+      <span>${esc(o)}</span>
+    </div>`).join("");
+
+  const notes = (card.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("");
+  const err = card.error
+    ? `<div class="note bad">${esc(card.error)} — press <kbd>E</kbd> to fix it.</div>`
+    : "";
+
+  $("#question").innerHTML = `
+    <div class="card">
+      <div class="eyebrow">${esc(b.kind || "")}</div>
+      <div class="prompt">${esc(pv.prompt)}</div>
+      ${pv.text ? `<div class="bubble ${b.format === "timestamp" ? "timestamp" : ""}">${esc(pv.text)}</div>` : ""}
+      ${opts ? `<div class="opts">${opts}</div>` : ""}
+      ${b.type === "month" ? `<div class="opts"><div class="opt correct">
+        <span class="ix">✓</span><span>${esc(card.answer_label)}</span></div></div>` : ""}
+      <div class="reveal">${esc(pv.reveal)}</div>
+      <div class="metaRow">
+        <span>${esc(b.id)}</span><span>${esc(c.id)}</span>
+        <span>score ${c.score}</span><span>${esc(s.file || "")}</span>
+      </div>
+    </div>
+    ${err}${notes}
+    ${s.note ? `<div class="note">${esc(s.note)}</div>` : ""}`;
+}
+
+// -------------------------------------------------------------- decisions
+
+async function reject() {
+  if (!card) return;
+  flash = null;
+  take(await api("/api/reject", { cand: card.cand.id }));
+}
+
+async function accept(block) {
+  if (!card) return;
+  flash = null;
+  const b = block || card.block;
+  const v = await api("/api/accept",
+    { cand: card.cand.id, block: b, slot: card.slot.id });
+  if (v.error) {                       // schema said no — stay put, open editor
+    view = v.progress ? v : view;
+    card = { ...card, block: b, error: v.error, preview: card.preview };
+    flash = { bad: true, msg: v.error };
+    render(); openEdit(); return;
+  }
+  flash = { msg: "wrote " + b.id };
+  take(v);
+}
+
+async function skip() {
+  if (!card) return;
+  flash = { msg: "skipped " + card.slot.id };
+  take(await api("/api/skip", { slot: card.slot.id }));
+}
+
+async function undo() {
+  const v = await api("/api/undo", {});
+  flash = v.error ? { bad: true, msg: v.error } : { msg: "undone" };
+  view = v; card = v.card; render();
+}
+
+// ----------------------------------------------------------------- editor
+
+function openEdit() {
+  if (!card) return;
+  overlay = "edit";
+  const b = card.block;
+  const indexed = ["binary", "choice", "wager", "mutual"].includes(b.type);
+  const optText = (b.options || []).join("\n");
+  const answerField = indexed
+    ? `<select id="f_answer">${(b.options || []).map((o, i) =>
+        `<option value="${i}" ${i === b.answer ? "selected" : ""}>${i} — ${esc(o)}</option>`).join("")}</select>`
+    : `<input id="f_answer" value="${esc(b.answer)}">`;
+
+  document.body.insertAdjacentHTML("beforeend", `
+  <div class="veil" id="veil"><div class="sheet">
+    <h2>Edit before it lands</h2>
+    <div class="sub">This is the block that gets appended to mine.toml.
+      <code>{p1}</code> and <code>{p2}</code> still become names at compile time;
+      everything else has to be literal.</div>
+    <div class="two">
+      <label><span>id</span><input id="f_id" value="${esc(b.id)}"></label>
+      <label><span>kind — the eyebrow</span><input id="f_kind" value="${esc(b.kind || "")}"></label>
+    </div>
+    <div class="two">
+      <label><span>area</span><input id="f_area" value="${esc(b.area || "")}"></label>
+      <label><span>format</span><input id="f_format" value="${esc(b.format || "bubble")}"></label>
+    </div>
+    <label><span>prompt</span><textarea id="f_prompt" rows="2">${esc(b.prompt || "")}</textarea></label>
+    <label><span>text — the message bubble</span><textarea id="f_text" rows="3">${esc(b.text || "")}</textarea></label>
+    ${b.options ? `<label><span>options — one per line</span><textarea id="f_options" rows="4">${esc(optText)}</textarea></label>` : ""}
+    <label><span>answer</span>${answerField}</label>
+    <label><span>reveal — the payoff</span><textarea id="f_reveal" rows="3">${esc(b.reveal || "")}</textarea></label>
+    <div class="hint">A reveal must never assume its own answer. If it states a
+      fact, that fact came from this message.</div>
+    <div class="acts">
+      <button class="btn go" id="save">Accept ⌘↵</button>
+      <button class="btn" id="cancel">Cancel esc</button>
+      <span class="hint" id="ederr" style="margin:0;color:var(--wrong)"></span>
+    </div>
+  </div></div>`);
+
+  $("#save").onclick = saveEdit;
+  $("#cancel").onclick = closeOverlay;
+  $("#f_prompt").focus();
+  if (card.error) $("#ederr").textContent = card.error;
+}
+
+function collect() {
+  const b = { ...card.block };
+  b.id = $("#f_id").value.trim();
+  b.kind = $("#f_kind").value.trim();
+  b.area = $("#f_area").value.trim() || null;
+  b.format = $("#f_format").value.trim() || "bubble";
+  b.prompt = $("#f_prompt").value.trim();
+  b.text = $("#f_text").value.trim() || null;
+  b.reveal = $("#f_reveal").value.trim();
+  const of = $("#f_options");
+  if (of) b.options = of.value.split("\n").map(s => s.trim()).filter(Boolean);
+  const av = $("#f_answer").value;
+  b.answer = av === "" ? null : (isNaN(Number(av)) ? av : Number(av));
+  return b;
+}
+
+async function saveEdit() {
+  const b = collect();
+  const v = await api("/api/accept", { cand: card.cand.id, block: b, slot: card.slot.id });
+  if (v.error) { $("#ederr").textContent = v.error; return; }
+  closeOverlay();
+  flash = { msg: "wrote " + b.id };
+  take(v);
+}
+
+function closeOverlay() {
+  const v = $("#veil"); if (v) v.remove();
+  overlay = null;
+  render();
+}
+
+// ----------------------------------------------------------------- search
+
+let hits = [], sel = 0, lastQuery = "";
+
+function openSearch() {
+  overlay = "search";
+  document.body.insertAdjacentHTML("beforeend", `
+  <div class="veil" id="veil"><div class="sheet">
+    <h2>Search the thread</h2>
+    <div class="sub">Tolerant matching — <code>goodnight</code> finds
+      <code>gnite</code> and <code>goooodnight</code>.
+      <kbd>↑</kbd><kbd>↓</kbd> to move · <kbd>↵</kbd> or <kbd>⌘1</kbd> who said it ·
+      <kbd>⌘2</kbd> date this · <kbd>esc</kbd> close</div>
+    <input id="q" placeholder="a word, a phrase, an inside joke" value="${esc(lastQuery)}">
+    <div id="hits" style="margin-top:14px"></div>
+  </div></div>`);
+  const q = $("#q");
+  q.oninput = debounce(runSearch, 180);
+  q.onkeydown = e => {
+    if (e.key === "ArrowDown") { sel = Math.min(sel + 1, hits.length - 1); paintHits(); e.preventDefault(); }
+    if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); paintHits(); e.preventDefault(); }
+    const mod = e.metaKey || e.ctrlKey;
+    if (e.key === "1" && mod) { mintFrom("who_said_it"); e.preventDefault(); }
+    if (e.key === "2" && mod) { mintFrom("datable"); e.preventDefault(); }
+  };
+  q.focus(); q.select();
+  if (lastQuery) runSearch();
+}
+
+function debounce(fn, ms) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+async function runSearch() {
+  lastQuery = $("#q").value;
+  const r = await api("/api/search", { q: lastQuery });
+  hits = r.hits; sel = 0; paintHits();
+}
+
+function paintHits() {
+  const box = $("#hits"); if (!box) return;
+  if (!hits.length) {
+    box.innerHTML = `<div class="empty">${lastQuery ? "nothing" : "type something"}</div>`;
+    return;
+  }
+  box.innerHTML = hits.map((h, i) => `
+    <div class="hit ${i === sel ? "on" : ""}" data-i="${i}">
+      <span class="who">${esc(h.sender)}</span>
+      <span class="tx">${esc(h.text)}</span>
+      <span class="dt">${esc(h.date)}</span>
+    </div>`).join("");
+  box.querySelectorAll(".hit").forEach(el => {
+    el.onclick = () => { sel = +el.dataset.i; paintHits(); };
+  });
+  const on = box.querySelector(".hit.on");
+  if (on) on.scrollIntoView({ block: "nearest" });
+}
+
+async function mintFrom(shape) {
+  if (!hits.length) return;
+  const r = await api("/api/from-message", { i: hits[sel].i, shape });
+  if (r.error) { flash = { bad: true, msg: r.error }; render(); return; }
+  closeOverlay();
+  card = r;                      // same shape as a slot card: block + preview
+  render();
+  openEdit();                    // a search-minted question always gets a look
+}
+
+// -------------------------------------------------------------------- help
+
+function openHelp() {
+  overlay = "help";
+  document.body.insertAdjacentHTML("beforeend", `
+  <div class="veil" id="veil"><div class="sheet">
+    <h2>Keys</h2>
+    <div class="sub">Everything is one press. Nothing is destructive.</div>
+    <p style="line-height:2.2">
+      <kbd>J</kbd> reject this candidate, show the next &nbsp;
+      <kbd>K</kbd> accept it into mine.toml &nbsp;
+      <kbd>E</kbd> edit it first &nbsp;<br>
+      <kbd>N</kbd> skip this whole slot &nbsp;
+      <kbd>U</kbd> undo the last accept (removes the block again) &nbsp;<br>
+      <kbd>S</kbd> search the thread and mint from any message &nbsp;
+      <kbd>?</kbd> this &nbsp;<kbd>esc</kbd> close
+    </p>
+    <div class="sub" style="margin-top:16px">
+      Accepts append to <code>questions/mine.toml</code>, which is gitignored.
+      Decisions are remembered in <code>questions/.curate.json</code> — close
+      the tab whenever, nothing is lost.
+    </div>
+  </div></div>`);
+}
+
+// -------------------------------------------------------------------- keys
+
+document.addEventListener("keydown", e => {
+  if (overlay) {
+    if (e.key === "Escape") { closeOverlay(); return; }
+    if (overlay === "edit" && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      saveEdit(); return;
+    }
+    if (overlay === "search" && !e.metaKey && !e.ctrlKey) {
+      if (e.key === "Enter") { mintFrom("who_said_it"); e.preventDefault(); }
+      return;
+    }
+    return;
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "j") reject();
+  else if (k === "k") accept();
+  else if (k === "e") { openEdit(); e.preventDefault(); }
+  else if (k === "n") skip();
+  else if (k === "u") undo();
+  else if (k === "s") { openSearch(); e.preventDefault(); }
+  else if (k === "?" || k === "/") { openHelp(); e.preventDefault(); }
+});
+
+api("/api/state").then(take);
+</script>
+</body>
+</html>

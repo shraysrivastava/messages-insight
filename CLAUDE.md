@@ -106,6 +106,14 @@ pure functions over that log. Keep it complete even where it looks redundant.
 bank carry questions for mechanics that may never ship. Widening that set is how
 a new mechanic launches.
 
+**`curate.py` bakes, it doesn't resolve.** A question minted from a real
+message has no resolver behind it, so `{winner}`, `{date}`, `{month}` and
+`{answer}` are substituted when the block is written and only `{p1}`/`{p2}`
+survive for `compile.py`. Braces inside message text are doubled on the way in.
+Decisions live in `questions/.curate.json` (gitignored) and every accepted block
+carries a `# ── curated ──` marker, which is how undo finds exactly its own
+block and nothing a human typed.
+
 **Matching is three layers** (`tools/lexicon.py`): normalise → expand every
 literal phrase into a repeat-and-space-tolerant regex → lexicons for real
 synonyms. `"i love you"` catches `ily`, `iloveyou`, `i loveeee youuu`, and

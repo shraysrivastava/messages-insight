@@ -286,7 +286,7 @@
    "type": "binary",
    "kind": "Joint account",
    "prompt": "Who brings up money more?",
-   "reveal": "Sam: 58 times.",
+   "reveal": "Nilu: 58 times.",
    "answer": 1,
    "options": [
     "Shray",
@@ -338,7 +338,7 @@
    "type": "binary",
    "kind": "Third party",
    "prompt": "Who talks about animals more?",
-   "reveal": "Sam, 142 times.",
+   "reveal": "Nilu, 142 times.",
    "answer": 1,
    "options": [
     "Shray",
@@ -390,7 +390,7 @@
    "type": "choice",
    "kind": "The archive",
    "prompt": "Which day of the week do we text most?",
-   "reveal": "Sunday. Sunday scaries are real and they are chatty.",
+   "reveal": "Sunday. Every relationship has a day, and that's ours.",
    "answer": 0,
    "options": [
     "Sunday",
@@ -479,8 +479,8 @@
    "id": "total-messages",
    "type": "number",
    "kind": "By the numbers",
-   "prompt": "How many messages have we sent each other in five years?",
-   "reveal": "5,243. Every single day, without a gap you'd notice.",
+   "prompt": "How many messages have we sent each other in 5 years?",
+   "reveal": "5,243 messages in 5 years. Neither of us has ever run out of things to say.",
    "answer": 5243,
    "area": "archive",
    "format": "bubble",
@@ -540,7 +540,7 @@
    "type": "number",
    "kind": "Character witness",
    "prompt": "How many times have we thanked each other?",
-   "reveal": "245. Five years of not taking it for granted.",
+   "reveal": "245. 5 years of not taking it for granted.",
    "answer": 245,
    "area": "affection",
    "format": "bubble",
@@ -648,7 +648,7 @@
    "type": "number",
    "kind": "Receipts",
    "prompt": "Longest run of consecutive days we both texted?",
-   "reveal": "29 days in a row.",
+   "reveal": "29 days in a row, without one of us dropping it.",
    "answer": 29,
    "area": "habits",
    "format": "bubble",
@@ -710,7 +710,7 @@
    "type": "binary",
    "kind": "Character witness",
    "prompt": "Who has typed “lol” more?",
-   "reveal": "Alex. 370 to 0. Not close, and never was.",
+   "reveal": "Shray. 370 to 0. Not close, and never was.",
    "answer": 0,
    "options": [
     "Shray",
@@ -726,7 +726,7 @@
    "type": "binary",
    "kind": "Chronically online",
    "prompt": "Who laughs in text more — “haha” in all its forms?",
-   "reveal": "Sam, 377 times to 44. The average length climbs every year.",
+   "reveal": "Nilu, 377 times to 44. The average length climbs every year.",
    "answer": 1,
    "options": [
     "Shray",
@@ -742,7 +742,7 @@
    "type": "binary",
    "kind": "Soft launch",
    "prompt": "Who gives more compliments?",
-   "reveal": "Sam, 33 times to 24.",
+   "reveal": "Nilu, 33 times to 24.",
    "answer": 1,
    "options": [
     "Shray",
@@ -758,7 +758,7 @@
    "type": "binary",
    "kind": "Receipts",
    "prompt": "Who has said “I love you” more?",
-   "reveal": "Sam: 147. Alex: 93. This is now a permanent record.",
+   "reveal": "Nilu: 147. Shray: 93. This is now a permanent record.",
    "answer": 1,
    "options": [
     "Shray",
@@ -774,7 +774,7 @@
    "type": "binary",
    "kind": "By the numbers",
    "prompt": "Who sends more hearts?",
-   "reveal": "Sam, 212 to 0.",
+   "reveal": "Nilu, 212 to 0.",
    "answer": 1,
    "options": [
     "Shray",
@@ -790,7 +790,7 @@
    "type": "binary",
    "kind": "By the numbers",
    "prompt": "Who uses more emoji overall?",
-   "reveal": "Sam, by a mile.",
+   "reveal": "Nilu, by a mile.",
    "answer": 1,
    "options": [
     "Shray",
@@ -806,7 +806,7 @@
    "type": "binary",
    "kind": "Petty grievances",
    "prompt": "Who double-texts more?",
-   "reveal": "Sam, 1559 times. Patience is not one of the five love languages.",
+   "reveal": "Nilu, 1559 times. Patience is not one of the five love languages.",
    "answer": 1,
    "options": [
     "Shray",
@@ -822,7 +822,7 @@
    "type": "binary",
    "kind": "Soft launch",
    "prompt": "Who gets the last word before bed more often?",
-   "reveal": "Sam, 991 nights out of 749.",
+   "reveal": "Nilu, 991 nights out of 749.",
    "answer": 1,
    "options": [
     "Shray",

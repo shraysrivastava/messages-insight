@@ -306,12 +306,18 @@ def dedupe(qs: list[dict], cfg: dict, rep: Report) -> list[dict]:
         kept.append(q)
 
     # Fuzzy overlap is reported, never auto-dropped — too easy to lose something.
+    # Compare the prompt *and* the bubble: curate.py mints a dozen questions
+    # that all ask "Who sent this?" about a different message, and they are not
+    # duplicates of each other in any sense worth a warning.
+    def sig(q: dict) -> str:
+        return q["prompt"] + "\n" + (q.get("text") or "")
+
     thresh = float(policy.get("fuzzy_threshold", 0.82))
     for i, a in enumerate(kept):
         for b in kept[i + 1:]:
             if a["origin"] == b["origin"] == "auto":
                 continue
-            ratio = difflib.SequenceMatcher(None, a["prompt"], b["prompt"]).ratio()
+            ratio = difflib.SequenceMatcher(None, sig(a), sig(b)).ratio()
             if ratio >= thresh:
                 rep.warn(f"{a['id']} and {b['id']} look alike ({ratio:.0%}) — "
                          f"set the same `topic` on yours to replace it")

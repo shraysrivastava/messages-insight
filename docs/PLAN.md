@@ -172,17 +172,35 @@ The `build_game.py` generators become *candidate* producers. Over-generate (40�
 each, not `rounds+1`) and attach provenance: source index, date, ±5 context. Rank
 by rough interestingness so the good ones surface in the first hundred you see.
 
-### 3.3 `curate.py` (`S2.1`)
+### 3.3 `curate.py` (`S2.1`) — built
 
 A localhost FastAPI page. **The highest-leverage thing in the plan** — it turns
-"author 90 questions from memory" into "make 300 fast judgments." One day.
+"author 90 questions from memory" into "make 300 fast judgments."
 
 1. Keyboard only: J reject, K accept, E edit.
 2. Context window always visible — you can't write a payoff without it.
-3. Resumable. Appends to `mine.toml`, tracks reviewed ids in a sidecar.
+3. Resumable. Appends to `mine.toml`, tracks reviewed ids in a sidecar
+   (`questions/.curate.json`, gitignored).
 4. **Free-text search mode.** Type `goodnight`, see every hit with dates, mint a
    question from any of them. Your best 15 questions come from here.
 5. Validates on accept.
+
+Three things it does that this section didn't ask for, because the real bank
+needed them:
+
+- **Baking, not resolving.** A curated question carries no resolver, so
+  `{winner}`, `{date}`, `{month}` and `{answer}` are substituted at mint time
+  and only `{p1}`/`{p2}` are left for the compiler. Message braces are doubled
+  on the way in, so a `{` in a real text can never become a template var.
+- **Mining a slot's own window.** `mine.py` proposes 50 per generator across the
+  whole thread, which leaves a 3am slot or a `source = { mine = "search" }` slot
+  with nothing. Those slots go back to the corpus and mine their own window
+  rather than sit unfillable.
+- **`redact` and `reply_inverted`** don't exist in `mine.py`; both are one
+  transform away from a kind that does, and are derived in `curate.py`.
+
+Undo removes exactly the block it wrote, found by a marker comment, and leaves
+a hand-edited file byte-identical.
 
 ### 3.4 `compile.py` (`S1.12`)
 

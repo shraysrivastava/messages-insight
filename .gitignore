@@ -7,6 +7,7 @@ test_corpus.json
 datasets/test.json
 candidates.json
 questions/mine.toml
+questions/.curate.json
 questions/inbox.md
 datasets/real.json
 data/

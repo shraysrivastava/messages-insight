@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play extract corpus mine compile clean
+.PHONY: status setup test lint demo play extract corpus mine curate compile clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -45,6 +45,7 @@ P2 ?= Her
 DATA    ?= datasets/test.json
 ROUNDS  ?= 10
 SECONDS ?= 25
+PORT    ?= 8900
 
 corpus:            ## chat.db -> $(CORPUS)   (CHAT=... P1=... P2=...)
 	@test -n "$(CHAT)" || (echo "usage: make corpus CHAT='+1555…' P1=Me P2=Them"; exit 1)
@@ -53,6 +54,12 @@ corpus:            ## chat.db -> $(CORPUS)   (CHAT=... P1=... P2=...)
 
 mine:              ## $(CORPUS) -> candidates.json
 	@$(PY) tools/mine.py --corpus $(CORPUS) --out candidates.json
+
+curate: candidates.json  ## review candidates in the browser -> questions/mine.toml
+	@$(PY) tools/curate.py --corpus $(CORPUS) --port $(PORT)
+
+candidates.json:
+	@$(MAKE) mine
 
 compile:           ## questions/ + $(CORPUS) -> $(DATASET)
 	@$(PY) tools/compile.py --corpus $(CORPUS) --out $(DATASET)
