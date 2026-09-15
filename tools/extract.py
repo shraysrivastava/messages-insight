@@ -249,11 +249,66 @@ def build_corpus(messages: list[dict], p1: str, p2: str) -> dict:
     }
 
 
+# Columns worth knowing about before you commit to a question format. Apple
+# adds these over the years, so what exists depends on the macOS that wrote
+# the database — which is why this is a probe and not a constant.
+WANTED = {
+    "date_read":            "how long a message sat unread — the game's own name",
+    "date_delivered":       "delivered-to-read gap, the other half of a read receipt",
+    "is_read":              "whether it was ever read at all",
+    "associated_message_type": "tapbacks — loved / laughed / emphasized",
+    "associated_message_guid": "which message a tapback was aimed at",
+    "thread_originator_guid": "replies, so a question can show what it answered",
+    "reply_to_guid":        "same, older form",
+    "date_edited":          "edited messages — what it said before",
+    "message_summary_info": "the edit history blob itself",
+    "date_retracted":       "unsent messages — who takes it back more",
+    "expressive_send_style_id": "invisible ink, slam, confetti",
+    "is_audio_message":     "voice notes",
+    "service":              "iMessage vs SMS, i.e. the green bubble",
+    "balloon_bundle_id":    "games, polls, Apple Cash",
+}
+
+
+def report_schema(conn) -> None:
+    """What this chat.db can answer, beyond what extract.py currently asks it.
+
+    Run this before designing a question format that needs something new. A
+    format that wants a column your macOS does not have is a format that
+    cannot ship, and finding that out after writing twenty questions is the
+    expensive order to find it out in.
+    """
+    have = {r[1] for r in conn.execute("PRAGMA table_info(message)").fetchall()}
+    tables = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+
+    used = {"ROWID", "text", "attributedBody", "is_from_me", "date",
+            "cache_has_attachments", "associated_message_type", "item_type"}
+    print(f"\n  message table: {len(have)} columns, {len(used & have)} of them used today\n")
+
+    print("  available but unused — each one is a question format:")
+    for col, why in WANTED.items():
+        if col in have and col not in used:
+            print(f"    +  {col:<26} {why}")
+    missing = [c for c in WANTED if c not in have]
+    if missing:
+        print("\n  not in this database (too old a macOS, or renamed):")
+        for col in missing:
+            print(f"    -  {col}")
+
+    print("\n  related tables:")
+    for t in ("attachment", "message_attachment_join", "handle", "chat"):
+        print(f"    {'+' if t in tables else '-'}  {t}")
+    print()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", default="~/Library/Messages/chat.db")
     ap.add_argument("--list", action="store_true", help="show your chats and exit")
+    ap.add_argument("--schema", action="store_true",
+                    help="report which message columns this macOS has, and exit")
     ap.add_argument("--chat", help="chat identifier(s), comma separated")
     ap.add_argument("--p1", default="Me", help="your name")
     ap.add_argument("--p2", default="Her", help="her name")
@@ -262,6 +317,9 @@ def main() -> None:
 
     conn, tmp = open_db(args.db)
     try:
+        if args.schema:
+            report_schema(conn)
+            return
         if args.list or not args.chat:
             list_chats(conn)
             return
