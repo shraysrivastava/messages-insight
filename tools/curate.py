@@ -115,6 +115,29 @@ def existing_ids(mine_path: str) -> set[str]:
         return {q.get("id", "") for q in tomllib.load(f).get("q", [])}
 
 
+def all_ids(qdir: str) -> set[str]:
+    """Every `id` in questions/, auto/ included. `id` is unique across all
+    files — a slot's own id is therefore already taken by the generated
+    question the slot lives in, and minting must not reuse it."""
+    out: set[str] = set()
+    for path in glob.glob(os.path.join(qdir, "*.toml")) + \
+            glob.glob(os.path.join(qdir, "auto", "*.toml")):
+        with open(path, "rb") as f:
+            out |= {q.get("id", "") for q in tomllib.load(f).get("q", [])}
+    return out
+
+
+def existing_topics(mine_path: str) -> set[str]:
+    """Topics already claimed by your own questions. `topic` defaults to `id`.
+    Two of yours on one topic is an error in compile.py, so a second mint for
+    the same slot gets no topic."""
+    if not os.path.exists(mine_path):
+        return set()
+    with open(mine_path, "rb") as f:
+        return {q.get("topic", q.get("id", ""))
+                for q in tomllib.load(f).get("q", [])}
+
+
 # ── candidates ────────────────────────────────────────────────────────────
 
 def _dt(c: dict) -> datetime:
@@ -605,7 +628,7 @@ class Session:
         return self.corpus.meta["p1"], self.corpus.meta["p2"]
 
     def taken(self) -> set[str]:
-        return existing_ids(self.mine_path) | {
+        return all_ids(os.path.dirname(self.mine_path)) | {
             m["qid"] for m in self.state["minted"]}
 
     def new_id(self, base: str) -> str:
@@ -656,8 +679,11 @@ class Session:
         if not q:
             return None
         cand = q[0]
+        # `id` is unique across every file, so a mint never gets the slot's
+        # own id. `topic` is the replacement mechanism: carrying the slot's
+        # topic is what retires the generated question in compile.py.
         qid = self.new_id(slot.id)
-        topic = slot.id if qid == slot.id else None
+        topic = None if slot.id in existing_topics(self.mine_path) else slot.id
         block, notes = mint(slot, cand, self.corpus, qid, topic)
         err = validate(block, self.names)
         stray = leftover_vars(block)
