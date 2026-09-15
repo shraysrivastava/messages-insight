@@ -101,9 +101,11 @@ CHECKS = [
     (4, "S4.2", "app/history.py",                      lambda: exists("app/history.py")),
     (4, "S4.3", "history shelf in lobby",              lambda: _grep("static/host.html", r"history") or _grep("poc/static/host.html", r"history")),
     (4, "S4.4", "receipts reel",                       lambda: _grep("static/host.html", r"reel")),
-    (4, "S4.5", "sound design",                        lambda: bool(glob.glob(p("static/sounds/*")))),
+    # Synthesised rather than sampled — there is no static/sounds/ and there
+    # never will be. Every cue is oscillators and an envelope (static/sound.js).
+    (4, "S4.5", "sound design",                        lambda: _grep("static/sound.js", r"function voice") or bool(glob.glob(p("static/sounds/*")))),
     (4, "S4.6", "mutual type",                         lambda: _grep("app/game.py", r"mutual")),
-    (4, "S4.7", "playwright smoke test",               lambda: any_exists("tests/test_smoke.py", "tests/smoke.spec.js", "tests/e2e")),
+    (4, "S4.7", "end-to-end smoke test",               lambda: any_exists("tests/test_smoke.py", "tests/smoke.spec.js", "tests/e2e")),
 ]
 
 STAGES = {
