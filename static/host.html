@@ -155,6 +155,22 @@
                  100%{opacity:1;transform:none}}
   .controls.chor{animation:fadeup .4s ease both}
 
+  /* the context thread (DESIGN 2.5 step 3). The actual conversation the
+     answer sits in, which is the whole reason curate.py captures it. */
+  .thread{display:flex;flex-direction:column;gap:7px;max-width:56ch;margin-top:18px}
+  .thread .m{
+    padding:9px 14px;border-radius:17px;font-size:16px;line-height:1.4;
+    max-width:82%;background:var(--sunk);color:var(--muted);
+    animation:msgin .4s cubic-bezier(.2,1.1,.3,1) both;
+  }
+  @keyframes msgin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .thread .m.p1{align-self:flex-end;border-bottom-right-radius:5px}
+  .thread .m.p2{align-self:flex-start;border-bottom-left-radius:5px}
+  .thread .m.it{
+    background:var(--raised);color:var(--cream);font-weight:500;
+    box-shadow:0 0 0 1px var(--line);
+  }
+
   /* the history shelf (DESIGN 2.1) */
   .shelf{margin-top:38px;width:100%;max-width:1040px;border-top:1px solid var(--line);
     padding-top:24px}
@@ -534,7 +550,10 @@ function question(revealed) {
   head.append(h("div", "eyebrow", q.kind));
   rows.push(head);
   rows.push(h("h2", "prompt serif", q.prompt));
-  if (q.text) {
+  /* At the reveal the context thread carries this same message, highlighted
+     in place — showing it twice reads as a repeat rather than as "and here is
+     where it was". */
+  if (q.text && !(revealed && q.context && q.context.length > 1)) {
     const b = h("div", "bubble qbubble", q.text);
     rows.push(b);
   }
@@ -569,13 +588,32 @@ function question(revealed) {
   return main(...rows);
 }
 
+/* The messages either side of the one the question came from, as a small
+   thread with the source lit. This is the difference between "the answer was
+   pasta" and the actual evening in May 2023 when you said it. Only curated
+   and message-sourced questions have one; a counting question has no
+   conversation to show and gets nothing. */
+function thread(msgs, fresh) {
+  if (!Array.isArray(msgs) || msgs.length < 2) return null;
+  const box = h("div", "thread");
+  msgs.forEach((m, i) => {
+    const b = h("div", "m " + (m.who === "p1" ? "p1" : "p2") + (m.self ? " it" : ""));
+    b.textContent = m.text;
+    if (fresh) b.style.animationDelay = (BEAT.thread + i * 0.09) + "s";
+    else b.style.animation = "none";
+    box.append(b);
+  });
+  return box;
+}
+
 /* Rounds whose reveal has already been choreographed. A phone dropping off
    mid-reveal triggers a re-render, and replaying the whole sequence from the
    silence would be worse than not having one. */
 const played = new Set();
 
 /* The beats, in seconds from the moment the reveal lands (DESIGN 2.5). */
-const BEAT = { resolve: 0.45, typing: 1.1, truth: 2.0, board: 2.3, controls: 2.9 };
+const BEAT = { resolve: 0.45, thread: 0.9, typing: 1.9, truth: 2.8,
+               board: 3.2, controls: 3.8 };
 
 function reveal() {
   const q = S.question;
@@ -594,6 +632,9 @@ function reveal() {
       c.classList.add("dim"); c.style.animationDelay = at("resolve");
     });
   }
+
+  const ctx = thread(q.context, fresh);
+  if (ctx) rows[0].append(ctx);
 
   const truth = h("div", "truth" + (fresh ? " chor" : ""));
   truth.style.animationDelay = at("typing");
@@ -692,6 +733,8 @@ function drawReel() {
     row.append(h("div", "no", `${i + 1} · ${r.kind}`));
     row.append(h("div", "q", r.prompt));
     if (r.text) row.append(h("div", "msg", r.text));
+    const ctx = thread(r.context, false);
+    if (ctx) row.append(ctx);
     /* Who said what, but never who won it. The scoring is the part we are
        deliberately leaving behind. */
     const guesses = Object.entries(r.results || {})

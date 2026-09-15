@@ -96,6 +96,32 @@ def render(text: str, ctx: dict, qid: str) -> str:
         raise ValueError(f"{qid}: bad template ({e})") from None
 
 
+def thread_around(corpus, i: int | None, span: int = 2) -> list[dict] | None:
+    """The messages either side of the one a question came from.
+
+    Only for questions the corpus can point at — a count has no source message
+    and gets nothing, which is right: there is no conversation to show. The
+    text is copied verbatim and never rendered as a template, because real
+    messages contain braces and `{` is not a template var just because someone
+    typed it at 2am.
+    """
+    if i is None:
+        return None
+    msgs = getattr(corpus, "messages", None)
+    if not msgs or not (0 <= i < len(msgs)):
+        return None
+    lo, hi = max(0, i - span), min(len(msgs), i + span + 1)
+    out = []
+    for m in msgs[lo:hi]:
+        text = (m.get("text") or "").strip()
+        if not text:
+            continue
+        out.append({"who": m["from"], "text": text, "self": m.get("i") == i})
+    # One message on its own is not a thread, it is the bubble that is already
+    # on screen.
+    return out if len(out) > 1 else None
+
+
 def shows_histogram(q: dict, spec: dict | None) -> bool:
     """Whether the month slider may draw `meta.density` behind this question.
 
@@ -273,6 +299,10 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
                 out["unit"] = q["unit"]
             if not shows_histogram(q, spec):
                 out["histogram"] = False
+            ctx = q.get("context") or (
+                thread_around(corpus, res.source) if res is not None else None)
+            if ctx:
+                out["context"] = ctx
             out["answer"] = None if q["type"] == "mutual" else (
                 res.value if res is not None else q.get("answer"))
         except ValueError as e:
@@ -393,7 +423,9 @@ def main() -> None:
         raise SystemExit(1)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    payload = data.model_dump(exclude_none=True)
+    # by_alias so ContextMsg's `self` is spelled the way the reveal reads it;
+    # it is the only aliased field in the schema.
+    payload = data.model_dump(exclude_none=True, by_alias=True)
     for q in payload["questions"]:
         # Only the exception travels. `histogram` is true for all but a couple
         # of month questions, and writing it 120 times makes every recompile a

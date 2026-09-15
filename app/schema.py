@@ -74,6 +74,18 @@ class Meta(BaseModel):
         return self
 
 
+class ContextMsg(BaseModel):
+    """One message in a reveal's context thread. Deliberately thin: who, what,
+    and whether this is the one the question was about."""
+    # `self` is the field name the reveal wants and a Python keyword, so it is
+    # aliased; populate_by_name lets both spellings in.
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    who: Literal["p1", "p2"]
+    text: Annotated[str, Field(min_length=1)]
+    self_: bool = Field(default=False, alias="self")
+
+
 class Question(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -93,6 +105,12 @@ class Question(BaseModel):
     # *is* that array ("which month did we text the least?") must not, or the
     # picture answers it. compile.py sets this from the resolver.
     histogram: bool = True
+
+    # The few messages either side of the one this question came from. The
+    # reveal draws them as a small thread with the source highlighted, which
+    # is the difference between "the answer was pasta" and the actual evening
+    # in May 2023 when you said it (DESIGN 2.5).
+    context: list["ContextMsg"] | None = None
 
     # Provenance, carried through so the dealer can prefer authored questions
     # and the history log can say where a round came from.

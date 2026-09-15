@@ -153,6 +153,33 @@
    "text": "i love you absolutely not",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "i keep laughing about what you said in the car yesterday 🫠",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "yeah 🫠",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "i love you absolutely not",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "the flight got delayed two hours so im just sitting at the gate",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "the dog would not stop barking at absolutely nothing for an hour ❤️",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "first-love-you"
   },
@@ -166,6 +193,33 @@
    "text": "so good our place 🥺",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "can we please go back to that place with the tiny chairs one day",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "good morning just got out of the meeting and it went so much better than expected 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "so good our place 🥺",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "you're kidding",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "good morning you left your charger here again this is the third time this month",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "first-our-place"
   },
@@ -179,6 +233,33 @@
    "text": "so good move in",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "reading your text from this morning again because it made my whole day 🙃",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "please remind me to actually book the tickets this time good morning ❤️",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "so good move in",
+     "self": true
+    },
+    {
+     "who": "p2",
+     "text": "miss you my boss scheduled another meeting that couldve been an email",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "ok but you have to admit the second one was better than the first haha",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "first-move-in"
   },
@@ -192,6 +273,33 @@
    "text": "marry please",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p1",
+     "text": "good morning its raining so hard here i can barely see across the street",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "me too 🙃",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "marry please",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "one day im making the pasta tonight the one with too much lemon",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "sorry i fell asleep mid sentence apparently that was very rude of me",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "first-marriage"
   },
@@ -205,6 +313,33 @@
    "text": "one day absolutely not",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "not true 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "same",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "one day absolutely not",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "deal cant wait to see you",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "genuinely obsessed with the playlist you made me last weekend",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "first-future"
   },
@@ -218,6 +353,33 @@
    "text": "forever the flight got delayed two hours so im just sitting at the gate",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p1",
+     "text": "you left your charger here again this is the third time this month 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "just got out of the meeting and it went so much better than expected",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "forever the flight got delayed two hours so im just sitting at the gate",
+     "self": true
+    },
+    {
+     "who": "p2",
+     "text": "i cannot stop thinking about those dumplings we had on tuesday 💀",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "thank you obviously",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "first-forever"
   },
@@ -690,6 +852,33 @@
    "text": "i love you absolutely not",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "i keep laughing about what you said in the car yesterday 🫠",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "yeah 🫠",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "i love you absolutely not",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "the flight got delayed two hours so im just sitting at the gate",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "the dog would not stop barking at absolutely nothing for an hour ❤️",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "days-until-love"
   },
@@ -703,6 +892,33 @@
    "text": "marry please",
    "area": "milestones",
    "format": "bubble",
+   "context": [
+    {
+     "who": "p1",
+     "text": "good morning its raining so hard here i can barely see across the street",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "me too 🙃",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "marry please",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "one day im making the pasta tonight the one with too much lemon",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "sorry i fell asleep mid sentence apparently that was very rude of me",
+     "self": false
+    }
+   ],
    "origin": "auto",
    "topic": "days-until-marriage-word"
   },

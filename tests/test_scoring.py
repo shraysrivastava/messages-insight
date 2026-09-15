@@ -224,3 +224,26 @@ def test_the_round_log_keeps_the_options_it_was_scored_against(game):
     rec = game.grade()
     assert rec.options == ["pasta", "pizza", "toast"]
     assert rec.options[rec.results["a"].answer] == "pizza"
+
+
+def test_the_context_thread_is_held_back_until_the_reveal(game):
+    """It is the conversation the answer is in. Sent with the question, it is
+    the answer."""
+    ctx = [{"who": "p2", "text": "you up?", "self": False},
+           {"who": "p1", "text": "always", "self": True}]
+    game.deck = [Q(type="binary", answer=1, context=ctx)]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    assert "context" not in game.snapshot(now=1001.0)["question"]
+    game.close_question()
+    assert game.snapshot(now=1030.0)["question"]["context"][1]["self"] is True
+
+
+def test_the_round_log_keeps_the_context_too(game):
+    ctx = [{"who": "p2", "text": "you up?", "self": False},
+           {"who": "p1", "text": "always", "self": True}]
+    game.deck = [Q(type="binary", answer=1, context=ctx)]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    game.add_player("a", "Shray").answer = 1
+    assert game.grade().context[0]["text"] == "you up?"

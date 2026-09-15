@@ -44,6 +44,11 @@ class Resolution:
     text: str | None = None
     hits: int | None = None
     error: str | None = None
+    # Index into corpus.messages of the message this answer came from, when
+    # there is one. compile.py turns it into the context thread the reveal
+    # shows — "the actual conversation from May 2023 where you said it"
+    # (DESIGN 2.5). Resolvers that count rather than quote leave it None.
+    source: int | None = None
 
 
 class Corpus:
@@ -145,7 +150,8 @@ def r_messages_between(c, spec, *_):
 def r_longest_message_words(c, spec, *_):
     best = max(c.messages, key=lambda m: m["words"])
     return Resolution(value=best["words"], hits=1,
-                      extras={"date": c.pretty(best)}, text=best["text"])
+                      extras={"date": c.pretty(best)}, text=best["text"],
+                      source=best.get("i"))
 
 
 def r_longest_gap_hours(c, spec, *_):
@@ -194,7 +200,8 @@ def r_days_until(c, spec, lex, key):
         return Resolution(error=f"no messages match {lex.name!r}")
     delta = hits[0]["dt"] - c.messages[0]["dt"]
     return Resolution(value=delta.days, hits=len(hits),
-                      extras={"date": c.pretty(hits[0])}, text=hits[0]["text"])
+                      extras={"date": c.pretty(hits[0])}, text=hits[0]["text"],
+                      source=hits[0].get("i"))
 
 
 # ── percentages ───────────────────────────────────────────────────────────
@@ -264,7 +271,7 @@ def r_first_use(c, spec, lex, key):
     first = hits[0]
     ix = c.month_of(first)
     return Resolution(
-        value=ix, hits=len(hits), text=first["text"],
+        value=ix, hits=len(hits), text=first["text"], source=first.get("i"),
         extras={"date": c.pretty(first), "month": c.pretty_month(ix),
                 "winner": c.name(first["from"])},
     )

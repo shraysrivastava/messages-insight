@@ -337,6 +337,21 @@ def bake(template: str, vals: dict) -> str:
 CLOCK_RE = re.compile(r"\b\d{1,2}:\d{2}\s*[ap]\.?m\.?", re.I)
 
 
+def context_for(corpus: Corpus, i: int | None, span: int = 2) -> list[dict] | None:
+    """The messages either side of this one, for the reveal's context thread."""
+    if i is None:
+        return None
+    msgs = getattr(corpus, "messages", None)
+    if not msgs or not (0 <= i < len(msgs)):
+        return None
+    out = []
+    for m in msgs[max(0, i - span):min(len(msgs), i + span + 1)]:
+        text = (m.get("text") or "").strip()
+        if text:
+            out.append({"who": m["from"], "text": text, "self": m.get("i") == i})
+    return out if len(out) > 1 else None
+
+
 def mint(slot: Slot, cand: dict, corpus: Corpus, qid: str,
          topic: str | None) -> tuple[dict, list[str]]:
     """Slot + candidate -> a finished question block, plus anything you should
@@ -389,6 +404,15 @@ def mint(slot: Slot, cand: dict, corpus: Corpus, qid: str,
         vals["other_date"] = cand["other_date"] if first else cand["date"]
     else:
         raise ValueError(f"no mint template for candidate kind {kind!r}")
+
+    # The conversation the message sits in, baked like everything else here.
+    # Not a pointer into the corpus: `i` shifts the next time you re-extract,
+    # and a question that quietly points at the wrong evening is worse than
+    # one with no context at all. Not brace-escaped either — compile.py copies
+    # context verbatim rather than rendering it, so a real "{" stays a "{".
+    ctx = context_for(corpus, cand.get("i"))
+    if ctx:
+        q["context"] = ctx
 
     q["id"] = qid
     if topic:
@@ -492,6 +516,8 @@ def toml_value(v) -> str:
         return str(v)
     if isinstance(v, list):
         return "[" + ", ".join(toml_value(x) for x in v) + "]"
+    if isinstance(v, dict):                      # inline table, for context
+        return "{" + ", ".join(f"{k} = {toml_value(x)}" for k, x in v.items()) + "}"
     return toml_str(v)
 
 
@@ -511,7 +537,12 @@ def block_text(q: dict, cand: dict | None = None, slot: Slot | None = None) -> s
             rows.append(f"{k} = {toml_value(q[k])}")
     for k, v in q.items():                       # anything the editor added
         if k not in FIELD_ORDER and v is not None:
-            rows.append(f"{k} = {toml_value(v)}")
+            if k == "context" and isinstance(v, list):
+                rows.append("context = [")
+                rows += [f"  {toml_value(m)}," for m in v]
+                rows.append("]")
+            else:
+                rows.append(f"{k} = {toml_value(v)}")
     return "\n".join(rows) + "\n"
 
 

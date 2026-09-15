@@ -62,6 +62,7 @@ class RoundRecord:
     correct: Any
     text: str | None = None
     options: list[str] | None = None     # or the reel replays "said 0"
+    context: list[dict] | None = None    # the thread around the source message
     format: str = "bubble"
     origin: str = "auto"
     area: str | None = None
@@ -318,6 +319,8 @@ class Game:
             correct=q.answer,
             text=q.text,
             options=list(q.options) if q.options else None,
+            context=([c.model_dump(by_alias=True) for c in q.context]
+                     if q.context else None),
             format=q.format,
             origin=q.origin,
             area=q.area,
@@ -377,6 +380,11 @@ class Game:
             if revealed:
                 pub["answer"] = q.answer
                 pub["reveal"] = q.reveal
+                # Only at the reveal. The thread around the source message
+                # would hand the answer over if it arrived with the question.
+                if q.context:
+                    pub["context"] = [c.model_dump(by_alias=True)
+                                      for c in q.context]
 
         board = sorted(self.players.values(), key=lambda p: -p.score)
         started = self.question_started_at

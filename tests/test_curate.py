@@ -345,3 +345,48 @@ def test_a_month_in_the_middle_of_the_thread_passes_without_a_warning(tmp_path):
                       reveal="{month}.")])
     s.guards = {"month_edge_pct": 0.10}
     assert s.card()["notes"] == []
+
+
+# ── the context thread (S3.2) ─────────────────────────────────────────────
+
+class _Corpus:
+    def __init__(self, texts):
+        self.messages = [{"i": i, "from": "p1" if i % 2 else "p2", "text": t}
+                         for i, t in enumerate(texts)]
+
+
+def test_context_is_the_messages_either_side_with_the_source_marked():
+    from tools.curate import context_for
+    c = _Corpus(["a", "b", "c", "d", "e", "f", "g"])
+    ctx = context_for(c, 3)
+    assert [m["text"] for m in ctx] == ["b", "c", "d", "e", "f"]
+    assert [m["self"] for m in ctx] == [False, False, True, False, False]
+
+
+def test_context_at_the_very_start_of_the_thread_is_just_shorter():
+    from tools.curate import context_for
+    ctx = context_for(_Corpus(["a", "b", "c", "d"]), 0)
+    assert [m["text"] for m in ctx] == ["a", "b", "c"]
+
+
+def test_a_message_with_no_neighbours_is_not_a_thread():
+    """One bubble is the bubble already on screen, not context for it."""
+    from tools.curate import context_for
+    assert context_for(_Corpus(["only"]), 0) is None
+    assert context_for(_Corpus(["a"]), None) is None
+
+
+def test_context_survives_a_toml_round_trip():
+    """Real messages contain quotes, newlines and braces. All three have to
+    come back out the way they went in."""
+    import tomllib
+    from tools.curate import block_text
+    q = {"id": "x", "type": "binary", "kind": "k", "prompt": "p?",
+         "reveal": "r.", "answer": 0, "options": ["A", "B"],
+         "context": [{"who": "p2", "text": 'he said "no" {seriously}',
+                      "self": False},
+                     {"who": "p1", "text": "line\nbreak", "self": True}]}
+    parsed = tomllib.loads(block_text(q))["q"][0]
+    assert parsed["context"][0]["text"] == 'he said "no" {seriously}'
+    assert parsed["context"][1]["text"] == "line\nbreak"
+    assert parsed["context"][1]["self"] is True
