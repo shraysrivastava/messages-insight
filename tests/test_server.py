@@ -9,9 +9,17 @@ import random
 
 import pytest
 
+import app.main as main
 from app.game import Game
 from app.main import Room, create_app
 from tests.conftest import make_dataset
+
+
+@pytest.fixture(autouse=True)
+def quick_read_beat(monkeypatch):
+    """main.READ_BEAT holds the reveal back so the read receipt can flip. It
+    is 1.2s live and would add that to every round-closing test here."""
+    monkeypatch.setattr(main, "READ_BEAT", 0.05)
 
 
 class FakeSocket:
@@ -270,6 +278,49 @@ async def test_a_round_closes_as_soon_as_everyone_has_answered():
     assert r.game.phase == "question"            # still waiting on her
     await r.handle(b, {"t": "answer", "id": "b", "value": 1})
     await asyncio.sleep(0.35)
+    assert r.game.phase == "reveal"
+
+
+@pytest.mark.asyncio
+async def test_the_reveal_waits_for_the_read_receipt_to_land(monkeypatch):
+    """The last answer must not close the round on the same tick. His phone
+    still says `Delivered`, and the flip to `Read 9:42 PM` is the screen the
+    game is named after (DESIGN 2.4)."""
+    monkeypatch.setattr(main, "READ_BEAT", 0.4)
+    r = room(seconds=30)
+    a = await hello(r, FakeSocket())
+    await join(r, a, pid="a")
+    b = await hello(r, FakeSocket())
+    await join(r, b, pid="b", name="Nilu")
+
+    r.game.deal()
+    await r.start_round(0)
+    r.cancel()
+    await r.open_question()
+    await r.handle(a, {"t": "answer", "id": "a", "value": 0})
+    await r.handle(b, {"t": "answer", "id": "b", "value": 1})
+
+    await asyncio.sleep(0.15)
+    assert r.game.phase == "question"             # the beat
+    await asyncio.sleep(0.5)
+    assert r.game.phase == "reveal"
+
+
+@pytest.mark.asyncio
+async def test_the_buzzer_does_not_wait_for_a_receipt_nobody_is_sending(monkeypatch):
+    """If time ran out, whoever didn't answer never will. No beat."""
+    monkeypatch.setattr(main, "READ_BEAT", 5.0)
+    r = room(seconds=0.1)
+    a = await hello(r, FakeSocket())
+    await join(r, a, pid="a")
+    b = await hello(r, FakeSocket())
+    await join(r, b, pid="b", name="Nilu")
+
+    r.game.deal()
+    await r.start_round(0)
+    r.cancel()
+    await r.open_question()
+    await asyncio.sleep(0.45)
     assert r.game.phase == "reveal"
 
 

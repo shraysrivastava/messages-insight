@@ -377,6 +377,7 @@ class Game:
                 pub["reveal"] = q.reveal
 
         board = sorted(self.players.values(), key=lambda p: -p.score)
+        started = self.question_started_at
         return {
             "t": "state",
             "phase": self.phase,
@@ -392,6 +393,13 @@ class Game:
                 {
                     "id": p.id, "name": p.name, "color": p.color,
                     "score": p.score, "online": p.online,
+                    # How long they took, for the read-receipt state (S3.3).
+                    # Speed is public — the host screen says "locked in 3.2s"
+                    # on purpose. *Whether it was right* is not, and isn't
+                    # here: the tension between "she answered fast" and "was
+                    # she right" is the whole hook (DESIGN 2.4).
+                    **({"took": round(p.answered_at - started, 2)}
+                       if p.answered_at is not None and started else {}),
                     **({"last": p.last} if revealed else {}),
                 }
                 for p in board

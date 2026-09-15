@@ -79,6 +79,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(ROOT, "static")
 
 COUNTDOWN = 3.0
+
+# The beat between the last answer landing and the reveal. Without it the round
+# closes on the same tick the second person locks in, and the read receipt on
+# the first person's phone never gets to flip from `Delivered` to `Read 9:42
+# PM` — the one screen the game is named after would be unreachable in a
+# two-player game (DESIGN 2.4). It is not padding; it is the screen.
+READ_BEAT = 1.2
 HEARTBEAT = 25.0        # Fly drops an idle socket at ~60
 TICK = 0.2              # how often the question loop checks the clock
 
@@ -169,11 +176,20 @@ class Room:
         """End on the buzzer, or as soon as everyone still connected has
         answered. `live()` is why a dropped phone doesn't hold the round."""
         try:
+            early = False
             while True:
                 left = (self.game.ends_at or 0) - time.time()
-                if left <= 0 or self.game.everyone_answered():
+                if left <= 0:
+                    break
+                if self.game.everyone_answered():
+                    early = True
                     break
                 await asyncio.sleep(TICK)
+            # Only when the round ended early. If the buzzer ran out, whoever
+            # didn't answer never will, and the receipt stays on `Delivered`
+            # where it belongs.
+            if early:
+                await asyncio.sleep(READ_BEAT)
             await self.close_question()
         except asyncio.CancelledError:
             pass

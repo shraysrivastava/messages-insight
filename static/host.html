@@ -74,7 +74,17 @@
     transition:opacity .3s;
   }
   .tick.in{opacity:1}
-  .tick .dot{width:10px;height:10px;border-radius:50%;background:currentColor}
+  .tick .dot{width:10px;height:10px;border-radius:50%;
+    background:transparent;border:2px solid currentColor;
+    transition:background .3s ease}
+  .tick.in .dot{background:currentColor}
+  .tick .lab{display:inline-flex;gap:6px;align-items:baseline}
+  .tick .took{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .tick .thinking{display:inline-flex;gap:4px;align-items:center;margin-left:2px}
+  .tick .thinking i{width:5px;height:5px;border-radius:50%;background:currentColor;
+    animation:blip 1.15s infinite ease-in-out both}
+  .tick .thinking i:nth-child(2){animation-delay:.16s}
+  .tick .thinking i:nth-child(3){animation-delay:.32s}
 
   /* reveal */
   .truth{border-left:3px solid var(--right);padding-left:20px;max-width:44ch}
@@ -362,15 +372,7 @@ function question(revealed) {
     animateTimer(bar, fill);
 
     const wait = h("div", "waiting");
-    S.players.forEach(p => {
-      const t = h("div", "tick" + (S.answered.includes(p.id) ? " in" : ""));
-      t.style.color = p.color;
-      t.append(h("span", "dot"),
-               textNode(S.answered.includes(p.id) ? `${p.name} locked in`
-                                                  : `${p.name} thinking…`,
-                        "var(--cream)"));
-      wait.append(t);
-    });
+    wait.append(...S.players.map(tickFor));
     rows.push(wait);
   }
 
@@ -560,21 +562,34 @@ connect("host", s => {
   else refreshTicks();
 });
 
+/* `Shray ✓ locked in 3.2s · Nilu ···` (DESIGN 2.4). How fast they were is
+   public; whether they were right is not, and is not in the payload. */
+function tickFor(p) {
+  const inYet = S.answered.includes(p.id);
+  const t = h("div", "tick" + (inYet ? " in" : ""));
+  t.style.color = p.color;
+  const label = h("span", "lab");
+  label.append(textNode(p.name, "var(--cream)"));
+  if (inYet && typeof p.took === "number") {
+    label.append(h("span", "took", ` locked in ${p.took.toFixed(1)}s`));
+  } else if (inYet) {
+    label.append(h("span", "took", " locked in"));
+  }
+  t.append(h("span", "dot"), label);
+  if (!inYet) {
+    const dots = h("span", "thinking");
+    dots.append(h("i"), h("i"), h("i"));
+    t.append(dots);
+  }
+  return t;
+}
+
 function refreshTicks() {
   // Mid-question we only need the "locked in" chips to update — re-rendering
   // would restart the timer animation.
   const wait = view.querySelector(".waiting");
   if (!wait) return render();
-  wait.replaceChildren();
-  S.players.forEach(p => {
-    const t = h("div", "tick" + (S.answered.includes(p.id) ? " in" : ""));
-    t.style.color = p.color;
-    t.append(h("span", "dot"),
-             textNode(S.answered.includes(p.id) ? `${p.name} locked in`
-                                                : `${p.name} thinking…`,
-                      "var(--cream)"));
-    wait.append(t);
-  });
+  wait.replaceChildren(...S.players.map(tickFor));
 }
 </script>
 </body>
