@@ -37,6 +37,18 @@ someone is careless.
   server holds no key (docs/PLAN.md §4).
 - Don't print message content into chat beyond what's needed to answer the
   question at hand. Aggregates over dumps.
+- **`make demo` must pass `--no-mine`.** `datasets/demo.json` is committed and
+  handed to people; building it from the whole `questions/` tree pulls curated
+  real messages straight into it. It happened once, caught before the commit.
+  Two tests hold the line — one on the builder, one on the committed file.
+- **`data/history.jsonl` is encrypted line by line** under the key the dataset
+  unlock derives. A summary carries its round log and a round log carries real
+  message text.
+
+**He is a player, so don't spoil him.** `make real`, `make curate` and any
+server pointed at `datasets/real.json` put the deck on screen. `make status`,
+`make compile`, `make lint` and `make seal` print counts and reasons only.
+When he asks to see something working, reach for `datasets/demo.json`.
 
 **The game must be playable at the end of every stage.** Stage 2 is the ship
 line; stages 3 and 4 are upside. Never leave the repo in a state where
@@ -83,7 +95,7 @@ chat.db ──extract──▶ corpus.json ──mine──▶ candidates.json
 ```bash
 make              # status dashboard
 make play         # fake corpus → real compiler → real server. Always works.
-make test         # 54 tests
+make test         # 262 tests
 make lint         # validate questions/ and compiled datasets
 make serve DATA=datasets/test.json
 ```
@@ -113,6 +125,23 @@ survive for `compile.py`. Braces inside message text are doubled on the way in.
 Decisions live in `questions/.curate.json` (gitignored) and every accepted block
 carries a `# ── curated ──` marker, which is how undo finds exactly its own
 block and nothing a human typed.
+
+**`superlatives.py` and `history.py` are pure functions over `game.log`.** The
+awards, the score graph (`curve()`, which shares `Tally` so it cannot disagree
+with them about who won), the shelf and the reel all read the same list of
+`RoundRecord`s. That is why the log has to stay complete — `options` and
+`context` are on it because the reel replays rounds long after the `Question`
+they came from is gone.
+
+**Context is baked for curated questions, resolved for generated ones.**
+`curate.py` writes the ±2 messages into the block at mint time because `i`
+shifts on re-extraction, and a question pointing at the wrong evening is worse
+than one with no context. `compile.py` derives it for generated questions from
+`Resolution.source`. Both land in the same `Question.context`, and it is
+copied verbatim, never templated — real messages contain braces.
+
+**The soundtrack is synthesised** (`static/sound.js`). Oscillators and
+envelopes, no asset files, host screen only. There is no `static/sounds/`.
 
 **Matching is three layers** (`tools/lexicon.py`): normalise → expand every
 literal phrase into a repeat-and-space-tolerant regex → lexicons for real
