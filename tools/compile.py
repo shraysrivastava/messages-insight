@@ -39,7 +39,7 @@ except ModuleNotFoundError:                     # py < 3.11
 from app.game import PLAYABLE
 from app.schema import Dataset
 from tools.lexicon import load_lexicons
-from tools.resolvers import Corpus, resolve
+from tools.resolvers import FROM_DENSITY, RESOLVERS, Corpus, resolve
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEXED = {"binary", "choice", "wager", "mutual"}
@@ -61,10 +61,18 @@ class Report:
 
 # ── loading ───────────────────────────────────────────────────────────────
 
-def load_questions(qdir: str) -> list[dict]:
+def load_questions(qdir: str, include_mine: bool = True) -> list[dict]:
+    """Every question block under `qdir`. Provenance is the directory.
+
+    `include_mine=False` builds from `auto/` alone. That is what the demo
+    dataset needs: `mine.toml` holds messages `curate.py` lifted verbatim out
+    of the real thread, and `datasets/demo.json` is committed and handed to
+    anyone. A demo built from the fake corpus is still not safe if it carries
+    three real messages through the question bank (CLAUDE.md, Privacy).
+    """
     out = []
     mine = os.path.join(qdir, "mine.toml")
-    files = ([("mine", mine)] if os.path.exists(mine) else []) + \
+    files = ([("mine", mine)] if include_mine and os.path.exists(mine) else []) + \
             [("auto", f) for f in sorted(glob.glob(os.path.join(qdir, "auto", "*.toml")))]
     for origin, path in files:
         with open(path, "rb") as f:
@@ -86,6 +94,27 @@ def render(text: str, ctx: dict, qid: str) -> str:
         raise ValueError(f"{qid}: unknown template var {e}") from None
     except (ValueError, TypeError) as e:
         raise ValueError(f"{qid}: bad template ({e})") from None
+
+
+def shows_histogram(q: dict, spec: dict | None) -> bool:
+    """Whether the month slider may draw `meta.density` behind this question.
+
+    It may not when the answer *is* the density array — "which month did we
+    text the least?" is free if the picture is on screen. The resolver is the
+    signal, not the wording: `resolvers.FROM_DENSITY` names the ones that read
+    the table. An author can also just say `histogram = false`.
+    """
+    if q.get("histogram") is False:
+        return False
+    if q.get("type") != "month" or not spec:
+        return True
+    key = next((k for k in spec if k in RESOLVERS), None)
+    if key not in FROM_DENSITY:
+        return True
+    # `within` narrows the count to one lexicon — the busiest month *for work
+    # stress* is not the busiest month, and the whole-thread picture does not
+    # answer it. Only the unfiltered form reads `meta.density` itself.
+    return bool(spec.get("within"))
 
 
 def build_context(meta: dict, res, q: dict, options: list[str] | None) -> dict:
@@ -154,7 +183,8 @@ def guard(q: dict, res, cfg: dict, months: int, rep: Report) -> bool:
 # ── the pipeline ──────────────────────────────────────────────────────────
 
 def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report,
-                    names: tuple[str | None, str | None] = (None, None)):
+                    names: tuple[str | None, str | None] = (None, None),
+                    include_mine: bool = True):
     with open(os.path.join(qdir, "config.toml"), "rb") as f:
         cfg = tomllib.load(f)
     with open(os.path.join(qdir, "lexicons.toml"), "rb") as f:
@@ -184,7 +214,7 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
     meta.pop("first_ts", None)
     meta.pop("last_ts", None)
 
-    raw = load_questions(qdir)
+    raw = load_questions(qdir, include_mine=include_mine)
     built: list[dict] = []
 
     for q in raw:
@@ -241,6 +271,8 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
                 out["text"] = res.text
             if q.get("unit"):
                 out["unit"] = q["unit"]
+            if not shows_histogram(q, spec):
+                out["histogram"] = False
             out["answer"] = None if q["type"] == "mutual" else (
                 res.value if res is not None else q.get("answer"))
         except ValueError as e:
@@ -336,6 +368,9 @@ def main() -> None:
     ap.add_argument("--p1", help="override the player names (else config.toml, else corpus)")
     ap.add_argument("--p2")
     ap.add_argument("--verbose", action="store_true", help="list every dropped question")
+    ap.add_argument("--no-mine", action="store_true",
+                    help="build from auto/ only — what the committed demo "
+                         "dataset uses, so no curated message can reach it")
     args = ap.parse_args()
 
     if not os.path.exists(args.corpus):
@@ -348,7 +383,8 @@ def main() -> None:
     playable = set(args.types.split(",")) if args.types else set(PLAYABLE)
     rep = Report()
     meta, questions = compile_dataset(args.corpus, args.questions, playable, rep,
-                                      names=(args.p1, args.p2))
+                                      names=(args.p1, args.p2),
+                                      include_mine=not args.no_mine)
 
     try:
         data = Dataset.model_validate({"meta": meta, "questions": questions})
@@ -357,9 +393,15 @@ def main() -> None:
         raise SystemExit(1)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    payload = data.model_dump(exclude_none=True)
+    for q in payload["questions"]:
+        # Only the exception travels. `histogram` is true for all but a couple
+        # of month questions, and writing it 120 times makes every recompile a
+        # hundred-line diff on a file that is in git.
+        if q.get("histogram") is True:
+            q.pop("histogram")
     with open(args.out, "w", encoding="utf-8") as f:
-        json.dump(data.model_dump(exclude_none=True), f,
-                  ensure_ascii=False, indent=1)
+        json.dump(payload, f, ensure_ascii=False, indent=1)
 
     # ── report ──
     qs = data.questions
@@ -379,6 +421,11 @@ def main() -> None:
             if args.verbose:
                 for i in ids:
                     print(f"       {D}{i}{X}")
+    hidden = [q.id for q in qs if not q.histogram]
+    if hidden:
+        print(f"  {D}histogram hidden on {len(hidden)} month question"
+              f"{'s' if len(hidden) > 1 else ''} the slider would answer{X}")
+
     if rep.warnings:
         print(f"\n{Y}warnings:{X}")
         for w in rep.warnings[:10]:

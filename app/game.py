@@ -367,6 +367,11 @@ class Game:
                 pub["options"] = q.options
             if q.unit is not None:
                 pub["unit"] = q.unit
+            # Only sent when it's off — the slider draws the histogram unless
+            # told not to, and a question whose answer is the density array
+            # would be giving itself away (schema.Question.histogram).
+            if not q.histogram:
+                pub["histogram"] = False
             if revealed:
                 pub["answer"] = q.answer
                 pub["reveal"] = q.reveal

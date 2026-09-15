@@ -509,6 +509,14 @@ RESOLVERS: dict[str, Callable] = {
 # Resolvers that want the whole lexicon table rather than one lexicon.
 WANTS_TABLE = {"busiest_month", "quietest_month"}
 
+# Resolvers whose answer is read straight off `meta.density` — the same array
+# the month slider draws as a histogram (PLAN S3.1). Drawing the picture next
+# to the question would be handing over the answer, so compile.py turns the
+# histogram off for exactly these. It happens to be the same set as
+# WANTS_TABLE today; it is written out separately because it is a different
+# fact about them, and the two will drift.
+FROM_DENSITY = {"busiest_month", "quietest_month"}
+
 # Resolvers whose spec key names a lexicon or phrase.
 WANTS_LEX = {"count", "count_phrase", "count_regex", "count_emoji",
              "who_says_more", "first_use", "first_use_sender", "days_until"}

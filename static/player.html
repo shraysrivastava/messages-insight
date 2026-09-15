@@ -44,6 +44,20 @@
 
   .slider-val{font-family:var(--mono);font-size:25px;font-weight:700;text-align:center}
 
+  /* The density histogram behind the month slider. One bar per month, height
+     by volume — she is sliding across a picture of the thread, and the spikes
+     are landmarks (PLAN S3.1). Bars are centred on the value they represent,
+     not laid out edge to edge, so bar i sits under the thumb at value i. */
+  .monthpick{position:relative;padding-top:6px}
+  .density{position:relative;height:56px;margin-bottom:-6px;pointer-events:none}
+  .density b{
+    position:absolute;bottom:0;transform:translateX(-50%);
+    background:rgba(239,231,222,.16);border-radius:2px 2px 0 0;
+    transition:background .18s ease,opacity .18s ease;
+  }
+  .density b.on{background:currentColor;opacity:.95}
+  .density b.near{background:rgba(239,231,222,.34)}
+
   .count{font-family:var(--display);font-weight:900;font-size:clamp(90px,32vw,150px);
     text-align:center;line-height:1;letter-spacing:-.05em;
     animation:tick .9s cubic-bezier(.2,1.2,.3,1) both}
@@ -282,8 +296,16 @@ function questionView() {
     const ends = h("div", "ends");
     ends.append(h("span", null, monthLabel(months[0])),
                 h("span", null, monthLabel(months[months.length - 1])));
-    const box = h("div");
-    box.append(out, sl, ends);
+
+    const hist = q.histogram === false ? null : density(months.length, tint);
+    if (hist) {
+      sl.addEventListener("input", () => hist.mark(parseInt(sl.value, 10)));
+      hist.mark(mid);
+    }
+
+    const box = h("div", "monthpick");
+    /* filter, not `hist && hist.el` — append(null) writes the text "null" */
+    box.append(...[out, hist && hist.el, sl, ends].filter(Boolean));
     kids.push(box);
     enable(mid);
   }
@@ -304,6 +326,37 @@ function questionView() {
 
   paint(...kids);
   runTimer(timer, fill);
+}
+
+/* One bar per month, scaled to the busiest one. Returns null when the dataset
+   predates `meta.density` — an older compile still plays, it just plays
+   without the picture. */
+function density(n, tint) {
+  const d = S.meta && S.meta.density;
+  if (!Array.isArray(d) || d.length !== n || n < 2) return null;
+
+  const peak = Math.max(...d, 1);
+  const el = h("div", "density");
+  el.style.color = tint;
+  const bars = d.map((v, i) => {
+    const b = h("b");
+    /* sqrt, not linear: one frantic month would otherwise flatten five years
+       into a single spike and a floor. */
+    b.style.height = Math.max(2, Math.round(Math.sqrt(v / peak) * 54)) + "px";
+    b.style.left = (i / (n - 1)) * 100 + "%";
+    b.style.width = Math.max(2, Math.floor(280 / n)) + "px";
+    el.append(b);
+    return b;
+  });
+
+  return {
+    el,
+    mark(i) {
+      bars.forEach((b, j) => {
+        b.className = j === i ? "on" : (Math.abs(j - i) <= 1 ? "near" : "");
+      });
+    },
+  };
 }
 
 function lockedView() {

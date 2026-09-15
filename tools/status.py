@@ -83,7 +83,9 @@ CHECKS = [
     (2, "S2.11", "fly.toml, scale-to-zero off",        lambda: _grep("fly.toml", r"auto_stop_machines\s*=\s*false")),
     (2, "S2.12", "fonts self-hosted",                  lambda: bool(glob.glob(p("static/fonts/*"))) or bool(glob.glob(p("poc/static/fonts/*")))),
 
-    (3, "S3.1", "density histogram",                   lambda: _grep("static/host.html", r"density") or _grep("poc/static/host.html", r"density")),
+    # The month slider is a phone input, so the histogram behind it is in
+    # player.html. This used to look in host.html and could never have fired.
+    (3, "S3.1", "density histogram",                   lambda: _grep("static/player.html", r"function density") or _grep("poc/static/player.html", r"density")),
     (3, "S3.2", "reveal choreography + context",       lambda: _grep("static/host.html", r"context") or _grep("poc/static/host.html", r"context")),
     (3, "S3.3", "locked / read-receipt state",         lambda: _grep("static/player.html", r"Delivered") or _grep("poc/static/player.html", r"Delivered")),
     (3, "S3.4", "app/superlatives.py",                 lambda: exists("app/superlatives.py")),

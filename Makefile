@@ -19,8 +19,11 @@ test:              ## run the test suite
 lint:              ## check questions/ and the compiled datasets
 	@$(PY) tools/validate.py datasets/demo.json
 
+# --no-mine is not optional. questions/mine.toml quotes the real thread; a demo
+# built from the fake corpus still leaks if it pulls those blocks in, and
+# datasets/demo.json is committed.
 demo: demo_corpus.json  ## build the safe fake dataset end to end
-	@$(PY) tools/compile.py --corpus demo_corpus.json --out datasets/demo.json
+	@$(PY) tools/compile.py --corpus demo_corpus.json --out datasets/demo.json --no-mine
 
 demo_corpus.json:
 	@$(PY) tools/make_demo_corpus.py --out demo_corpus.json

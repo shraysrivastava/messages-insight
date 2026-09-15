@@ -230,6 +230,7 @@
    "answer": 7,
    "area": "archive",
    "format": "bubble",
+   "histogram": false,
    "origin": "auto",
    "topic": "quietest-month"
   },

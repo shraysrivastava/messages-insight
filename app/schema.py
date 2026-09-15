@@ -89,6 +89,11 @@ class Question(BaseModel):
     area: str | None = None
     format: QFormat = "bubble"
 
+    # The month slider draws `meta.density` behind it. A question whose answer
+    # *is* that array ("which month did we text the least?") must not, or the
+    # picture answers it. compile.py sets this from the resolver.
+    histogram: bool = True
+
     # Provenance, carried through so the dealer can prefer authored questions
     # and the history log can say where a round came from.
     origin: Literal["mine", "auto"] = "auto"

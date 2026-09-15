@@ -199,3 +199,17 @@ def test_snapshot_never_leaks_the_answer_before_the_reveal(game):
 
 def test_snapshot_hides_the_question_in_the_lobby(game):
     assert game.snapshot()["question"] is None
+
+
+def test_the_histogram_flag_only_travels_when_it_is_off(game):
+    """The slider draws the density picture unless told not to, so the common
+    case costs nothing on the wire and an old client just draws it."""
+    game.deck = [Q(type="month", answer=3)]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    assert "histogram" not in game.snapshot(now=1001.0)["question"]
+
+    game.deck = [Q(type="month", answer=3, histogram=False)]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    assert game.snapshot(now=1001.0)["question"]["histogram"] is False

@@ -1,7 +1,12 @@
 """The pipeline: dedup, guards, templating."""
+import json
+import os
+import tomllib
+
 import pytest
 
-from tools.compile import Report, build_context, dedupe, guard, render
+from tools.compile import (ROOT, Report, build_context, dedupe, guard,
+                           load_questions, render, shows_histogram)
 from tools.resolvers import Resolution
 
 
@@ -96,3 +101,69 @@ def test_context_resolves_an_index_answer_to_its_option_text():
     ctx = build_context({"p1": "Shray", "p2": "Nilu", "total": 10},
                         res, {"type": "binary"}, ["Shray", "Nilu"])
     assert ctx["answer"] == "Nilu"
+
+
+# ── the month histogram (S3.1) ────────────────────────────────────────────
+
+def test_a_question_answered_by_the_density_table_hides_the_histogram():
+    """"Which month did we text the least?" is free if the picture is drawn."""
+    assert not shows_histogram({"type": "month"}, {"quietest_month": True})
+    assert not shows_histogram({"type": "month"}, {"busiest_month": True})
+
+
+def test_an_ordinary_month_question_keeps_its_histogram():
+    assert shows_histogram({"type": "month"}, {"first_use": "i_love_you"})
+
+
+def test_only_month_questions_are_affected():
+    assert shows_histogram({"type": "number"}, {"quietest_month": True})
+
+
+def test_an_author_can_turn_it_off_by_hand():
+    assert not shows_histogram({"type": "month", "histogram": False}, None)
+
+
+def test_a_question_with_no_resolver_keeps_its_histogram():
+    """A curated question has a source, not a spec. It is not density-derived."""
+    assert shows_histogram({"type": "month"}, None)
+
+
+def test_a_narrowed_density_question_keeps_its_histogram():
+    """The busiest month *for work stress* is not the busiest month. The
+    whole-thread picture does not answer it."""
+    assert shows_histogram({"type": "month"},
+                           {"busiest_month": True, "within": "work"})
+
+
+# ── the demo dataset is handed to people (CLAUDE.md, Privacy) ─────────────
+
+def test_the_demo_build_leaves_your_own_questions_out(tmp_path):
+    """`mine.toml` quotes the real thread verbatim. A demo built from the fake
+    corpus still leaks if the question bank carries those blocks through."""
+    (tmp_path / "auto").mkdir()
+    (tmp_path / "mine.toml").write_text(
+        '[[q]]\nid="m1"\ntype="binary"\nkind="k"\nprompt="p"\nreveal="r"\n')
+    (tmp_path / "auto" / "a.toml").write_text(
+        '[[q]]\nid="a1"\ntype="binary"\nkind="k"\nprompt="p"\nreveal="r"\n')
+
+    both = load_questions(str(tmp_path))
+    assert sorted(q["id"] for q in both) == ["a1", "m1"]
+
+    auto_only = load_questions(str(tmp_path), include_mine=False)
+    assert [q["id"] for q in auto_only] == ["a1"]
+
+
+def test_the_committed_demo_dataset_carries_nothing_of_yours():
+    """A regression guard on the file itself, not the builder. This is the one
+    dataset in git, and `make demo` rewrites it."""
+    with open(os.path.join(ROOT, "datasets", "demo.json"), encoding="utf-8") as f:
+        demo = json.load(f)
+    assert [q["id"] for q in demo["questions"] if q.get("origin") == "mine"] == []
+
+    mine = os.path.join(ROOT, "questions", "mine.toml")
+    if not os.path.exists(mine):
+        return                              # not checked out here; nothing to compare
+    with open(mine, "rb") as f:
+        yours = {q.get("text") for q in tomllib.load(f).get("q", []) if q.get("text")}
+    shipped = {q.get("text") for q in demo["questions"] if q.get("text")}
+    assert not (yours & shipped), "a curated message reached the demo dataset"
