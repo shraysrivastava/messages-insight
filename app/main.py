@@ -73,6 +73,7 @@ from fastapi.staticfiles import StaticFiles
 from app.datasets import Library, Locked
 from app.game import DealRules, Game
 from app.schema import Dataset, load
+from app.superlatives import as_dict, award
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(ROOT, "static")
@@ -99,6 +100,10 @@ class Room:
         self.heart: asyncio.Task | None = None
         self.host_token = secrets.token_urlsafe(12)
         self.host_claimed = False
+        # Computed once when the game ends, not on every broadcast — the final
+        # screen re-renders as the award cards deal, and 20 evaluators over the
+        # whole log is not work to repeat sixty times.
+        self.awards: list[dict] = []
 
     # ── talking ───────────────────────────────────────────────────────────
 
@@ -119,6 +124,8 @@ class Room:
         nowhere else; a socket that hasn't proved it's the host must not be
         handed the very thing that would let it join."""
         snap = self.game.snapshot()
+        if snap["phase"] == "final":
+            snap["awards"] = self.awards
         if not meta or meta.get("role") != "host":
             snap["code"] = None
             return snap
@@ -193,12 +200,17 @@ class Room:
         else:
             self.cancel()
             self.game.finish()
+            self.awards = [as_dict(a) for a in award(
+                self.game.log,
+                {pid: p.name for pid, p in self.game.players.items()},
+                seconds=self.game.seconds)]
             await self.broadcast()
 
     async def restart(self) -> None:
         """Play again with the same people, the same names, the same colours —
         and a fresh deck, because `deal()` re-rolls."""
         self.cancel()
+        self.awards = []
         keep = {pid: (p.name, p.color) for pid, p in self.game.players.items()}
         self.game.reset()
         for pid, (name, color) in keep.items():
@@ -213,6 +225,7 @@ class Room:
         your mind about which game to play would be its own small disaster.
         """
         old = self.game
+        self.awards = []
         fresh = Game(data, rounds=old.rounds if old.rounds != len(old.bank) else None,
                      seconds=old.seconds, rules=old.rules, rng=old.rng)
         fresh.code = old.code

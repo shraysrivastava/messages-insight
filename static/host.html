@@ -115,6 +115,23 @@
     font-family:var(--mono);font-size:16px;color:var(--muted);
   }
 
+  /* superlatives — dealt one at a time, ~2s apart (DESIGN 2.9) */
+  .awards{margin-top:34px;width:100%;max-width:960px}
+  .awards .eyebrow{text-align:center;margin-bottom:14px}
+  .awardrow{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+  .award{
+    flex:0 1 300px;background:var(--raised);border-radius:18px;padding:16px 18px;
+    border-left:4px solid var(--muted);text-align:left;
+  }
+  .award.dealing{animation:deal .6s cubic-bezier(.2,1.1,.3,1) both}
+  @keyframes deal{
+    from{opacity:0;transform:translateY(26px) rotate(-2deg) scale(.94)}
+    to{opacity:1;transform:none}
+  }
+  .award .ttl{font-family:var(--display);font-weight:900;font-size:21px;
+    letter-spacing:-.01em;margin-bottom:4px}
+  .award .ev{font-size:14px;color:var(--muted);line-height:1.45}
+
   .controls{display:flex;gap:14px;align-items:center}
   .controls button{width:auto;min-width:190px}
   .hint{color:var(--muted);font-size:14px}
@@ -364,6 +381,39 @@ function reveal() {
   return rows[0];
 }
 
+/* The awards land after the podium, one every couple of seconds. `dealt`
+   survives re-renders so a phone dropping off mid-ceremony doesn't restart
+   the whole run — a card that has already landed stays landed. */
+const dealt = new Set();
+
+function awardCards() {
+  const list = (S.awards || []);
+  if (!list.length) return null;
+
+  const box = h("div", "awards");
+  box.append(h("div", "eyebrow", list.length === 1 ? "one award" : "the awards"));
+  const row = h("div", "awardrow");
+
+  list.forEach((a, i) => {
+    const card = h("div", "award");
+    const who = a.winners
+      .map(id => (S.players.find(p => p.id === id) || {}).color)
+      .filter(Boolean);
+    card.style.borderLeftColor = who[0] || "var(--muted)";
+
+    if (!dealt.has(a.key)) {
+      card.classList.add("dealing");
+      card.style.animationDelay = (0.6 + i * 2) + "s";
+      setTimeout(() => dealt.add(a.key), 600 + i * 2000);
+    }
+    card.append(h("div", "ttl", a.title), h("div", "ev", a.evidence));
+    row.append(card);
+  });
+
+  box.append(row);
+  return box;
+}
+
 function final() {
   const order = S.players.slice();
   const top = order[0] ? order[0].score : 0;
@@ -395,7 +445,7 @@ function final() {
   const controls = h("div", "controls");
   controls.append(again);
 
-  return main(head, sub, podium, controls);
+  return main(head, sub, podium, awardCards(), controls);
 }
 
 /* ------------------------------------------------------------------ timer  */
