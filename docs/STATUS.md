@@ -20,16 +20,15 @@ python3 tools/status.py --bank      just the question bank
 
 ## ▶ Resume here
 
-**Stages 1 and 2 are code-complete.** Everything a script can do is done. The
-one thing standing between this repo and a played game is a deploy, and that
-needs you.
+**Every build task in the plan is done except one, and that one is yours.**
+`tools/status.py` reads 44/45. The missing check is `S2.7`,
+`datasets/real.json.enc`, which needs a passphrase only you can choose.
 
 **Two commands, in this order, and the order matters:**
 
-1. **`make seal`** — needs a passphrase, which only you can choose. Writes
-   `datasets/real.json.enc` (`S2.7`) and backs up `mine.toml` at the same
-   time. Both `.enc` files then want a `git add`; neither has ever been
-   committed, so your eight authored questions still have no version control.
+1. **`make seal`** — writes `datasets/real.json.enc` and backs up `mine.toml`
+   at the same time. Both `.enc` files then want a `git add`; neither has ever
+   been committed, so your authored questions still have no version control.
 2. **`flyctl auth login`**, then `fly apps create read-receipts`,
    `fly deploy`, then **`fly scale count 1`** — not optional: the lobby, the
    deck, the scores and the decrypted dataset all live in one process's
@@ -39,35 +38,46 @@ Seal *before* deploy. `COPY datasets/` picks up the ciphertext and
 `.dockerignore` blocks only the plaintext, so an image built before sealing
 ships without the real dataset and the Real button never appears.
 
-**Content — yours, and still the critical path.** The bank is 122 shippable
-but only **8 are yours** (3 of them curated), and the dealer wants 9 of every
-14 rounds from `mine.toml`. It backfills from `auto/` when yours run short, so
-the game works either way — it is just less yours.
+### What the game does now
 
-1. `make curate`. <kbd>J</kbd> reject, <kbd>K</kbd> accept, <kbd>E</kbd> edit,
-   <kbd>S</kbd> to search the whole thread and mint from any message in it.
-   Half an hour of this is a game.
-2. Fill `lex.pet_names` and `lex.inside_jokes` in `questions/lexicons.toml` —
-   turns on 3 questions immediately, and every inside-joke phrase after that
-   is a free `month` question.
-3. Dump raw ideas into `questions/inbox.md` in plain English. They come back
-   as finished `mine.toml` blocks.
+Stages 3 and 4 are code-complete. Everything below was built against the demo
+corpus and driven in a real browser; none of it needs a single real question
+to work, and all of it lights up the moment real ones arrive.
 
-**Stage 3 is 7/12.** The density histogram (`S3.1`), the read receipt
-(`S3.3`), the superlatives (`S3.4`/`S3.5`) and the reveal choreography are in
-and driven in a browser. The one thing left is the second half of `S3.2`, the
-context thread — it needs the pipeline to carry context, and nothing does
-today: `curate.py` captures ±5 messages and throws them away at mint time.
+- **Lobby** — "Previously on Read Receipts": head-to-head record, a card per
+  past game, an all-time line (biggest round, repeated awards, questions seen
+  so you can tell when the bank is going stale). Cards open that game's reel.
+- **Question** — options stagger in; the month slider has the density
+  histogram behind it, which is suppressed on the questions it would answer.
+- **Locked** — your answer as a sent bubble, `Delivered`, then
+  `Read 9:42 PM` when she locks in. The host sees `locked in 3.2s`, never
+  whether it was right.
+- **Reveal** — 450ms of silence, the answer resolves, the real conversation
+  around the message slides in as a thread with the source lit, the truth
+  types out behind an indicator, the rope moves and the points land.
+- **Podium** — confetti, a crown, the score graph with lead-change pips and
+  the biggest round annotated, four to six awards dealt as cards, and
+  **[ Replay the receipts ]**.
+- **Sound** — synthesised, host only, mute in the top bar.
 
-**Before designing new question formats, run `make chats` — sorry,
-`./.venv/bin/python tools/extract.py --schema` — in Terminal.app.** It reports
-which columns this macOS's `chat.db` actually has. Several formats worth
-wanting are not reachable from the current SQL: `date_read`/`date_delivered`
-(how long you left each other on read — the game is named after it), tapbacks
-(`associated_message_type`, currently filtered out), edited and unsent
-messages, replies, send effects, voice notes. Re-extraction is yours to run,
-so it is worth knowing what is there before the bank gets written against
-what isn't.
+### Content is now the only critical path
+
+The bank is 122 shippable but only **8 are yours** (3 curated), and the dealer
+wants 9 of every 14 rounds from `mine.toml`. It backfills from `auto/`, so the
+game works either way — it is just less yours.
+
+**Before writing formats, run this in Terminal.app:**
+
+```
+./.venv/bin/python tools/extract.py --schema
+```
+
+It reports which columns this macOS's `chat.db` actually has. Several formats
+worth wanting are not reachable from the current SQL: `date_read` and
+`date_delivered` (how long you left each other on read — the game is named
+after it), tapbacks, edited and unsent messages, replies, send effects, voice
+notes. Re-extraction is yours to run, so it is worth knowing what is there
+before the bank is written against what isn't.
 
 **Spoilers.** You are a player. `make real` and any server pointed at
 `datasets/real.json` put the whole deck on screen; `make status`,
@@ -80,12 +90,15 @@ press Start. No question text appears before round one.
 - `questions/mine.toml` is gitignored and unbacked-up until `make seal` runs
   *and* the resulting `.enc` is committed. The passphrase exists nowhere but
   your head — `M5.2` is the checkbox for that.
+- **History is unreadable until the passphrase is typed.** Every line of
+  `data/history.jsonl` is ciphertext under the key the dataset unlock derives
+  (DESIGN §4). The lobby shelf is therefore empty on a cold boot and fills
+  when you unlock Real. That is the trade, and it is deliberate.
+- **Fly needs a volume for history to survive a deploy.** `data/` is on the
+  machine's disk. Without `fly volumes create`, every deploy forgets the past
+  games. Not urgent before the first game; urgent before the second.
 - The friend-thread test data is in `corpus.json` / `datasets/test.json`. Both
   gitignored. Re-running `make corpus` with her identifier overwrites it.
-- `make demo` used to pull `mine.toml` into the committed demo dataset once a
-  curate session had run. Fixed with `--no-mine` and two tests, but it is the
-  shape of mistake to keep watching for: anything committed that is built from
-  `questions/`.
 
 ---
 
@@ -152,6 +165,26 @@ lied to is worse than a red one.
 
 ---
 
+## Drift from the plan
+
+Where the build diverged from `PLAN.md` / `DESIGN.md`, and why. Nothing here
+was a silent change; each one is in a commit message too.
+
+| Drift | Why |
+| --- | --- |
+| `static/sound.js` is a new file; `static/sounds/` never existed | Every cue is synthesised from oscillators. No assets to vendor, nothing to 404 on the night. `status.py`'s `S4.5` check looked for audio files and could never have fired |
+| `S4.7` is a protocol-level smoke test, not Playwright | Playwright isn't installed and a headless Chrome in the unit suite is minutes plus a standing flake budget. `tests/test_smoke.py` plays a whole game through `Room` in 0.4s; the rendering is verified with the CDP harness by hand. The check is renamed to match |
+| `curve()` lives in `superlatives.py`, not its own module | `Tally.running()` already computed the cumulative score. A second file working it out separately is how the graph and the awards start disagreeing about who won |
+| The data contract grew five fields | `Question.histogram` and `Question.context` (+ `ContextMsg`); `RoundRecord.options` and `.context`; `players[].took` on the wire. HANDOVER §2 is still the shape, these are additions to it, each with a comment saying what breaks without it |
+| `READ_BEAT` — a new 1.2s pause between the last answer and the reveal | Without it the round closed on the same tick the second person answered, and the `Delivered` → `Read` flip happened on a screen already being replaced. The screen the game is named after was unreachable |
+| `{t:"reel", id}` added to the protocol | The reel needs a past game's whole round log, which is far too big to put in every state broadcast |
+| `compile.py --no-mine`, and `make demo` passes it | `make demo` was pulling curated real messages into the committed demo dataset once a curate session had run. It never reached git; two tests now hold the line |
+| `extract.py --schema` is new | Designing a question format that needs a column this macOS lacks is a format that can't ship. Finding that out after writing twenty questions is the expensive order |
+| `status.py` S3.1 check moved from `host.html` to `player.html` | The month slider is a phone input. The check could never have fired |
+| History is encrypted per line | DESIGN §4 offered the choice and recommended it. A summary carries its round log and a round log carries real message text; a plaintext history beside a sealed dataset would undo what `seal.py` is for |
+
+---
+
 ## Blocked / decisions outstanding
 
 Keep this honest. An empty list is the goal.
@@ -204,4 +237,19 @@ remember whether something got done.
 2026-09-14  M2.7 verified properly: every `text` field in mine.toml and
             real.json checked against the whole `git log --all -p`. No
             message text has ever been committed.
+2026-09-15  S3.3 the read receipt, and the READ_BEAT that makes it reachable.
+            extract.py --schema written so the question formats can be
+            designed against what chat.db actually has.
+2026-09-15  STAGE 4 BUILD COMPLETE. Score graph (S4.1), history.py with
+            encrypted lines (S4.2), the lobby shelf (S4.3), the receipts reel
+            (S4.4), a synthesised soundtrack plus confetti and a crown
+            (S4.5), and a whole-game smoke test (S4.7). 262 tests green.
+2026-09-15  S3.2 finished: the context thread. curate.py had been capturing
+            the conversation around each message and throwing it away at mint
+            time; it now bakes it, and compile.py attaches it to generated
+            questions from the resolver's source index. The reveal and the
+            reel both show it.
+2026-09-15  Standings redrawn as the tug of war DESIGN 2.6 asked for, and the
+            phone's verdicts now know what type of question you got wrong.
+            44/45 — the only open check is S2.7, which needs the passphrase.
 ```
