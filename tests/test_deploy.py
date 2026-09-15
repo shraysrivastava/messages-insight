@@ -6,6 +6,7 @@ it is exactly the kind of thing that gets found at 8pm on the night rather than
 here.
 """
 import ast
+import fnmatch
 import os
 import re
 
@@ -24,8 +25,39 @@ def dockerfile():
         return f.read()
 
 
+def dockerignore() -> list[tuple[str, bool]]:
+    """The .dockerignore patterns, as (pattern, is_negation). Only the forms
+    the file actually uses — plain paths, `*.ext` globs, `dir/`, and `!keep`."""
+    out = []
+    with open(os.path.join(ROOT, ".dockerignore"), encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            neg = line.startswith("!")
+            out.append((line.lstrip("!").rstrip("/"), neg))
+    return out
+
+
+def ignored(path: str, patterns: list[tuple[str, bool]]) -> bool:
+    """Docker applies every pattern in order; the last match wins, so a later
+    `!tools/seal.py` rescues a file an earlier `tools/` excluded."""
+    verdict = False
+    for pattern, neg in patterns:
+        hit = (fnmatch.fnmatch(path, pattern)
+               or fnmatch.fnmatch(os.path.basename(path), pattern)
+               or path.startswith(pattern + "/"))
+        if hit:
+            verdict = not neg
+    return verdict
+
+
 def copied_paths() -> set[str]:
-    """Every repo path the Dockerfile puts in the image."""
+    """Every repo path the Dockerfile actually puts in the image — COPY minus
+    what .dockerignore withholds from the build context. Both halves matter:
+    `COPY datasets/` is only safe because the plaintext real dataset is
+    excluded, and this is the test that notices if either side changes."""
+    patterns = dockerignore()
     out: set[str] = set()
     for line in COPY.findall(dockerfile()):
         parts = line.split()
@@ -37,7 +69,7 @@ def copied_paths() -> set[str]:
                         out.add(os.path.relpath(os.path.join(base, f), ROOT))
             elif os.path.exists(full):
                 out.add(os.path.relpath(full, ROOT))
-    return out
+    return {p for p in out if not ignored(p, patterns)}
 
 
 def first_party_imports(path: str) -> set[str]:
