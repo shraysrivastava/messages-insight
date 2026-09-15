@@ -339,3 +339,50 @@ def test_the_wire_shape_is_json_ready():
     d = as_dict(award(log, NAMES)[0])
     assert set(d) == {"key", "title", "winners", "evidence"}
     assert isinstance(d["winners"], list)
+
+
+# ── the score graph (S4.1) ────────────────────────────────────────────────
+
+def test_the_curve_is_the_running_score_per_player():
+    log = [rec(0, a=res(points=900), b=res(points=100)),
+           rec(1, a=res(points=200), b=res(points=800))]
+    c = S.curve(log, NAMES)
+    assert {l.name: l.points for l in c.lines} == {"Shray": (900, 1100),
+                                                   "Nilu": (100, 900)}
+    assert c.rounds == 2 and c.high == 1100
+
+
+def test_a_lead_change_is_recorded_where_it_happens():
+    log = [rec(0, a=res(points=900), b=res(points=100)),     # Shray ahead
+           rec(1, a=res(points=0, accuracy=0.0), b=res(points=1000))]  # Nilu takes it
+    assert S.curve(log, NAMES).leads == (1,)
+
+
+def test_level_is_nobody_leading_not_a_lead_change():
+    """Drawing level and then retaking the lead is one change, not two, or a
+    close game comes out as a dotted line."""
+    log = [rec(0, a=res(points=900), b=res(points=100)),
+           rec(1, a=res(points=100), b=res(points=900)),      # level at 1000
+           rec(2, a=res(points=900), b=res(points=100))]      # Shray again
+    assert S.curve(log, NAMES).leads == ()
+
+
+def test_the_biggest_round_of_the_game_is_annotated():
+    log = [rec(0, a=res(points=400), b=res(points=100)),
+           rec(1, a=res(points=120), b=res(points=980)),
+           rec(2, a=res(points=300), b=res(points=100))]
+    c = S.curve(log, NAMES)
+    assert (c.best_round, c.best_pid, c.best_points) == (1, "b", 980)
+
+
+def test_an_empty_log_makes_an_empty_curve():
+    c = S.curve([], NAMES)
+    assert c.rounds == 0 and c.leads == () and c.best_pid is None and c.high == 0
+
+
+def test_the_curve_wire_shape_is_json_ready():
+    log = [rec(0, a=res(points=900), b=res(points=100))]
+    d = S.curve_dict(S.curve(log, NAMES))
+    assert set(d) == {"rounds", "lines", "leads", "best", "high"}
+    assert d["lines"][0]["points"] == [900]
+    import json; json.dumps(d)

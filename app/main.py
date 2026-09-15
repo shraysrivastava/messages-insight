@@ -73,7 +73,7 @@ from fastapi.staticfiles import StaticFiles
 from app.datasets import Library, Locked
 from app.game import DealRules, Game
 from app.schema import Dataset, load
-from app.superlatives import as_dict, award
+from app.superlatives import as_dict, award, curve, curve_dict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(ROOT, "static")
@@ -111,6 +111,7 @@ class Room:
         # screen re-renders as the award cards deal, and 20 evaluators over the
         # whole log is not work to repeat sixty times.
         self.awards: list[dict] = []
+        self.curve: dict | None = None
 
     # ── talking ───────────────────────────────────────────────────────────
 
@@ -133,6 +134,7 @@ class Room:
         snap = self.game.snapshot()
         if snap["phase"] == "final":
             snap["awards"] = self.awards
+            snap["curve"] = self.curve
         if not meta or meta.get("role") != "host":
             snap["code"] = None
             return snap
@@ -216,17 +218,17 @@ class Room:
         else:
             self.cancel()
             self.game.finish()
+            names = {pid: p.name for pid, p in self.game.players.items()}
             self.awards = [as_dict(a) for a in award(
-                self.game.log,
-                {pid: p.name for pid, p in self.game.players.items()},
-                seconds=self.game.seconds)]
+                self.game.log, names, seconds=self.game.seconds)]
+            self.curve = curve_dict(curve(self.game.log, names))
             await self.broadcast()
 
     async def restart(self) -> None:
         """Play again with the same people, the same names, the same colours —
         and a fresh deck, because `deal()` re-rolls."""
         self.cancel()
-        self.awards = []
+        self.awards, self.curve = [], None
         keep = {pid: (p.name, p.color) for pid, p in self.game.players.items()}
         self.game.reset()
         for pid, (name, color) in keep.items():
@@ -241,7 +243,7 @@ class Room:
         your mind about which game to play would be its own small disaster.
         """
         old = self.game
-        self.awards = []
+        self.awards, self.curve = [], None
         fresh = Game(data, rounds=old.rounds if old.rounds != len(old.bank) else None,
                      seconds=old.seconds, rules=old.rules, rng=old.rng)
         fresh.code = old.code

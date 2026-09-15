@@ -155,6 +155,23 @@
                  100%{opacity:1;transform:none}}
   .controls.chor{animation:fadeup .4s ease both}
 
+  /* the score graph (DESIGN 2.8). Raw SVG — a charting library for two
+     polylines is payload nobody asked for. */
+  .graph{margin-top:30px;width:100%;max-width:960px}
+  .graph svg{width:100%;height:auto;display:block;overflow:visible}
+  .graph .gl{stroke:var(--line);stroke-width:1}
+  .graph path.ln{
+    fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
+    animation:draw 1.25s cubic-bezier(.4,0,.2,1) both;
+  }
+  @keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+  .graph .lead{animation:pip .4s cubic-bezier(.2,1.4,.3,1) both}
+  @keyframes pip{from{opacity:0;r:0}to{opacity:1}}
+  .graph text{font-family:var(--mono);font-size:13px;fill:var(--muted)}
+  .graph text.end{font-size:15px;font-weight:700}
+  .graph text.note{font-size:12px;fill:var(--cream)}
+  .graph .fade{animation:fadeup .5s ease both}
+
   /* superlatives — dealt one at a time, ~2s apart (DESIGN 2.9) */
   .awards{margin-top:34px;width:100%;max-width:960px}
   .awards .eyebrow{text-align:center;margin-bottom:14px}
@@ -453,6 +470,104 @@ function reveal() {
   return rows[0];
 }
 
+/* ------------------------------------------------------------ score graph */
+
+const NS = "http://www.w3.org/2000/svg";
+function sv(tag, attrs) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+
+/* Two lines, one per player, the rounds across the bottom. Lead changes get a
+   pip; the biggest single round of the night gets a label. The whole thing is
+   the "cool history of the game" in one image, and the thing worth
+   screenshotting (DESIGN 2.8). */
+function scoreGraph() {
+  const c = S.curve;
+  if (!c || c.rounds < 2 || !c.lines.length) return null;
+
+  const W = 900, H = 280, L = 10, R = 104, T = 22, B = 30;
+  const top = Math.max(c.high, 1) * 1.1;
+  const x = i => L + (i / (c.rounds - 1)) * (W - L - R);
+  const y = v => T + (1 - v / top) * (H - T - B);
+  const colour = pid => (S.players.find(p => p.id === pid) || {}).color
+                        || "var(--muted)";
+
+  const g = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+                        "aria-label": "Score by round" });
+
+  // a few horizontal rules, enough to read height by and no more
+  for (let k = 0; k <= 3; k++) {
+    const v = (top / 3) * k;
+    g.append(sv("line", { class: "gl", x1: L, x2: W - R, y1: y(v), y2: y(v) }));
+  }
+
+  // round numbers: first, last, and the quarters — 14 labels is noise
+  for (let i = 0; i < c.rounds; i++) {
+    if (i !== 0 && i !== c.rounds - 1 && i % Math.ceil(c.rounds / 5)) continue;
+    const t = sv("text", { x: x(i), y: H - 8, "text-anchor": "middle" });
+    t.textContent = i + 1;
+    g.append(t);
+  }
+
+  c.lines.forEach((ln, k) => {
+    const pts = ln.points.map((v, i) => [x(i), y(v)]);
+    const d = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " +
+                                p[1].toFixed(1)).join(" ");
+    const path = sv("path", { class: "ln", d, stroke: colour(ln.pid) });
+    /* Rough is fine: the dash only has to be longer than the path for the
+       draw-on to start off screen. */
+    const len = Math.round(W * 1.6);
+    path.style.setProperty("--len", len);
+    path.style.strokeDasharray = len;
+    path.style.animationDelay = (0.25 + k * 0.18) + "s";
+    g.append(path);
+
+    const last = pts[pts.length - 1];
+    const name = sv("text", { class: "end fade", x: last[0] + 12,
+                              y: last[1] - 4, fill: colour(ln.pid) });
+    name.textContent = ln.name;
+    const score = sv("text", { class: "fade", x: last[0] + 12, y: last[1] + 14 });
+    score.textContent = ln.points[ln.points.length - 1].toLocaleString();
+    for (const el of [name, score]) el.style.animationDelay = "1.5s";
+    g.append(name, score);
+  });
+
+  // where the game turned over
+  c.leads.forEach((i, k) => {
+    const ln = c.lines.find(l => {
+      const best = Math.max(...c.lines.map(z => z.points[i]));
+      return l.points[i] === best;
+    });
+    if (!ln) return;
+    const dot = sv("circle", { class: "lead", cx: x(i), cy: y(ln.points[i]),
+                               r: 6, fill: "var(--night)",
+                               stroke: colour(ln.pid), "stroke-width": 3 });
+    dot.style.animationDelay = (1.5 + k * 0.12) + "s";
+    g.append(dot);
+  });
+
+  // the biggest single round of the night
+  if (c.best && c.best.points > 0 && c.rounds > 2) {
+    const ln = c.lines.find(l => l.pid === c.best.pid);
+    if (ln) {
+      const i = c.best.round;
+      const up = y(ln.points[i]) > 60;
+      const note = sv("text", { class: "note fade", x: x(i),
+                                y: y(ln.points[i]) + (up ? -16 : 26),
+                                "text-anchor": "middle" });
+      note.textContent = `+${c.best.points.toLocaleString()}`;
+      note.style.animationDelay = "1.7s";
+      g.append(note);
+    }
+  }
+
+  const box = h("div", "graph");
+  box.append(h("div", "eyebrow", "how it went"), g);
+  return box;
+}
+
 /* The awards land after the podium, one every couple of seconds. `dealt`
    survives re-renders so a phone dropping off mid-ceremony doesn't restart
    the whole run — a card that has already landed stays landed. */
@@ -517,7 +632,7 @@ function final() {
   const controls = h("div", "controls");
   controls.append(again);
 
-  return main(head, sub, podium, awardCards(), controls);
+  return main(head, sub, podium, scoreGraph(), awardCards(), controls);
 }
 
 /* ------------------------------------------------------------------ timer  */

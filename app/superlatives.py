@@ -3,8 +3,11 @@
 superlatives.py — the end-of-game awards, computed from the round log.
 
 `Game.grade()` appends a `RoundRecord` for every round and nothing reads it
-during play. This is the first thing that does. Everything here is a pure
-function over `list[RoundRecord]`: no clock, no sockets, no `Game`. That is
+during play. This is the first thing that does — the awards, and `curve()`,
+which is the same log read as a shape instead of a verdict (`S4.1`). They
+share `Tally`, which already had to compute a running score to know who was
+ever ahead. Everything here is a pure function over `list[RoundRecord]`: no
+clock, no sockets, no `Game`. That is
 deliberate — an award that misfires on the night is worse than no award, and
 the only way to know it doesn't is to run it against a log you wrote by hand.
 
@@ -547,3 +550,74 @@ def as_dict(a: Award) -> dict[str, Any]:
     """The wire shape. The host screen deals these as cards."""
     return {"key": a.key, "title": a.title, "winners": list(a.winners),
             "evidence": a.evidence}
+
+
+# ── the score graph (S4.1) ────────────────────────────────────────────────
+#
+# Lives here rather than in a module of its own because `Tally.running()` is
+# exactly the series it needs, and a second file computing the same cumulative
+# scores is how the graph and the awards start disagreeing about who won.
+
+
+@dataclass(frozen=True)
+class Line:
+    pid: str
+    name: str
+    points: tuple[int, ...]          # cumulative, one per round played
+
+
+@dataclass(frozen=True)
+class Curve:
+    """Everything the SVG needs, already decided. The client draws; it does not
+    work out who was leading."""
+    rounds: int
+    lines: tuple[Line, ...]
+    leads: tuple[int, ...]           # rounds where the lead changed hands
+    best_round: int | None           # the biggest single round of the game
+    best_pid: str | None
+    best_points: int
+    high: int                        # the y axis, i.e. the winning score
+
+
+def curve(log: list[RoundRecord], names: dict[str, str]) -> Curve:
+    t = Tally(log=list(log), names=dict(names), seconds=0.0)
+    run = t.running()
+    lines = tuple(Line(pid=pid, name=t.name(pid), points=tuple(run[pid]))
+                  for pid in t.pids)
+
+    # A lead change is a change in *who* is ahead, and level is nobody. Coming
+    # back to level and then retaking it is one change, not two, or a close
+    # game turns into a dotted line.
+    leads: list[int] = []
+    prev: str | None = None
+    for i in range(len(log)):
+        who = t.leader_after(i)
+        if who is not None and prev is not None and who != prev:
+            leads.append(i)
+        if who is not None:
+            prev = who
+
+    best_round = best_pid = None
+    best_points = 0
+    for r in log:
+        for pid in t.pids:
+            pts = t.points(r, pid)
+            if pts > best_points:
+                best_points, best_round, best_pid = pts, r.index, pid
+
+    high = max((l.points[-1] for l in lines if l.points), default=0)
+    return Curve(rounds=len(log), lines=lines, leads=tuple(leads),
+                 best_round=best_round, best_pid=best_pid,
+                 best_points=best_points, high=high)
+
+
+def curve_dict(c: Curve) -> dict[str, Any]:
+    return {
+        "rounds": c.rounds,
+        "lines": [{"pid": l.pid, "name": l.name, "points": list(l.points)}
+                  for l in c.lines],
+        "leads": list(c.leads),
+        "best": ({"round": c.best_round, "pid": c.best_pid,
+                  "points": c.best_points} if c.best_pid else None),
+        "high": c.high,
+    }
