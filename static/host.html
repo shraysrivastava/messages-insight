@@ -804,8 +804,10 @@ function drawReel() {
     const row = h("div", "rnd");
     row.append(h("div", "no", `${i + 1} · ${r.kind}`));
     row.append(h("div", "q", r.prompt));
-    if (r.text) row.append(h("div", "msg", r.text));
+    /* Same rule as the reveal: when the thread carries this message in place,
+       showing it above as well reads as a repeat. */
     const ctx = thread(r.context, false);
+    if (r.text && !ctx) row.append(h("div", "msg", r.text));
     if (ctx) row.append(ctx);
     /* Who said what, but never who won it. The scoring is the part we are
        deliberately leaving behind. */
