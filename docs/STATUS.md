@@ -20,66 +20,62 @@ python3 tools/status.py --bank      just the question bank
 
 ## ▶ Resume here
 
-**Stage 1 is closed.** The whole pipeline is proven on a real thread: 7,640
-messages extracted, 43 questions compiled, a full game played in the browser.
+**Stages 1 and 2 are code-complete.** Everything a script can do is done. The
+one thing standing between this repo and a played game is a deploy, and that
+needs you.
 
-**`curate.py` is built** (`S2.1`), which unblocks the content track. Stage 2 is
-now two tracks that run in parallel:
+**Two commands, in this order, and the order matters:**
 
-**Content — yours, and the critical path.** The bank is 119 shippable but
-**0 from `mine.toml`**, and the dealer wants 9 of every 14 rounds to be yours.
+1. **`make seal`** — needs a passphrase, which only you can choose. Writes
+   `datasets/real.json.enc` (`S2.7`) and backs up `mine.toml` at the same
+   time. Both `.enc` files then want a `git add`; neither has ever been
+   committed, so your eight authored questions still have no version control.
+2. **`flyctl auth login`**, then `fly apps create read-receipts`,
+   `fly deploy`, then **`fly scale count 1`** — not optional: the lobby, the
+   deck, the scores and the decrypted dataset all live in one process's
+   memory, so two machines means two games and a lobby that never fills.
 
-1. `make curate`. A browser opens on the first of 26 slots, each one a finished
-   question missing only a real message, with ~500 proposals ranked behind it.
-   <kbd>J</kbd> reject, <kbd>K</kbd> accept, <kbd>E</kbd> edit. Accepts land in
-   `questions/mine.toml` as finished blocks. Half an hour of this is a game.
-   Four slots (`who-said-longest`, `which-came-first-auto`,
-   `what-happened-next-1`, `work-first-big-news`) ship with `TODO` reveals on
-   purpose — they refuse to save until you write the payoff, and they're the
-   four best rounds in the deck.
-2. <kbd>S</kbd> in that same page searches the whole thread and mints a question
-   from any message in it. This is where the good ones come from.
-3. Fill `lex.pet_names` and `lex.inside_jokes` in `questions/lexicons.toml` —
-   turns on 3 questions immediately, and every inside-joke phrase after that is
-   a free `month` question.
-4. Dump raw ideas into `questions/inbox.md` in plain English. They come back as
-   finished `mine.toml` blocks.
+Seal *before* deploy. `COPY datasets/` picks up the ciphertext and
+`.dockerignore` blocks only the plaintext, so an image built before sealing
+ships without the real dataset and the Real button never appears.
 
-**Build — everything a script can do is done.** `app/main.py` is the real
-server (`S2.0`) with the join code, client-timestamped answers and the
-heartbeat (`S2.3`–`S2.5`); `seal.py` and the passphrase gate are in
-(`S2.6`, `S2.8`); the Dockerfile, `fly.toml` and self-hosted fonts are
-written (`S2.10`–`S2.12`). `make play` runs it, `make poc` runs the old
-proof of concept if you ever need the fallback.
+**Content — yours, and still the critical path.** The bank is 122 shippable
+but only **8 are yours** (3 of them curated), and the dealer wants 9 of every
+14 rounds from `mine.toml`. It backfills from `auto/` when yours run short, so
+the game works either way — it is just less yours.
 
-**Two things left in stage 2, and both need you:**
+1. `make curate`. <kbd>J</kbd> reject, <kbd>K</kbd> accept, <kbd>E</kbd> edit,
+   <kbd>S</kbd> to search the whole thread and mint from any message in it.
+   Half an hour of this is a game.
+2. Fill `lex.pet_names` and `lex.inside_jokes` in `questions/lexicons.toml` —
+   turns on 3 questions immediately, and every inside-joke phrase after that
+   is a free `month` question.
+3. Dump raw ideas into `questions/inbox.md` in plain English. They come back
+   as finished `mine.toml` blocks.
 
-1. **`make seal`** — needs a passphrase, which only you can choose. Produces
-   `datasets/real.json.enc` (`S2.7`) and backs up `mine.toml` at the same time.
-2. **`make deploy`** — needs `flyctl` and a Fly account. Then
-   **`fly scale count 1`**, which is not optional: the lobby, the deck, the
-   scores and the decrypted dataset all live in one process's memory, so two
-   machines means two games and a lobby that never fills.
+**Stage 3 is half built.** The density histogram (`S3.1`), the superlatives
+(`S3.4`/`S3.5`) and the reveal choreography are in and verified in a browser.
+Open: `S3.3` (the read-receipt locked state) and the second half of `S3.2`,
+the context thread — which needs the pipeline to carry context, and nothing
+does today. `curate.py` captures it and throws it away at mint time.
 
-The Dockerfile has never been built — Docker's daemon wasn't running here. What
-*was* verified is the thing a Dockerfile usually gets wrong: the app runs from a
-tree containing only the files it copies, with only the runtime dependencies
-installed, and the passphrase gate still opens a sealed dataset from it. Check
-`primary_region = "ord"` in `fly.toml` — it's a guess at the middle of your two
-states.
-
-**One thing only you can do:** `make seal`, once you've curated anything worth
-keeping. It asks for a passphrase, writes `datasets/real.json.enc` and
-`questions/mine.toml.enc`, and those get committed (`S2.7`). Until you run it,
-every question you write in `curate.py` exists in exactly one place, on one
-laptop, ungitignored and unbacked-up.
+**Spoilers.** You are a player. `make real` and any server pointed at
+`datasets/real.json` put the whole deck on screen; `make status`,
+`make compile`, `make lint` and `make seal` print only counts and reasons and
+are safe to watch. For `M5.1`, rehearse the mechanics on demo and verify the
+real deck at the lobby only — unlock it, confirm the toggle flips, and do not
+press Start. No question text appears before round one.
 
 **Known open threads**
+- `questions/mine.toml` is gitignored and unbacked-up until `make seal` runs
+  *and* the resulting `.enc` is committed. The passphrase exists nowhere but
+  your head — `M5.2` is the checkbox for that.
 - The friend-thread test data is in `corpus.json` / `datasets/test.json`. Both
   gitignored. Re-running `make corpus` with her identifier overwrites it.
-- `questions/mine.toml` is gitignored and therefore unbacked-up until you run
-  `make seal`, which encrypts it alongside the dataset. The passphrase exists
-  nowhere but your head — `M5.2` is the checkbox for that.
+- `make demo` used to pull `mine.toml` into the committed demo dataset once a
+  curate session had run. Fixed with `--no-mine` and two tests, but it is the
+  shape of mistake to keep watching for: anything committed that is built from
+  `questions/`.
 
 ---
 
@@ -117,7 +113,10 @@ lied to is worse than a red one.
 - [ ] `M2.4` Deployed; opened the URL on a phone that isn't on your WiFi
 - [ ] `M2.5` Left a lobby idle 10 minutes — socket survived, machine stayed up
 - [ ] `M2.6` Passphrase gate tested: right one loads, wrong one fails closed
-- [ ] `M2.7` Confirmed no plaintext real data in git (`git log -p | grep`)
+- [x] `M2.7` Confirmed no plaintext real data in git — no message text in any blob
+      Every `text` field in `mine.toml` and `real.json` checked against the
+      whole `git log --all -p`. Two hits, both authored slot templates that
+      live in `questions/auto/` and were always committed.
 - [ ] `M2.8` **Played a full 14-round game on the deployed URL, laptop + phone**
 
 ### Stage 3 — Feel
@@ -148,8 +147,8 @@ lied to is worse than a red one.
 Keep this honest. An empty list is the goal.
 
 - [x] ~~Full Disk Access~~ — granted to Terminal.app
-- [ ] `chat.db` not yet extracted. Everything downstream
-      of `corpus.json` is verified against a synthetic corpus until then.
+- [x] ~~`chat.db` not yet extracted~~ — 7,640 messages pulled in Terminal.app;
+      the whole pipeline runs on the real thread now.
 - [x] ~~Python 3.11+~~ — 3.14 installed, `.venv` created, full stack verified
 
 ---
@@ -171,4 +170,28 @@ remember whether something got done.
             {winner} rendering "Me", a compliment lexicon matching "if you look
             at gym data", reveals that assumed their own answer, and prompts
             hardcoding "five years" on a 4-year thread.
+2026-09-02  Stage 2 build complete. curate.py, seal.py, app/main.py, the
+            demo/real passphrase toggle, Dockerfile, fly.toml, self-hosted
+            fonts. Everything a script can do; S2.7 and M2.4-M2.8 all wait on
+            a passphrase and a deploy.
+2026-09-13  First curate session. 3 questions minted from real messages;
+            mine.toml at 8 blocks.
+2026-09-14  Verified the container for the first time — python:3.14-slim,
+            295MB, /healthz and both pages 200, dealt 51 from demo. The big
+            untested assumption in the deploy is gone.
+2026-09-14  Drove the passphrase gate end to end in a real browser over a real
+            socket: toggle renders, wrong passphrase says "That didn't open
+            it." and stays on demo, right one swaps the deck and the hero
+            stats follow. The decrypted deck is cached for the life of the
+            process — asked once a night, by design.
+2026-09-14  Stage 3: S3.1 density histogram, S3.4/S3.5 superlatives (20
+            awards, 41 tests, 5 fired in a real game), and the first half of
+            S3.2 — reveal choreography. 225 tests green.
+2026-09-14  Caught `make demo` baking three curated real messages into the
+            committed demo dataset. Never reached git; the committed build
+            predated the curate session. compile.py --no-mine and two tests
+            now hold it.
+2026-09-14  M2.7 verified properly: every `text` field in mine.toml and
+            real.json checked against the whole `git log --all -p`. No
+            message text has ever been committed.
 ```
