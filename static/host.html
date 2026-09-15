@@ -155,6 +155,30 @@
                  100%{opacity:1;transform:none}}
   .controls.chor{animation:fadeup .4s ease both}
 
+  /* the tug of war (DESIGN 2.6). Two players is not a leaderboard, it is a
+     rope — so draw the rope, and say the gap rather than two totals. */
+  .tug{width:100%;max-width:640px;margin-top:4px}
+  .tug .rope{
+    position:relative;height:14px;border-radius:7px;overflow:hidden;
+    background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line);
+  }
+  .tug .rope span{
+    position:absolute;top:0;bottom:0;left:0;
+    transition:width .85s cubic-bezier(.3,1.2,.4,1);
+  }
+  .tug .rope u{
+    position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--cream);
+    transform:translateX(-1px);opacity:.75;
+    transition:left .85s cubic-bezier(.3,1.2,.4,1);
+  }
+  .tug .gap{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-top:9px;font-size:15px;
+  }
+  .tug .gap b{font-family:var(--display);font-weight:900;font-size:19px}
+  .tug.flip .rope u{animation:flash .7s ease 2}
+  @keyframes flash{50%{opacity:.15;box-shadow:0 0 14px 5px var(--cream)}}
+
   /* the context thread (DESIGN 2.5 step 3). The actual conversation the
      answer sits in, which is the whole reason curate.py captures it. */
   .thread{display:flex;flex-direction:column;gap:7px;max-width:56ch;margin-top:18px}
@@ -588,6 +612,52 @@ function question(revealed) {
   return main(...rows);
 }
 
+/* Two players is a rope, not a ladder (DESIGN 2.6). One bar, a centre line
+   that slides, and the gap said out loud — "Nilu leads by 340" is a sentence;
+   two totals are a table. `lastLeader` gives the line a flash on the round
+   the rope actually changes hands. */
+let lastLeader = null;
+
+function tugOfWar(fresh) {
+  const ps = S.players;
+  if (ps.length !== 2) return null;
+  const [a, b] = ps;                                 // already sorted by score
+  const total = a.score + b.score;
+  /* Level, or nobody has scored: the line sits in the middle rather than
+     jumping to one end on a divide by zero. */
+  const share = total > 0 ? a.score / total : 0.5;
+  const gap = a.score - b.score;
+
+  const box = h("div", "tug");
+  const rope = h("div", "rope");
+  const fill = h("span");
+  fill.style.width = (share * 100) + "%";
+  fill.style.background = a.color;
+  const rest = h("span");
+  rest.style.cssText = `left:${share * 100}%;right:0;width:${(1 - share) * 100}%`;
+  rest.style.background = b.color;
+  const line = h("u");
+  line.style.left = (share * 100) + "%";
+  rope.append(fill, rest, line);
+
+  const gapLine = h("div", "gap");
+  const left = h("div");
+  left.append(textNode(a.name, a.color, "nm"));
+  const right = h("div");
+  right.append(textNode(b.name, b.color, "nm"));
+  const mid = h("b");
+  mid.textContent = gap === 0 ? "level"
+                              : `${a.name} leads by ${gap.toLocaleString()}`;
+  gapLine.append(left, mid, right);
+
+  const leader = gap === 0 ? null : a.id;
+  if (fresh && leader && lastLeader && leader !== lastLeader) box.classList.add("flip");
+  if (fresh) lastLeader = leader;
+
+  box.append(rope, gapLine);
+  return box;
+}
+
 /* The messages either side of the one the question came from, as a small
    thread with the source lit. This is the difference between "the answer was
    pasta" and the actual evening in May 2023 when you said it. Only curated
@@ -652,6 +722,8 @@ function reveal() {
     val.textContent = q.reveal;
   }
 
+  const tug = tugOfWar(fresh);
+
   const board = h("div", "board");
   S.players.forEach((p, i) => {
     const row = h("div", "row" + (fresh ? " chor" : ""));
@@ -679,7 +751,7 @@ function reveal() {
   controls.style.animationDelay = at("controls");
   controls.append(next);
 
-  const m = main(truth, board, controls);
+  const m = main(truth, tug, board, controls);
   rows[0].append(...m.childNodes);
   return rows[0];
 }
@@ -1009,7 +1081,9 @@ connect("host", s => {
   const phaseChanged = !S || S.phase !== s.phase || S.round !== s.round;
   /* Back in the lobby means a new game: forget which reveals and which award
      cards have already had their moment. */
-  if (s.phase === "lobby") { played.clear(); dealt.clear(); confettiFired = false; }
+  if (s.phase === "lobby") {
+    played.clear(); dealt.clear(); confettiFired = false; lastLeader = null;
+  }
   cue(s, phaseChanged);
   S = s;
   if (phaseChanged || s.phase !== "question") render();
