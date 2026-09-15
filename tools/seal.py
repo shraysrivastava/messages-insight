@@ -93,19 +93,31 @@ def seal(plaintext: bytes, passphrase: str) -> bytes:
     return json.dumps(envelope, indent=1).encode("utf-8") + b"\n"
 
 
-def unseal(envelope: bytes, passphrase: str) -> bytes:
-    """Envelope -> plaintext. Raises BadPassphrase on a wrong key, a corrupted
-    file, or a truncated one — Fernet authenticates, so there is no path where
-    this returns garbage instead of raising."""
+def open_with_key(envelope: bytes, passphrase: str) -> tuple[bytes, bytes]:
+    """Plaintext, and the key that opened it.
+
+    The key is worth handing back because the history log is written with the
+    same secret (DESIGN §4). Deriving it costs ~150ms of scrypt, the passphrase
+    is typed once a night, and asking for it again to write a line after every
+    game is not a thing anyone would put up with. It stays in memory, next to
+    the decrypted deck that is already there, and is never written down.
+    """
     try:
         env = json.loads(envelope)
         salt = base64.b64decode(env["salt"])
         params = {k: int(env[k]) for k in ("n", "r", "p") if k in env}
         key = derive(passphrase, salt, params)
-        return Fernet(key).decrypt(env["ct"].encode())
+        return Fernet(key).decrypt(env["ct"].encode()), key
     except (InvalidToken, KeyError, ValueError, TypeError,
             json.JSONDecodeError) as e:
         raise BadPassphrase("could not open") from e
+
+
+def unseal(envelope: bytes, passphrase: str) -> bytes:
+    """Envelope -> plaintext. Raises BadPassphrase on a wrong key, a corrupted
+    file, or a truncated one — Fernet authenticates, so there is no path where
+    this returns garbage instead of raising."""
+    return open_with_key(envelope, passphrase)[0]
 
 
 # ── checking what we're about to seal ──────────────────────────────────────

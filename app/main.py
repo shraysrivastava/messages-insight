@@ -36,6 +36,7 @@ Client → server
     {t:"join",  id, name, code}                 code must match, else denied
     {t:"answer", id, value, at}                 `at` is client-estimated server time
     {t:"start"|"next"|"skip"|"reset"}           host only
+    {t:"reel", id}                              host only — a game's round log
     {t:"ping", c0}                              clock sync + keepalive
 
 Server → client
@@ -43,6 +44,7 @@ Server → client
     {t:"state", ...}          Game.snapshot() — never leaks an answer early
     {t:"welcome", role, token, code?}           `code` only for the host
     {t:"denied", why}
+    {t:"reel", game}          one past game, in full, for the receipts reel
     {t:"pong", c0, s}         c0 echoed back, s is server time
     {t:"ping", s}             heartbeat; the client answers with a pong
 
@@ -72,6 +74,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.datasets import Library, Locked
 from app.game import DealRules, Game
+from app.history import History, summarise
 from app.schema import Dataset, load
 from app.superlatives import as_dict, award, curve, curve_dict
 
@@ -99,9 +102,11 @@ class Room:
     in Game; this class only decides *when*.
     """
 
-    def __init__(self, game: Game, library: Library | None = None):
+    def __init__(self, game: Game, library: Library | None = None,
+                 history: History | None = None):
         self.game = game
         self.library = library
+        self.history = history
         self.sockets: dict[WebSocket, dict] = {}    # ws -> {role, pid}
         self.timer: asyncio.Task | None = None
         self.heart: asyncio.Task | None = None
@@ -112,6 +117,7 @@ class Room:
         # whole log is not work to repeat sixty times.
         self.awards: list[dict] = []
         self.curve: dict | None = None
+        self.last_game: str | None = None
 
     # ── talking ───────────────────────────────────────────────────────────
 
@@ -135,11 +141,16 @@ class Room:
         if snap["phase"] == "final":
             snap["awards"] = self.awards
             snap["curve"] = self.curve
+            snap["game_id"] = self.last_game
         if not meta or meta.get("role") != "host":
             snap["code"] = None
             return snap
         if self.library:
             snap["datasets"] = self.library.state()
+        if self.history and snap["phase"] == "lobby":
+            which = self.library.current if self.library else "demo"
+            snap["history"] = {"games": self.history.cards(which),
+                               "stats": self.history.stats(which)}
         return snap
 
     async def broadcast(self) -> None:
@@ -222,13 +233,29 @@ class Room:
             self.awards = [as_dict(a) for a in award(
                 self.game.log, names, seconds=self.game.seconds)]
             self.curve = curve_dict(curve(self.game.log, names))
+            self.last_game = self.remember()
             await self.broadcast()
+
+    def remember(self) -> str | None:
+        """Put the finished game on the shelf, and return its id so the podium
+        can offer its own reel. Never fatal: a disk that will not take the line
+        is not a reason to lose the podium the two of them are looking at."""
+        if not self.history or not self.game.log:
+            return None
+        which = self.library.current if self.library else "demo"
+        try:
+            g = summarise(self.game.log, self.game.players, which,
+                          self.awards, self.curve)
+            self.history.remember(g)
+            return g.id
+        except Exception:
+            return None
 
     async def restart(self) -> None:
         """Play again with the same people, the same names, the same colours —
         and a fresh deck, because `deal()` re-rolls."""
         self.cancel()
-        self.awards, self.curve = [], None
+        self.awards, self.curve, self.last_game = [], None, None
         keep = {pid: (p.name, p.color) for pid, p in self.game.players.items()}
         self.game.reset()
         for pid, (name, color) in keep.items():
@@ -243,7 +270,7 @@ class Room:
         your mind about which game to play would be its own small disaster.
         """
         old = self.game
-        self.awards, self.curve = [], None
+        self.awards, self.curve, self.last_game = [], None, None
         fresh = Game(data, rounds=old.rounds if old.rounds != len(old.bank) else None,
                      seconds=old.seconds, rules=old.rules, rng=old.rng)
         fresh.code = old.code
@@ -318,6 +345,23 @@ class Room:
             await self.restart()
         elif kind == "dataset":
             await self.choose(ws, msg)
+        elif kind == "reel":
+            await self.send_reel(ws, msg)
+
+    async def send_reel(self, ws: WebSocket, msg: dict) -> None:
+        """One past game's whole round log, for the receipts reel.
+
+        Host only, and only for a game already on the shelf — which for the
+        real dataset means the passphrase has been typed. The reel is the
+        point of the whole exercise (DESIGN 2.11): the mechanic was always a
+        pretext for showing her messages she had forgotten about.
+        """
+        if not self.history:
+            return await self.send(ws, {"t": "denied", "why": "no history"})
+        g = self.history.find(str(msg.get("id") or ""))
+        if not g:
+            return await self.send(ws, {"t": "denied", "why": "no such game"})
+        await self.send(ws, {"t": "reel", "game": g.to_dict()})
 
     async def choose(self, ws: WebSocket, msg: dict) -> None:
         """Switch datasets. Lobby only — swapping decks mid-game would rewrite
@@ -332,6 +376,11 @@ class Room:
             await self.send(ws, {"t": "denied", "why": str(e)})
             await self.send(ws, self.view(self.sockets.get(ws)))
             return
+        if self.history and self.library.key:
+            try:
+                self.history.unlock(self.library.key)
+            except Exception:
+                pass
         self.swap(data, which)
         await self.broadcast()
 
@@ -463,9 +512,10 @@ def local_ip() -> str:
 
 
 def build_room(data: Dataset, rounds: int | None, seconds: float | None,
-               library: Library | None = None) -> Room:
+               library: Library | None = None,
+               history: History | None = None) -> Room:
     return Room(Game(data, rounds=rounds, seconds=seconds, rules=DealRules()),
-                library=library)
+                library=library, history=history)
 
 
 def main() -> None:
@@ -483,7 +533,8 @@ def main() -> None:
                          f"  make demo      builds the safe fake one\n"
                          f"  make compile   builds the real one")
     library = Library()
-    room = build_room(load(path), args.rounds, args.seconds, library=library)
+    room = build_room(load(path), args.rounds, args.seconds, library=library,
+                      history=History())
     g = room.game
     ip = local_ip()
     sealed = (f"    Real data                 {D}on the host screen, "

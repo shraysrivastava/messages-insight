@@ -50,6 +50,10 @@ class Library:
         self.demo_path = os.path.join(root, demo)
         self.sealed_path = os.path.join(root, sealed)
         self.cache: dict[str, Dataset] = {}
+        # The key the passphrase derived, kept for the life of the process
+        # alongside the plaintext that is already here. history.py writes its
+        # lines with it rather than asking for the words a second time.
+        self.key: bytes | None = None
         self.tries: deque[float] = deque()
         self.current = "demo"
 
@@ -94,15 +98,16 @@ class Library:
         if not passphrase or not os.path.exists(self.sealed_path):
             raise Locked("could not open")
 
-        from tools.seal import BadPassphrase, unseal
+        from tools.seal import BadPassphrase, open_with_key
         try:
             with open(self.sealed_path, "rb") as f:
-                plain = unseal(f.read(), passphrase)
+                plain, key = open_with_key(f.read(), passphrase)
             ds = Dataset.model_validate_json(plain)
         except (BadPassphrase, ValueError) as e:
             raise Locked("could not open") from e
 
         self.cache["real"] = ds
+        self.key = key
         self.tries.clear()          # it worked; stop counting
         return ds
 
@@ -118,6 +123,7 @@ class Library:
     def forget(self) -> None:
         """Drop the decrypted copy. Nothing calls this during a game; it exists
         so a test can prove the plaintext isn't kept anywhere else."""
+        self.key = None
         self.cache.pop("real", None)
         if self.current == "real":
             self.current = "demo"

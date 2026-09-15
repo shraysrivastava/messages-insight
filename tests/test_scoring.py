@@ -213,3 +213,14 @@ def test_the_histogram_flag_only_travels_when_it_is_off(game):
     game.begin_round(0)
     game.open_question(now=1000.0)
     assert game.snapshot(now=1001.0)["question"]["histogram"] is False
+
+
+def test_the_round_log_keeps_the_options_it_was_scored_against(game):
+    """Without them the receipts reel replays "Shray said 0"."""
+    game.deck = [Q(type="choice", answer=1, options=["pasta", "pizza", "toast"])]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    game.add_player("a", "Shray").answer = 1
+    rec = game.grade()
+    assert rec.options == ["pasta", "pizza", "toast"]
+    assert rec.options[rec.results["a"].answer] == "pizza"

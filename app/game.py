@@ -61,6 +61,7 @@ class RoundRecord:
     reveal: str
     correct: Any
     text: str | None = None
+    options: list[str] | None = None     # or the reel replays "said 0"
     format: str = "bubble"
     origin: str = "auto"
     area: str | None = None
@@ -316,6 +317,7 @@ class Game:
             reveal=q.reveal,
             correct=q.answer,
             text=q.text,
+            options=list(q.options) if q.options else None,
             format=q.format,
             origin=q.origin,
             area=q.area,

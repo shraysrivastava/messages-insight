@@ -130,6 +130,8 @@ function open() {
       if (typeof onWelcome === "function") onWelcome(msg);
     } else if (msg.t === "denied") {
       if (typeof onDenied === "function") onDenied(msg.why);
+    } else if (msg.t === "reel") {
+      if (typeof onReel === "function") onReel(msg.game);
     } else if (msg.t === "state" && onState) {
       onState(msg);
     }

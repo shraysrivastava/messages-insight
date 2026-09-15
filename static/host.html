@@ -155,6 +155,68 @@
                  100%{opacity:1;transform:none}}
   .controls.chor{animation:fadeup .4s ease both}
 
+  /* the history shelf (DESIGN 2.1) */
+  .shelf{margin-top:38px;width:100%;max-width:1040px;border-top:1px solid var(--line);
+    padding-top:24px}
+  .h2h{text-align:center;margin-bottom:18px}
+  .tally{display:flex;align-items:baseline;justify-content:center;gap:16px;
+    margin-top:8px}
+  .tally .side{display:flex;align-items:baseline;gap:10px}
+  .tally .nm{font-family:var(--display);font-weight:900;font-size:25px}
+  .tally .n{font-family:var(--mono);font-weight:700;font-size:31px}
+  .tally .dash{color:var(--muted);font-size:20px}
+  .h2h .hint{margin-top:4px;font-size:13px}
+
+  .cards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .gcard{
+    width:auto;min-width:150px;text-align:left;background:var(--raised);
+    border:1px solid var(--line);border-radius:16px;padding:12px 14px;
+    color:var(--cream);font:inherit;cursor:pointer;
+    animation:rise .5s cubic-bezier(.2,1.1,.3,1) both;
+    transition:transform .16s ease,border-color .16s ease;
+  }
+  .gcard:hover{transform:translateY(-3px);border-color:var(--muted)}
+  .gcard .when{font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted)}
+  .gcard .sc{display:flex;gap:7px;align-items:baseline;margin-top:6px;
+    font-family:var(--mono);font-weight:700;font-size:19px}
+  .gcard .vs{color:var(--muted);font-weight:400}
+  .gcard .won{font-size:14px;margin-top:5px}
+  .gcard .aw{font-size:12px;color:var(--muted);margin-top:3px;font-style:italic}
+  .alltime{text-align:center;color:var(--muted);font-size:13px;margin-top:18px}
+
+  .roster .empty{display:flex;align-items:center;gap:8px}
+
+  /* the receipts reel (DESIGN 2.11) — the game, with the game removed */
+  .reel{
+    position:fixed;inset:0;background:var(--night);z-index:40;
+    overflow-y:auto;padding:38px 30px 90px;
+    animation:reelin .45s cubic-bezier(.2,1,.3,1) both;
+  }
+  @keyframes reelin{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  .reel .inner{max-width:720px;margin:0 auto}
+  .reel h2{font-family:var(--display);font-weight:900;font-size:40px;
+    letter-spacing:-.02em;margin-bottom:6px}
+  .reel .sub{color:var(--muted);font-size:15px;margin-bottom:34px}
+  .rnd{padding:24px 0;border-top:1px solid var(--line)}
+  .rnd .no{font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted)}
+  .rnd .q{font-family:var(--display);font-weight:600;font-size:22px;
+    line-height:1.25;margin:8px 0 14px}
+  .rnd .msg{
+    background:var(--raised);border-radius:20px 20px 20px 5px;
+    padding:13px 17px;font-size:17px;line-height:1.45;max-width:85%;
+  }
+  .rnd .said{font-family:var(--mono);font-size:12px;color:var(--muted);
+    margin-top:10px}
+  .rnd .tru{border-left:3px solid var(--right);padding-left:16px;margin-top:14px;
+    font-size:16px;line-height:1.4}
+  /* appended to <body>, not inside .reel — so it cannot be `.reel .close` */
+  .reel-close{
+    position:fixed;top:20px;right:24px;width:auto;min-width:0;padding:10px 18px;
+    z-index:41;
+  }
+
   /* the score graph (DESIGN 2.8). Raw SVG — a charting library for two
      polylines is payload nobody asked for. */
   .graph{margin-top:30px;width:100%;max-width:960px}
@@ -251,7 +313,11 @@ function lobby() {
   const roster = h("div", "roster");
   roster.style.marginTop = "30px";
   if (!S.players.length) {
-    roster.append(h("div", "empty", "Waiting for phones to join…"));
+    const w = h("div", "empty");
+    const dots = h("span", "thinking");
+    dots.append(h("i"), h("i"), h("i"));
+    w.append(textNode("Waiting for phones", "var(--muted)"), dots);
+    roster.append(w);
   }
   S.players.forEach(p => {
     const w = h("div", "who");
@@ -291,7 +357,80 @@ function lobby() {
 
   const wrap = h("div", "lobby");
   wrap.append(left, box);
-  return main(wrap);
+  return main(wrap, shelf());
+}
+
+/* "Previously on Read Receipts" (DESIGN 2.1). Five years of meetaversaries
+   and this shelf is the actual artifact. Empty until a game has been played
+   — and, for the real dataset, until the passphrase has been typed, because
+   every line of that log is ciphertext until then (history.py). */
+function shelf() {
+  const hist = S.history;
+  if (!hist || !hist.games.length) return null;
+  const st = hist.stats || {};
+
+  const box = h("div", "shelf");
+
+  if (st.record && st.record.length > 1) {
+    const hh = h("div", "h2h");
+    hh.append(h("div", "eyebrow", "head to head"));
+    const line = h("div", "tally");
+    st.record.forEach((r, i) => {
+      if (i) line.append(h("span", "dash", "—"));
+      const who = h("span", "side");
+      const n = h("span", "n", String(r.wins));
+      n.style.color = (S.players.find(p => p.id === r.pid) || {}).color
+                      || "var(--cream)";
+      /* Name first on the left, score first on the right, so the two numbers
+         meet in the middle either side of the dash. */
+      who.append(...(i ? [n, h("span", "nm", r.name)]
+                       : [h("span", "nm", r.name), n]));
+      line.append(who);
+    });
+    hh.append(line);
+    if (st.draws) hh.append(h("div", "hint", st.draws === 1 ? "one draw"
+                                                            : `${st.draws} draws`));
+    box.append(hh);
+  }
+
+  const row = h("div", "cards");
+  hist.games.slice(0, 6).forEach((g, i) => {
+    const card = h("button", "gcard");
+    card.style.animationDelay = (i * 0.07) + "s";
+    const when = new Date(g.played_at);
+    card.append(h("div", "when", when.toLocaleDateString([],
+                  { month: "short", day: "numeric" })));
+
+    const line = h("div", "sc");
+    const ids = Object.keys(g.scores);
+    ids.forEach((pid, k) => {
+      if (k) line.append(h("span", "vs", "–"));
+      const n = h("span", "v", g.scores[pid].toLocaleString());
+      if (g.colors && g.colors[pid]) n.style.color = g.colors[pid];
+      line.append(n);
+    });
+    card.append(line);
+
+    card.append(h("div", "won", g.winner ? `${g.names[g.winner]} 👑` : "a draw"));
+    if (g.awards && g.awards.length) {
+      card.append(h("div", "aw", "“" + g.awards[0] + "”"));
+    }
+    card.onclick = () => openReel(g.id);
+    row.append(card);
+  });
+  box.append(row);
+
+  const bits = [];
+  if (st.best_round) {
+    bits.push(`biggest round ${st.best_round.points.toLocaleString()} — ` +
+              `${st.best_round.name} on “${st.best_round.kind}”`);
+  }
+  (st.repeats || []).forEach(r =>
+    bits.push(`${r.name} has been ${r.title} ${r.times}×`));
+  if (st.questions_seen) bits.push(`${st.questions_seen} questions seen`);
+  if (bits.length) box.append(h("div", "alltime", bits.join("  ·  ")));
+
+  return box;
 }
 
 /* The real thread is ciphertext until somebody types the words. Nothing on
@@ -470,6 +609,92 @@ function reveal() {
   return rows[0];
 }
 
+/* ------------------------------------------------------------------ reel  */
+
+/* The receipts reel: every round of a past game, scrollable, with the scoring
+   stripped out (DESIGN 2.11). The mechanic was always a pretext for showing
+   her messages she had forgotten about — this is that, with the game removed.
+   It sits over whatever screen you opened it from, so the lobby keeps its
+   sockets and the podium keeps its confetti. */
+let reel = null;
+
+function openReel(id) {
+  send({ t: "reel", id });
+}
+
+function onReel(game) {
+  reel = game;
+  drawReel();
+}
+
+function closeReel() {
+  reel = null;
+  closeReelDom();
+  document.removeEventListener("keydown", reelKeys);
+}
+
+function reelKeys(e) {
+  if (e.key === "Escape") closeReel();
+}
+
+function drawReel() {
+  closeReelDom();
+  const g = reel;
+  if (!g) return;
+
+  const box = h("div", "reel");
+  const inner = h("div", "inner");
+
+  const when = new Date(g.played_at);
+  inner.append(h("h2", null, "The receipts"));
+  const who = Object.keys(g.scores || {})
+    .map(pid => `${g.names[pid]} ${g.scores[pid].toLocaleString()}`).join("  ·  ");
+  inner.append(h("div", "sub",
+    when.toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })
+    + (who ? "  ·  " + who : "")));
+
+  (g.rounds || []).forEach((r, i) => {
+    const row = h("div", "rnd");
+    row.append(h("div", "no", `${i + 1} · ${r.kind}`));
+    row.append(h("div", "q", r.prompt));
+    if (r.text) row.append(h("div", "msg", r.text));
+    /* Who said what, but never who won it. The scoring is the part we are
+       deliberately leaving behind. */
+    const guesses = Object.entries(r.results || {})
+      .map(([pid, res]) => `${g.names[pid] || pid} said ${reelGuess(r, res.answer, g)}`)
+      .join("   ·   ");
+    if (guesses) row.append(h("div", "said", guesses));
+    if (r.reveal) row.append(h("div", "tru", r.reveal));
+    inner.append(row);
+  });
+
+  box.append(inner);
+  const close = h("button", "ghost close reel-close", "Close");
+  close.onclick = closeReel;
+  document.body.append(box, close);
+  document.addEventListener("keydown", reelKeys);
+  box.scrollTop = 0;
+}
+
+function closeReelDom() {
+  const el = document.querySelector(".reel");
+  if (el) el.remove();
+  const btn = document.querySelector(".reel-close");
+  if (btn) btn.remove();
+}
+
+/* The reel has no live `S.question`, so shownGuess's month lookup needs the
+   months from the game being replayed rather than from the current one. */
+function reelGuess(r, answer, g) {
+  if (answer === null || answer === undefined) return "nothing";
+  if (r.options && r.options[answer] !== undefined) return "“" + r.options[answer] + "”";
+  if (r.type === "number") return Number(answer).toLocaleString();
+  if (r.type === "month" && S.meta && S.meta.months && S.meta.months[answer]) {
+    return monthLabel(S.meta.months[answer]);
+  }
+  return String(answer);
+}
+
 /* ------------------------------------------------------------ score graph */
 
 const NS = "http://www.w3.org/2000/svg";
@@ -630,6 +855,11 @@ function final() {
   const again = h("button", "ghost", "Back to the lobby");
   again.onclick = () => send({ t: "reset" });
   const controls = h("div", "controls");
+  if (S.game_id) {
+    const replay = h("button", "cta", "Replay the receipts");
+    replay.onclick = () => openReel(S.game_id);
+    controls.append(replay);
+  }
   controls.append(again);
 
   return main(head, sub, podium, scoreGraph(), awardCards(), controls);
