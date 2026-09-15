@@ -53,11 +53,21 @@ the game works either way — it is just less yours.
 3. Dump raw ideas into `questions/inbox.md` in plain English. They come back
    as finished `mine.toml` blocks.
 
-**Stage 3 is half built.** The density histogram (`S3.1`), the superlatives
-(`S3.4`/`S3.5`) and the reveal choreography are in and verified in a browser.
-Open: `S3.3` (the read-receipt locked state) and the second half of `S3.2`,
-the context thread — which needs the pipeline to carry context, and nothing
-does today. `curate.py` captures it and throws it away at mint time.
+**Stage 3 is 7/12.** The density histogram (`S3.1`), the read receipt
+(`S3.3`), the superlatives (`S3.4`/`S3.5`) and the reveal choreography are in
+and driven in a browser. The one thing left is the second half of `S3.2`, the
+context thread — it needs the pipeline to carry context, and nothing does
+today: `curate.py` captures ±5 messages and throws them away at mint time.
+
+**Before designing new question formats, run `make chats` — sorry,
+`./.venv/bin/python tools/extract.py --schema` — in Terminal.app.** It reports
+which columns this macOS's `chat.db` actually has. Several formats worth
+wanting are not reachable from the current SQL: `date_read`/`date_delivered`
+(how long you left each other on read — the game is named after it), tapbacks
+(`associated_message_type`, currently filtered out), edited and unsent
+messages, replies, send effects, voice notes. Re-extraction is yours to run,
+so it is worth knowing what is there before the bank gets written against
+what isn't.
 
 **Spoilers.** You are a player. `make real` and any server pointed at
 `datasets/real.json` put the whole deck on screen; `make status`,
