@@ -115,6 +115,36 @@
     font-family:var(--mono);font-size:16px;color:var(--muted);
   }
 
+  /* reveal choreography (DESIGN 2.5). The beat of silence before the answer
+     resolves is the effect; everything here is a delay off that beat. */
+  .opt.hit.lit{animation:lit .5s cubic-bezier(.2,1.1,.3,1) both}
+  @keyframes lit{
+    0%{border-color:var(--line);background:transparent}
+    55%{border-color:var(--right);background:rgba(123,211,137,.26);transform:scale(1.035)}
+    100%{border-color:var(--right);background:rgba(123,211,137,.1);transform:none}
+  }
+  .opt.miss.dim{animation:dim .45s ease both}
+  @keyframes dim{from{opacity:1;transform:none}to{opacity:.4;transform:scale(.97)}}
+
+  .truth.chor{animation:fadeup .5s ease both}
+  @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .typing{display:flex;gap:6px;align-items:center;height:34px}
+  .typing i{
+    width:8px;height:8px;border-radius:50%;background:var(--muted);
+    animation:blip 1.15s infinite ease-in-out both;
+  }
+  .typing i:nth-child(2){animation-delay:.16s}
+  .typing i:nth-child(3){animation-delay:.32s}
+  @keyframes blip{0%,72%,100%{opacity:.25;transform:translateY(0)}
+                  36%{opacity:1;transform:translateY(-4px)}}
+
+  .row.chor{animation:slidein .45s cubic-bezier(.2,1.1,.3,1) both}
+  @keyframes slidein{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:none}}
+  .row .delta.pop{animation:pop .42s cubic-bezier(.2,1.4,.3,1) both}
+  @keyframes pop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.28)}
+                 100%{opacity:1;transform:none}}
+  .controls.chor{animation:fadeup .4s ease both}
+
   /* superlatives — dealt one at a time, ~2s apart (DESIGN 2.9) */
   .awards{margin-top:34px;width:100%;max-width:960px}
   .awards .eyebrow{text-align:center;margin-bottom:14px}
@@ -347,24 +377,63 @@ function question(revealed) {
   return main(...rows);
 }
 
+/* Rounds whose reveal has already been choreographed. A phone dropping off
+   mid-reveal triggers a re-render, and replaying the whole sequence from the
+   silence would be worse than not having one. */
+const played = new Set();
+
+/* The beats, in seconds from the moment the reveal lands (DESIGN 2.5). */
+const BEAT = { resolve: 0.45, typing: 1.1, truth: 2.0, board: 2.3, controls: 2.9 };
+
 function reveal() {
   const q = S.question;
-  const rows = [question(true)];
+  const fresh = !played.has(S.round);
+  played.add(S.round);
+  const at = k => (fresh ? BEAT[k] : 0) + "s";
 
-  const truth = h("div", "truth");
-  truth.append(h("div", "lab", "The truth"), h("div", "val", q.reveal));
+  const rows = [question(true)];
+  if (fresh) {
+    /* 1. the room goes quiet, then 2. the answer resolves and the wrong
+       tiles desaturate. Silence is the effect, so it is a real delay. */
+    rows[0].querySelectorAll(".opt.hit").forEach(c => {
+      c.classList.add("lit"); c.style.animationDelay = at("resolve");
+    });
+    rows[0].querySelectorAll(".opt.miss").forEach(c => {
+      c.classList.add("dim"); c.style.animationDelay = at("resolve");
+    });
+  }
+
+  const truth = h("div", "truth" + (fresh ? " chor" : ""));
+  truth.style.animationDelay = at("typing");
+  const val = h("div", "val");
+  truth.append(h("div", "lab", "The truth"), val);
+  if (fresh) {
+    /* 4. the typing indicator first, then the line lands. */
+    const dots = h("div", "typing");
+    dots.append(h("i"), h("i"), h("i"));
+    val.append(dots);
+    setTimeout(() => {
+      if (val.isConnected) val.replaceChildren(document.createTextNode(q.reveal));
+    }, BEAT.truth * 1000);
+  } else {
+    val.textContent = q.reveal;
+  }
 
   const board = h("div", "board");
   S.players.forEach((p, i) => {
-    const row = h("div", "row");
-    row.style.animationDelay = (i * 0.09) + "s";
+    const row = h("div", "row" + (fresh ? " chor" : ""));
+    row.style.animationDelay = ((fresh ? BEAT.board : 0) + i * 0.12) + "s";
     row.style.color = p.color;
     const pts = p.last ? p.last.points : 0;
+    /* 5. the points arrive after the row does, not with it. */
+    const delta = h("div", "delta " + (pts > 0 ? "good" : "zero") +
+                            (fresh ? " pop" : ""), "+" + pts);
+    delta.style.animationDelay = ((fresh ? BEAT.board : 0) + i * 0.12 + 0.3) + "s";
     row.append(
       h("div", "rank", "#" + (i + 1)),
       textNode(p.name, "var(--cream)", "nm"),
       h("div", "said", p.last ? shownGuess(q, p.last.answer, S) : "—"),
-      h("div", "delta " + (pts > 0 ? "good" : "zero"), "+" + pts),
+      delta,
       h("div", "tot", String(p.score))
     );
     board.append(row);
@@ -373,7 +442,8 @@ function reveal() {
   const last = S.round + 1 >= S.rounds;
   const next = h("button", "cta", last ? "Final scores" : "Next round");
   next.onclick = () => send({ t: "next" });
-  const controls = h("div", "controls");
+  const controls = h("div", "controls" + (fresh ? " chor" : ""));
+  controls.style.animationDelay = at("controls");
   controls.append(next);
 
   const m = main(truth, board, controls);
@@ -482,6 +552,9 @@ function onDenied(why) {
 
 connect("host", s => {
   const phaseChanged = !S || S.phase !== s.phase || S.round !== s.round;
+  /* Back in the lobby means a new game: forget which reveals and which award
+     cards have already had their moment. */
+  if (s.phase === "lobby") { played.clear(); dealt.clear(); }
   S = s;
   if (phaseChanged || s.phase !== "question") render();
   else refreshTicks();
