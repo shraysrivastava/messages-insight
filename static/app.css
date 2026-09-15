@@ -245,3 +245,17 @@ input[type=password]{
   background:var(--sunk);border:1.5px solid rgba(239,231,222,.14);
   border-radius:14px;padding:14px 16px;text-align:center;letter-spacing:.1em;
 }
+
+
+/* Every animation in this game is decoration over a state change that already
+   happened — the reveal still reveals, the cards still deal, the graph is
+   still drawn. So honouring this costs nothing and is the difference between
+   "designed" and "unusable" for anyone who needs it (DESIGN §6). */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+}

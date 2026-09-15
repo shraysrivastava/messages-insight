@@ -187,6 +187,19 @@
 
   .roster .empty{display:flex;align-items:center;gap:8px}
 
+  /* confetti, once (DESIGN 2.10). DOM nodes rather than a canvas: sixty divs
+     for four seconds is cheaper than a render loop, and it dies on its own. */
+  .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:30}
+  .confetti i{
+    position:absolute;top:-24px;width:9px;height:14px;border-radius:2px;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    from{transform:translateY(-10vh) rotate(0deg);opacity:1}
+    to{transform:translateY(110vh) rotate(720deg);opacity:.85}
+  }
+  .crown{font-size:26px;line-height:1}
+
   /* the receipts reel (DESIGN 2.11) — the game, with the game removed */
   .reel{
     position:fixed;inset:0;background:var(--night);z-index:40;
@@ -251,6 +264,13 @@
     letter-spacing:-.01em;margin-bottom:4px}
   .award .ev{font-size:14px;color:var(--muted);line-height:1.45}
 
+  .mute{
+    width:auto;min-width:0;padding:6px 10px;font-size:17px;line-height:1;
+    background:transparent;border:1px solid var(--line);border-radius:10px;
+    cursor:pointer;
+  }
+  .mute:hover{border-color:var(--muted)}
+
   .controls{display:flex;gap:14px;align-items:center}
   .controls button{width:auto;min-width:190px}
   .hint{color:var(--muted);font-size:14px}
@@ -266,6 +286,7 @@
 <div id="host"></div>
 
 <script src="/static/shared.js"></script>
+<script src="/static/sound.js"></script>
 <script>
 const view = document.getElementById("host");
 let S = null, lastPhase = null, timerRaf = null;
@@ -279,6 +300,19 @@ function topbar() {
     bar.append(h("div", "pill", `Round ${S.round + 1} / ${S.rounds}`));
   }
   const sp = h("div", "spacer"); bar.append(sp);
+
+  /* Visible mute. Non-negotiable if she's on a call with you while playing
+     (DESIGN §6). */
+  const mute = h("button", "mute", Sound.muted ? "🔇" : "🔊");
+  mute.title = Sound.muted ? "Sound off" : "Sound on";
+  mute.setAttribute("aria-label", mute.title);
+  mute.onclick = () => {
+    const off = Sound.toggle();
+    mute.textContent = off ? "🔇" : "🔊";
+    mute.title = off ? "Sound off" : "Sound on";
+    mute.setAttribute("aria-label", mute.title);
+  };
+  bar.append(mute);
   S.players.forEach(p => {
     const chip = h("div", "pill");
     chip.style.color = p.color;
@@ -329,7 +363,7 @@ function lobby() {
   const start = h("button", "cta", S.players.length ? "Start the game"
                                                     : "Waiting for players…");
   start.disabled = !S.players.length;
-  start.onclick = () => send({ t: "start" });
+  start.onclick = () => { Sound.init(); send({ t: "start" }); };
   const startWrap = h("div", "controls");
   startWrap.style.marginTop = "26px";
   startWrap.append(start);
@@ -816,7 +850,7 @@ function awardCards() {
     if (!dealt.has(a.key)) {
       card.classList.add("dealing");
       card.style.animationDelay = (0.6 + i * 2) + "s";
-      setTimeout(() => dealt.add(a.key), 600 + i * 2000);
+      setTimeout(() => { dealt.add(a.key); Sound.ping(); }, 600 + i * 2000);
     }
     card.append(h("div", "ttl", a.title), h("div", "ev", a.evidence));
     row.append(card);
@@ -824,6 +858,29 @@ function awardCards() {
 
   box.append(row);
   return box;
+}
+
+/* One burst, on arrival at the podium. `once` because a re-render — a phone
+   dropping off, a late reconnect — must not set it off again. */
+let confettiFired = false;
+
+function confetti(colors) {
+  if (confettiFired) return;
+  confettiFired = true;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const box = h("div", "confetti");
+  for (let i = 0; i < 70; i++) {
+    const bit = h("i");
+    bit.style.left = Math.random() * 100 + "vw";
+    bit.style.background = colors[i % colors.length];
+    bit.style.animationDuration = (2.4 + Math.random() * 1.8) + "s";
+    bit.style.animationDelay = (Math.random() * 0.8) + "s";
+    bit.style.opacity = 0.55 + Math.random() * 0.45;
+    box.append(bit);
+  }
+  document.body.append(box);
+  setTimeout(() => box.remove(), 5200);
 }
 
 function final() {
@@ -841,7 +898,13 @@ function final() {
     const col = h("div", "plinth");
     col.style.animationDelay = (i * 0.14) + "s";
     col.style.color = p.color;
-    col.append(h("div", "nm", p.name), h("div", "sc", p.score.toLocaleString()));
+    const nm = h("div", "nm", p.name);
+    if (i === 0 && !tie) {
+      const crown = h("span", "crown", " 👑");
+      crown.setAttribute("aria-label", "winner");
+      nm.append(crown);
+    }
+    col.append(nm, h("div", "sc", p.score.toLocaleString()));
     const block = h("div", "block", "#" + (i + 1));
     block.style.height = heights[i] + "px";
     block.style.background = `linear-gradient(180deg,${p.color}33,var(--raised))`;
@@ -862,6 +925,7 @@ function final() {
   }
   controls.append(again);
 
+  confetti(order.map(p => p.color).concat(["#EFE7DE"]));
   return main(head, sub, podium, scoreGraph(), awardCards(), controls);
 }
 
@@ -874,6 +938,7 @@ function animateTimer(bar, fill) {
     const left = Math.max(0, (S.endsAt - serverNow()) * 1000);
     fill.style.transform = `scaleX(${left / total})`;
     bar.classList.toggle("urgent", left < total * 0.28);
+    tickClock(left);
     if (left > 0 && document.body.contains(bar)) timerRaf = requestAnimationFrame(step);
   };
   step();
@@ -901,11 +966,40 @@ connect("host", s => {
   const phaseChanged = !S || S.phase !== s.phase || S.round !== s.round;
   /* Back in the lobby means a new game: forget which reveals and which award
      cards have already had their moment. */
-  if (s.phase === "lobby") { played.clear(); dealt.clear(); }
+  if (s.phase === "lobby") { played.clear(); dealt.clear(); confettiFired = false; }
+  cue(s, phaseChanged);
   S = s;
   if (phaseChanged || s.phase !== "question") render();
   else refreshTicks();
 });
+
+/* The soundtrack rides the state transitions rather than the render, so a
+   re-render never replays a cue (DESIGN §6). */
+let ticked = -1;
+function cue(next, phaseChanged) {
+  if (!S) return;
+
+  // someone locked in
+  if (next.answered.length > S.answered.length && next.phase === "question") {
+    Sound.send();
+  }
+  if (!phaseChanged) return;
+
+  if (next.phase === "question") ticked = -1;
+  // the receive lands *after* the silence — the pause is the joke
+  if (next.phase === "reveal") setTimeout(() => Sound.receive(), BEAT.resolve * 1000);
+  if (next.phase === "final") setTimeout(() => Sound.flourish(), 350);
+}
+
+/* A low tick under the last few seconds. Driven from the timer's own frame
+   loop, which is the only thing that knows how much clock is left. */
+function tickClock(left) {
+  const whole = Math.ceil(left / 1000);
+  if (whole <= 5 && whole > 0 && whole !== ticked) {
+    ticked = whole;
+    Sound.tick();
+  }
+}
 
 /* `Shray ✓ locked in 3.2s · Nilu ···` (DESIGN 2.4). How fast they were is
    public; whether they were right is not, and is not in the payload. */
