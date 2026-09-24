@@ -24,7 +24,6 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-import sys
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

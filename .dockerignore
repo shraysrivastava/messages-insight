@@ -4,7 +4,7 @@ corpus.json
 *_corpus.json
 candidates.json
 datasets/real.json
-datasets/test.json
+datasets/dev.json
 questions/
 tools/
 !tools/__init__.py

@@ -359,6 +359,7 @@ code you've already tested. One hour now, saves a day in stage 4.
 | `S2.10` | Dockerfile |
 | `S2.11` | `fly.toml` with `auto_stop_machines = false` |
 | `S2.12` | Fonts self-hosted |
+| `S2.13` | `datasets/dev.json.enc` — the rehearsal deck | 0.5h |
 
 **One machine, always.** There is no database — the lobby, the deck, the scores
 and the decrypted dataset live in one Python object in one process. Two machines
@@ -388,6 +389,22 @@ ship line.**
 | `S3.6` | `percent` type | 0.5h |
 | `S3.7` | `wager` / Final Receipt | 2h |
 | `S3.8` | Weighted dealing — yours first | 1h |
+| `S3.9` | Blind audit mode — `make audit` | 1h |
+| `S3.10` | Text audit — `make questions` | 1h |
+
+`S3.9` exists because he designs the game *and* plays it. `compile.py --dev`
+emits the same question set as `real.json` — same ids, same order, same bubbles —
+with every answer replaced by a uniform random draw, every reveal masked, and
+`context`/`histogram` stripped. A uniform draw is independent of the value it
+replaced, so reading `dev.json`, or `blind()` itself, tells you nothing. `make
+audit` serves it with `--rounds 999 --seed 1`: every question, in a stable order,
+so a round number names a question. Review by number; cut by id.
+
+`S3.10` is the same guarantee without the browser: `tools/audit.py` reads
+`datasets/dev.json` and prints the bank grouped by `kind`. It cannot leak an
+answer, because the file it reads does not contain one — pointed at
+`real.json` it refuses. Filters: `--mine`, `--kind`, `--area`, `--type`,
+`--ids`.
 
 `S3.1` is the highest payoff in the project: one bar per month behind the slider,
 height = volume. She's sliding across a picture of your relationship and the spikes

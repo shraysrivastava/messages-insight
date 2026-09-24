@@ -15,6 +15,7 @@ Exit code is non-zero if anything is wrong, so it drops straight into CI.
 from __future__ import annotations
 
 import glob
+import re
 import os
 import sys
 from collections import Counter
@@ -38,7 +39,16 @@ FORMATS = {"bubble", "blank", "redacted", "compare", "thread", "timestamp"}
 STATUSES = {"ready", "draft", "mine"}
 FIELDS = {"id", "topic", "type", "kind", "area", "format", "prompt", "text",
           "options", "answer", "reveal", "status", "unit", "source",
-          "min_margin", "min_answer", "min_hits", "month_edge_pct", "mode"}
+          "min_margin", "min_answer", "min_hits", "month_edge_pct", "mode",
+          # curate.py bakes the surrounding thread into the block, and
+          # Question.context carries it through to the reveal. It was missing
+          # here, so every curated block with context linted as an error.
+          "context"}
+
+# One message inside a `context` array. Mirrors app.schema.ContextMsg — the
+# field is `who`, not `from`, and getting that wrong passed this linter twice
+# before compile.py rejected it a hundred and twenty times over.
+CONTEXT_KEYS = {"who", "text", "self"}
 
 SOURCE_KEYS = {"mine", "search", "first_message", "by", "before", "after",
                "lex", "hours", "blanks", "spread_months"}
@@ -51,6 +61,24 @@ def lint(qdir: str = QDIR) -> tuple[list[str], list[str]]:
     with open(os.path.join(qdir, "lexicons.toml"), "rb") as f:
         lexicons = tomllib.load(f)["lex"]
     lex_names = set(lexicons)
+
+    # A lexicon whose `regex` doesn't compile takes compile.py down with a
+    # PatternError three frames deep, and nothing upstream notices. Written
+    # after fourteen of them were declared "clean" by this very function:
+    # `regex` is a *list*, and a bare string iterates character by character.
+    for name, body in lexicons.items():
+        pats = body.get("regex")
+        if pats is None:
+            continue
+        if isinstance(pats, str):
+            errors.append(f"lexicons.toml:{name}: `regex` must be a list, "
+                          f"not a bare string")
+            continue
+        for pat in pats:
+            try:
+                re.compile(pat)
+            except re.error as e:
+                errors.append(f"lexicons.toml:{name}: bad regex {pat!r} ({e})")
 
     files = [("mine", os.path.join(qdir, "mine.toml"))] + \
             [("auto", f) for f in sorted(glob.glob(os.path.join(qdir, "auto", "*.toml")))]
@@ -125,6 +153,25 @@ def lint(qdir: str = QDIR) -> tuple[list[str], list[str]]:
                     errors.append(
                         f"{where}: answer {ans} out of range for "
                         f"{len(q['options'])} options")
+
+            ctx = q.get("context")
+            if ctx is not None:
+                if not isinstance(ctx, list) or not ctx:
+                    errors.append(f"{where}: `context` must be a non-empty list")
+                else:
+                    for row in ctx:
+                        if not isinstance(row, dict):
+                            errors.append(f"{where}: context rows must be tables")
+                            break
+                        bad = set(row) - CONTEXT_KEYS
+                        if bad:
+                            errors.append(f"{where}: context row has unknown "
+                                          f"field(s) {sorted(bad)}")
+                            break
+                        if row.get("who") not in ("p1", "p2"):
+                            errors.append(f"{where}: context row `who` must be "
+                                          f"p1 or p2")
+                            break
 
             src = q.get("source")
             if isinstance(src, dict):

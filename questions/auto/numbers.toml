@@ -5,16 +5,6 @@
 # is degenerate on small numbers.
 
 [[q]]
-id = "total-messages"
-type = "number"
-kind = "By the numbers"
-area = "archive"
-prompt = "How many messages have we sent each other in {years} years?"
-answer = { total_messages = true }
-reveal = "{answer:,} messages in {years} years. Neither of us has ever run out of things to say."
-status = "ready"
-
-[[q]]
 id = "love-you-count"
 type = "number"
 kind = "Receipts"
@@ -85,16 +75,6 @@ reveal = "{answer:,}. Worth rereading on a bad day."
 status = "ready"
 
 [[q]]
-id = "laughing-count"
-type = "number"
-kind = "Chronically online"
-area = "humor"
-prompt = "How many of our {total:,} messages were one of us laughing?"
-answer = { count = "laughing" }
-reveal = "{answer:,}. That's the actual answer to why this worked."
-status = "ready"
-
-[[q]]
 id = "hearts-count"
 type = "number"
 kind = "Receipts"
@@ -132,16 +112,6 @@ area = "travel"
 prompt = "How many of our messages mention a flight, an airport, or packing?"
 answer = { count = "travel" }
 reveal = "{answer:,}. A relationship measured in boarding passes."
-status = "ready"
-
-[[q]]
-id = "food-count"
-type = "number"
-kind = "Petty grievances"
-area = "food"
-prompt = "How many messages have been about food?"
-answer = { count = "food" }
-reveal = "{answer:,}. Most of them the same conversation."
 status = "ready"
 
 [[q]]
@@ -205,16 +175,6 @@ reveal = "{answer:,}. Nothing good has ever been said at 4am and we said it anyw
 status = "ready"
 
 [[q]]
-id = "longest-message"
-type = "number"
-kind = "Petty grievances"
-area = "conflict"
-prompt = "How many words are in the longest message either of us has sent?"
-answer = { longest_message_words = true }
-reveal = "{answer} words. Nobody writes {answer} words about something small."
-status = "ready"
-
-[[q]]
 id = "distinct-emoji"
 type = "number"
 kind = "By the numbers"
@@ -254,22 +214,3 @@ answer = { days_until = "love_you" }
 reveal = "{answer} days. Somebody was doing maths that whole time."
 status = "ready"
 
-[[q]]
-id = "days-until-marriage-word"
-type = "number"
-kind = "Deep cut"
-area = "milestones"
-prompt = "How many days before one of us first said the word “marry”?"
-answer = { days_until = "marriage" }
-reveal = "{answer} days before somebody said it out loud."
-status = "ready"
-
-[[q]]
-id = "days-until-parents"
-type = "number"
-kind = "Ancient history"
-area = "people"
-prompt = "How many days before one of us first mentioned their parents?"
-answer = { days_until = "parents" }
-reveal = "{answer} days."
-status = "ready"

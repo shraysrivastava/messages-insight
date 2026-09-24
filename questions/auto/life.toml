@@ -86,16 +86,6 @@ status = "mine"
 # ── ILLNESS AND CARE ──────────────────────────────────────────────────────
 
 [[q]]
-id = "sick-count"
-type = "number"
-kind = "In sickness"
-area = "health"
-prompt = "How many times has one of us been sick over text?"
-answer = { count = "sick" }
-reveal = "{answer:,}. And somebody always offered to bring soup from a different state."
-status = "ready"
-
-[[q]]
 id = "sick-who-more"
 type = "binary"
 kind = "In sickness"
@@ -117,16 +107,6 @@ reveal = "{month}."
 status = "ready"
 
 # ── MONEY ─────────────────────────────────────────────────────────────────
-
-[[q]]
-id = "money-count"
-type = "number"
-kind = "Joint account"
-area = "money"
-prompt = "How many messages mention money — Venmo, rent, splitting a bill?"
-answer = { count = "money" }
-reveal = "{answer:,}. Romance."
-status = "ready"
 
 [[q]]
 id = "money-who-more"
@@ -163,16 +143,6 @@ reveal = "{winner}, {n1} times. The aux is not a democracy."
 status = "ready"
 
 [[q]]
-id = "tv-count"
-type = "number"
-kind = "One more episode"
-area = "media"
-prompt = "How many times have we talked about a show or a movie?"
-answer = { count = "tv" }
-reveal = "{answer:,}. Roughly {answer} arguments about spoilers."
-status = "ready"
-
-[[q]]
 id = "tv-first"
 type = "month"
 kind = "One more episode"
@@ -183,16 +153,6 @@ reveal = "{month}. Statistically, we still haven't finished it."
 status = "ready"
 
 # ── PETS AND CREATURES ────────────────────────────────────────────────────
-
-[[q]]
-id = "pets-count"
-type = "number"
-kind = "Third party"
-area = "people"
-prompt = "How many messages are about an animal?"
-answer = { count = "pets" }
-reveal = "{answer:,}. The third member of this relationship."
-status = "ready"
 
 [[q]]
 id = "pets-who-more"
@@ -206,28 +166,6 @@ reveal = "{winner}, {n1} times."
 status = "ready"
 
 # ── WEATHER ───────────────────────────────────────────────────────────────
-
-[[q]]
-id = "weather-count"
-type = "number"
-kind = "Two forecasts"
-area = "weather"
-prompt = "How many messages have been a weather report from another state?"
-answer = { count = "weather" }
-reveal = "{answer:,}. The purest form of long distance."
-status = "ready"
-
-# ── HOLIDAYS AND OCCASIONS ────────────────────────────────────────────────
-
-[[q]]
-id = "holidays-count"
-type = "number"
-kind = "Occasions"
-area = "milestones"
-prompt = "How many messages mention a holiday, a birthday, or an anniversary?"
-answer = { count = "holidays" }
-reveal = "{answer:,}. {years} years of showing up."
-status = "ready"
 
 [[q]]
 id = "holidays-busiest"
@@ -250,36 +188,6 @@ reveal = "{month}. The beginning of {years} years of overthinking presents."
 status = "ready"
 
 # ── FRICTION ──────────────────────────────────────────────────────────────
-
-[[q]]
-id = "lateness-count"
-type = "number"
-kind = "Five minutes away"
-area = "logistics"
-prompt = "How many times has one of us claimed to be “on the way”?"
-answer = { count = "lateness" }
-reveal = "{answer:,}. A conservative estimate of the lies told."
-status = "ready"
-
-[[q]]
-id = "driving-count"
-type = "number"
-kind = "Five minutes away"
-area = "logistics"
-prompt = "How many messages are about traffic, parking, or a train?"
-answer = { count = "driving" }
-reveal = "{answer:,}."
-status = "ready"
-
-[[q]]
-id = "reassurance-count"
-type = "number"
-kind = "In sickness"
-area = "affection"
-prompt = "How many times has one of us said some version of “it's going to be ok”?"
-answer = { count = "reassurance" }
-reveal = "{answer:,}. And it was, every time."
-status = "ready"
 
 [[q]]
 id = "sorry-first"

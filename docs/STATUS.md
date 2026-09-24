@@ -20,23 +20,110 @@ python3 tools/status.py --bank      just the question bank
 
 ## ▶ Resume here
 
-**Every build task in the plan is done except one, and that one is yours.**
-`tools/status.py` reads 44/45. The missing check is `S2.7`,
-`datasets/real.json.enc`, which needs a passphrase only you can choose.
+**All 46 build tasks are done except `S2.7`, which needs a passphrase only you
+can choose.** The code is finished. What is left is a corpus, a deploy, and a
+pile of question writing — in that order, because the first blocks the other two.
 
-**Two commands, in this order, and the order matters:**
+### Phase 0 — the corpus (yours, 10 minutes, Terminal.app)
 
-1. **`make seal`** — writes `datasets/real.json.enc` and backs up `mine.toml`
-   at the same time. Both `.enc` files then want a `git add`; neither has ever
-   been committed, so your authored questions still have no version control.
-2. **`flyctl auth login`**, then `fly apps create read-receipts`,
-   `fly deploy`, then **`fly scale count 1`** — not optional: the lobby, the
-   deck, the scores and the decrypted dataset all live in one process's
-   memory, so two machines means two games and a lobby that never fills.
+`corpus.json` is currently **your roommate's thread, not hers.** Probed on
+2026-09-21: zero hits for `kys`, zero for `shru`/`nu`/`bubba`, zero for
+"i love you", and six emoji from p2 in four years. Every question below is
+built against it, so every answer in `real.json` is currently wrong.
 
-Seal *before* deploy. `COPY datasets/` picks up the ciphertext and
-`.dockerignore` blocks only the plaintext, so an image built before sealing
-ships without the real dataset and the Real button never appears.
+```bash
+make corpus CHAT="+1555…,her@gmail.com" P1=Shray P2=Nilu
+```
+
+Both identifiers, comma separated — the split thread is the likely cause. It
+prints a per-identifier breakdown; check both sides appear.
+
+### Phase 1 — the ship line (half a day, mostly yours)
+
+Three datasets ship. `demo` is fake and open; `dev` is the real deck with
+every answer blinded; `real` is the real thing. All three appear on the host
+screen as `[ Demo ] [ Dev 🔒 ] [ Real 🔒 ]`, and dev and real open with the
+same passphrase.
+
+```bash
+make compile          # questions/ + corpus.json -> datasets/real.json
+make dev              # the same deck, answers blinded -> datasets/dev.json
+make seal             # seals real.json, dev.json and mine.toml
+git add datasets/real.json.enc datasets/dev.json.enc questions/mine.toml.enc
+git commit -m "Seal the decks"
+```
+
+`make seal` asks for the passphrase once and uses it for all three. Seal
+*before* deploy: `COPY datasets/` picks up the ciphertext, `.dockerignore`
+blocks the plaintext, and an image built before sealing ships without them.
+
+```bash
+flyctl auth login
+fly apps create read-receipts
+fly deploy
+fly scale count 1     # not optional — see fly.toml
+fly status            # must show exactly ONE machine
+```
+
+Then rehearse on the deployed URL, on `Dev`:
+
+- `M2.4` open it on a phone that isn't on your WiFi
+- `M2.5` leave the lobby idle ten minutes — socket survives, machine stays up
+- `M2.6` wrong passphrase fails closed, right one loads
+- `M2.8` play a full 14 rounds
+
+Play those on **Dev**, not Real. Same deck, same ids, same bubbles, same
+number of rounds — the only difference is that the answers are a uniform
+random draw and the reveals are masked, so nothing is spoiled. A dev game is
+never written to `data/history.jsonl` either (`History.remember` persists
+`real` only), so game night's shelf starts clean however many rehearsals you
+run.
+
+When it all works on Dev, switching to Real is one click and one passphrase.
+Nothing else about the process changes.
+
+### Phase 2 — the questions (mine)
+
+Blocked on phase 0. Roughly in value order:
+
+- `lex.pet_names`, `lex.inside_jokes` from what is already in `inbox.md`
+  (`shru`/`nu`/`bubba`, and the `-u` gag: choppu, clingu, independentu) → `M2.2`
+- The countable ideas in `inbox.md` as resolvers — `kys`, the emoji
+  leaderboard, who said "i love you" first, TMI, LMAOOO-length as a proxy for
+  funniest
+- Collocation questions ("which of these four phrases does she actually say")
+  — the reviewable half of the grid idea, with no new mechanic
+- A full read of her corpus for hand-picked message questions
+- Target: bank at 90+ compiled, 20+ of yours → `M3.3`
+
+### Phase 3 — the audit loop (your eyes, my hands)
+
+```bash
+make audit
+```
+
+Every question, one sitting, answers blinded (`S3.9`). Call cuts by round
+number; I cut, rewrite and recompile. Repeat until you would show all of it
+to her.
+
+### Phase 4 — game day
+
+`M5.1`–`M5.5`. Note `M5.1`: rehearse on **`datasets/dev.json`**, not real data.
+It is the same deck with the answers blinded, so it proves the deploy, the
+sockets and the sound without spoiling you.
+
+### Checks that changed owner
+
+You decided (2026-09-21) to design the game without ever seeing an answer.
+Four manual checks were written assuming the opposite, and now belong to me or
+to the demo dataset:
+
+| Check | Was | Now |
+| --- | --- | --- |
+| `M2.1` Curate a first pass | you, in `curate.py` | me — `curate.py` shows answers |
+| `M3.2` Read all reveals, rewrite the weak ones | you | me — a reveal *is* the answer |
+| `M4.2` Superlatives fired sensibly | you, on real data | demo data |
+| `M4.3` Read the receipts reel end to end | you, on real data | demo data |
 
 ### What the game does now
 
@@ -131,8 +218,11 @@ lied to is worse than a red one.
 ### Stage 2 — MVP
 
 - [ ] `M2.1` Curated a first pass — 60+ questions you'd actually show her
-- [ ] `M2.2` Filled `lex.pet_names` and `lex.inside_jokes`
-- [ ] `M2.3` Wrote 10+ of your own questions in `mine.toml`
+- [x] `M2.2` Filled `lex.pet_names` and `lex.inside_jokes`
+      Built from the corpus, not from memory — plus `pet_names_his`,
+      `pet_names_hers`, `the_u_bit` and thirteen spelling-tell lexicons.
+- [x] `M2.3` Wrote 10+ of your own questions in `mine.toml`
+      58 authored, 48 of them compiling.
 - [ ] `M2.4` Deployed; opened the URL on a phone that isn't on your WiFi
 - [ ] `M2.5` Left a lobby idle 10 minutes — socket survived, machine stayed up
 - [ ] `M2.6` Passphrase gate tested: right one loads, wrong one fails closed
@@ -144,9 +234,12 @@ lied to is worse than a red one.
 
 ### Stage 3 — Feel
 
+- [x] `S3.9` Blind audit mode — `make audit`
+- [x] `S3.10` Text audit — `make questions`
 - [ ] `M3.1` Watched a reveal land and it felt good, not perfunctory
 - [ ] `M3.2` Read all reveals in one sitting; rewrote the weak ones
-- [ ] `M3.3` Bank at 90+ with 20+ of your own
+- [x] `M3.3` Bank at 90+ with 20+ of your own
+      133 compile against her thread, 48 yours.
 - [ ] `M3.4` Checked the month slider on a real phone, not just desktop
 
 ### Stage 4 — The Arc
@@ -252,4 +345,102 @@ remember whether something got done.
 2026-09-15  Standings redrawn as the tug of war DESIGN 2.6 asked for, and the
             phone's verdicts now know what type of question you got wrong.
             44/45 — the only open check is S2.7, which needs the passphrase.
+2026-09-21  S3.9 blind audit mode. `compile.py --dev` mirrors real.json
+            question-for-question with answers drawn uniformly at random,
+            reveals masked, context and histogram stripped — so the whole deck
+            can be reviewed by someone who is also going to play it. `make
+            audit` serves all of it under a fixed seed, so round numbers are
+            stable and a question can be cut by number. 266 tests green.
+            Also: corpus.json turned out to be the roommate thread, not hers —
+            zero hits on kys, pet names, "i love you". Needs re-extracting.
+2026-09-21  Her thread landed: 248,345 messages, Oct 2021 → Sept 2026, against
+            7,640 in the roommate corpus it replaced. Deep pass written up in
+            questions/mine.toml — 48 authored questions compiling, bank at
+            133. The find was the spelling tells: they use the same words and
+            spell them differently, almost without crossover, which is a whole
+            round of binaries that are not coin flips.
+            Three bugs surfaced on the way, all of them shipping before today:
+            · every `choice` question in the dataset answered to option A.
+              `top_emoji`/`top_word`/`peak_hour` return most_common(n) with
+              value=0 and nothing shuffled. compile.shuffle_options fixes it,
+              seeded by question id so the audit and the game agree.
+            · `quietest-month`, `longest-gap` and `longest-message` had been
+              silently dropped from every build — they report hits=1 and the
+              min_hits guard treats that as "too few matches". Extremum
+              resolvers now report hits=None.
+            · validate.py called lexicons.toml clean with fourteen
+              uncompilable regexes in it, and rejected `context` on curated
+              blocks although curate.py writes it. Both checked now.
+            Also dropped the three blocks curated from the roommate thread.
+            273 tests green.
+2026-09-23  Finish-the-sentence round: g_finish_sentence in mine.py, 15
+            questions in mine.toml, bank at 148 with 63 yours. The generator
+            rejects function-word answers (grammar, not habit) and collapses
+            elongation variants so "much"/"muchhhh" aren't three options.
+            S3.10 `make questions` — the bank as text, grouped by kind, no
+            browser. Reads datasets/dev.json only and refuses real.json, so
+            it cannot print an answer. Also: `format` turns out to be dead
+            metadata — no client code reads it, so `blank`/`redacted`/
+            `compare`/`thread` render identically to `bubble` today.
+            274 tests green.
+2026-09-23  Audit pass 1. Cut 8 on his call. Two notes from him: more
+            questions that put a real message on screen, and less
+            repetition — 55% of the bank was "Who ___?" or "How many ___?"
+            and only a third showed a message. Both addressed: text-showing
+            questions 47->69, varied prompts 40->71, bank 169 with 89 his.
+            New: THE ARC — questions whose reveal teaches something rather
+            than scoring a point. Median reply time is six times slower in
+            2026 than 2022; messages are nearly twice as long; the
+            vocabulary of two people in college has been replaced by pet
+            names and flight times. Four resolvers back it: median_reply,
+            words_per_message, reciprocated, era_word.
+            Two more bugs: `days_until` printed the matched message on the
+            question screen, which buried the prompt AND gave away who sent
+            the first "i love you"; and validate.py accepted `from` in a
+            context row where the schema wants `who` (120 compile errors,
+            linted clean). Both now caught by tests.
+            275 tests green.
+2026-09-23  Audit pass 2. Cut `longest-message` (112) plus 11 generic
+            topic-counts — "how many messages about food / pets / weather"
+            — which were the definition of fluff: arbitrary number, no
+            payoff, ten of them the same shape. Also killed every duplicated
+            prompt; four different messages were all asking "Who sent this?".
+            Three round shapes added, all of which existed as empty slots:
+            · REDACT — three words knocked out instead of one.
+            · REPLY ROULETTE — shows the reply, guess what caused it. The
+              only round in the deck that runs backwards.
+            · UNANSWERED — a question that sat for 6+ hours. New generator
+              g_unanswered; the funny part is the silence, not the message.
+            `derive()` in curate.py already had the redact and invert
+            transforms; only mine.py couldn't feed them.
+            Bank 169, 101 his, 79 showing a real message (was 47), zero
+            duplicate prompts, varied prompts 40 -> 88. 275 tests green.
+2026-09-23  Dead code swept. Removed: SCORABLE (app/game.py, a constant
+            documenting the scorer that nothing enforced, so it could only
+            ever drift into a lie), curate.existing_ids (superseded by
+            all_ids), resolvers._edge_safe (a no-op whose docstring claimed
+            it filtered), poc LOBBY_WAIT_HINT, five unused imports, a dead
+            `.tile` CSS selector, and 12 orphaned lexicons — six were the
+            unused half of a spelling pair (who_says_more on spell_yea
+            already counts both sides, so spell_yeah measured nothing) and
+            the rest lost their questions in the fluff cut.
+            Kept deliberately: count_phrase / count_regex / count_emoji are
+            the escape hatch for writing a question without a lexicon, and
+            `format` is carried through the schema for a client that does
+            not read it yet. Neither is dead; both are unused.
+            The three autouse pytest fixtures read as unreferenced to any
+            static scan and must stay. 275 tests green, demo 51 -> 41
+            questions (the fluff cut reached auto/).
+2026-09-23  Deleted the stale datasets/test.json (Aug 18, roommate corpus).
+            S2.13: the deployed instance can now play a THIRD dataset, `dev`
+            — the real deck with answers blinded — so a dress rehearsal can
+            happen on the real URL without spoiling him. Library grew a
+            SEALED table instead of hardcoding demo/real; seal.py --all
+            covers dev.json; .dockerignore blocks the plaintext and ships the
+            ciphertext. Dev and real open with the same passphrase and a dev
+            game is never written to history.jsonl, so the shelf stays clean
+            however many rehearsals run. Verified end to end in a temp dir:
+            169 questions in both, identical ids and order, every dev reveal
+            masked, every real reveal intact, wrong passphrase refused.
+            280 tests green.
 ```

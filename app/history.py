@@ -47,7 +47,7 @@ class GameSummary:
     """One finished game, complete enough to redraw every end screen from."""
     id: str
     played_at: str                       # ISO 8601, UTC
-    dataset: str                         # "real" | "demo" — never mixed
+    dataset: str                         # "real" | "dev" | "demo" — never mixed
     names: dict[str, str] = field(default_factory=dict)
     colors: dict[str, str] = field(default_factory=dict)
     scores: dict[str, int] = field(default_factory=dict)

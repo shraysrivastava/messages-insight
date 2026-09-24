@@ -69,26 +69,6 @@ reveal = "{month}. Said long before it actually happened."
 status = "ready"
 
 [[q]]
-id = "first-marriage"
-type = "month"
-kind = "Deep cut"
-area = "milestones"
-prompt = "When did the m-word first appear in this thread?"
-answer = { first_use = "marriage" }
-reveal = "{month}. Filed, at the time, under joking."
-status = "ready"
-
-[[q]]
-id = "first-parents"
-type = "month"
-kind = "Ancient history"
-area = "people"
-prompt = "When did one of us first bring up the other meeting their parents?"
-answer = { first_use = "parents" }
-reveal = "{month}."
-status = "ready"
-
-[[q]]
 id = "first-friends"
 type = "month"
 kind = "Ancient history"

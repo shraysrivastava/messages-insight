@@ -264,46 +264,6 @@
    "topic": "first-move-in"
   },
   {
-   "id": "first-marriage",
-   "type": "month",
-   "kind": "Deep cut",
-   "prompt": "When did the m-word first appear in this thread?",
-   "reveal": "March 2024. Filed, at the time, under joking.",
-   "answer": 36,
-   "text": "marry please",
-   "area": "milestones",
-   "format": "bubble",
-   "context": [
-    {
-     "who": "p1",
-     "text": "good morning its raining so hard here i can barely see across the street",
-     "self": false
-    },
-    {
-     "who": "p2",
-     "text": "me too 🙃",
-     "self": false
-    },
-    {
-     "who": "p1",
-     "text": "marry please",
-     "self": true
-    },
-    {
-     "who": "p1",
-     "text": "one day im making the pasta tonight the one with too much lemon",
-     "self": false
-    },
-    {
-     "who": "p2",
-     "text": "sorry i fell asleep mid sentence apparently that was very rude of me",
-     "self": false
-    }
-   ],
-   "origin": "auto",
-   "topic": "first-marriage"
-  },
-  {
    "id": "first-future",
    "type": "month",
    "kind": "First time we said it",
@@ -433,18 +393,6 @@
    "topic": "work-worst-month"
   },
   {
-   "id": "money-count",
-   "type": "number",
-   "kind": "Joint account",
-   "prompt": "How many messages mention money — Venmo, rent, splitting a bill?",
-   "reveal": "99. Romance.",
-   "answer": 99,
-   "area": "money",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "money-count"
-  },
-  {
    "id": "money-who-more",
    "type": "binary",
    "kind": "Joint account",
@@ -473,30 +421,6 @@
    "topic": "music-count"
   },
   {
-   "id": "tv-count",
-   "type": "number",
-   "kind": "One more episode",
-   "prompt": "How many times have we talked about a show or a movie?",
-   "reveal": "306. Roughly 306 arguments about spoilers.",
-   "answer": 306,
-   "area": "media",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "tv-count"
-  },
-  {
-   "id": "pets-count",
-   "type": "number",
-   "kind": "Third party",
-   "prompt": "How many messages are about an animal?",
-   "reveal": "229. The third member of this relationship.",
-   "answer": 229,
-   "area": "people",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "pets-count"
-  },
-  {
    "id": "pets-who-more",
    "type": "binary",
    "kind": "Third party",
@@ -513,42 +437,6 @@
    "topic": "pets-who-more"
   },
   {
-   "id": "weather-count",
-   "type": "number",
-   "kind": "Two forecasts",
-   "prompt": "How many messages have been a weather report from another state?",
-   "reveal": "91. The purest form of long distance.",
-   "answer": 91,
-   "area": "weather",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "weather-count"
-  },
-  {
-   "id": "lateness-count",
-   "type": "number",
-   "kind": "Five minutes away",
-   "prompt": "How many times has one of us claimed to be “on the way”?",
-   "reveal": "196. A conservative estimate of the lies told.",
-   "answer": 196,
-   "area": "logistics",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "lateness-count"
-  },
-  {
-   "id": "driving-count",
-   "type": "number",
-   "kind": "Five minutes away",
-   "prompt": "How many messages are about traffic, parking, or a train?",
-   "reveal": "217.",
-   "answer": 217,
-   "area": "logistics",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "driving-count"
-  },
-  {
    "id": "busiest-weekday",
    "type": "choice",
    "kind": "The archive",
@@ -557,9 +445,9 @@
    "answer": 0,
    "options": [
     "Sunday",
-    "Friday",
+    "Wednesday",
     "Tuesday",
-    "Wednesday"
+    "Friday"
    ],
    "area": "habits",
    "format": "bubble",
@@ -572,12 +460,12 @@
    "kind": "Chronically online",
    "prompt": "Which emoji have we used the most?",
    "reveal": "🥺. By a humiliating margin.",
-   "answer": 0,
+   "answer": 3,
    "options": [
-    "🥺",
-    "😂",
     "😭",
-    "❤"
+    "❤",
+    "😂",
+    "🥺"
    ],
    "area": "language",
    "format": "bubble",
@@ -590,12 +478,12 @@
    "kind": "By the numbers",
    "prompt": "Which of these words do we say most?",
    "reveal": "“morning”.",
-   "answer": 0,
+   "answer": 3,
    "options": [
-    "morning",
+    "absolutely",
     "minutes",
     "sorry",
-    "absolutely"
+    "morning"
    ],
    "area": "language",
    "format": "bubble",
@@ -608,12 +496,12 @@
    "kind": "The archive",
    "prompt": "What time of day do we text most?",
    "reveal": "Afternoon. That's when we're both actually ourselves.",
-   "answer": 0,
+   "answer": 3,
    "options": [
-    "Afternoon",
-    "Morning",
     "Late night",
-    "Evening"
+    "Morning",
+    "Evening",
+    "Afternoon"
    ],
    "area": "habits",
    "format": "bubble",
@@ -629,26 +517,14 @@
    "answer": 0,
    "options": [
     "2025",
-    "2022",
     "2023",
+    "2022",
     "2024"
    ],
    "area": "archive",
    "format": "bubble",
    "origin": "auto",
    "topic": "which-year-loudest"
-  },
-  {
-   "id": "total-messages",
-   "type": "number",
-   "kind": "By the numbers",
-   "prompt": "How many messages have we sent each other in 5 years?",
-   "reveal": "5,243 messages in 5 years. Neither of us has ever run out of things to say.",
-   "answer": 5243,
-   "area": "archive",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "total-messages"
   },
   {
    "id": "love-you-count",
@@ -735,18 +611,6 @@
    "topic": "compliment-count"
   },
   {
-   "id": "laughing-count",
-   "type": "number",
-   "kind": "Chronically online",
-   "prompt": "How many of our 5,243 messages were one of us laughing?",
-   "reveal": "1,314. That's the actual answer to why this worked.",
-   "answer": 1314,
-   "area": "humor",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "laughing-count"
-  },
-  {
    "id": "hearts-count",
    "type": "number",
    "kind": "Receipts",
@@ -795,16 +659,16 @@
    "topic": "travel-count"
   },
   {
-   "id": "food-count",
+   "id": "longest-gap",
    "type": "number",
-   "kind": "Petty grievances",
-   "prompt": "How many messages have been about food?",
-   "reveal": "107. Most of them the same conversation.",
-   "answer": 107,
-   "area": "food",
+   "kind": "The archive",
+   "prompt": "What's the longest we've ever gone without texting? (hours)",
+   "reveal": "119 hours. The longest silence in 5 years — and then it ended.",
+   "answer": 119,
+   "area": "archive",
    "format": "bubble",
    "origin": "auto",
-   "topic": "food-count"
+   "topic": "longest-gap"
   },
   {
    "id": "longest-streak",
@@ -849,7 +713,6 @@
    "prompt": "How many days from our first message to the first “I love you”?",
    "reveal": "217 days. Somebody was doing maths that whole time.",
    "answer": 217,
-   "text": "i love you absolutely not",
    "area": "milestones",
    "format": "bubble",
    "context": [
@@ -881,46 +744,6 @@
    ],
    "origin": "auto",
    "topic": "days-until-love"
-  },
-  {
-   "id": "days-until-marriage-word",
-   "type": "number",
-   "kind": "Deep cut",
-   "prompt": "How many days before one of us first said the word “marry”?",
-   "reveal": "1115 days before somebody said it out loud.",
-   "answer": 1115,
-   "text": "marry please",
-   "area": "milestones",
-   "format": "bubble",
-   "context": [
-    {
-     "who": "p1",
-     "text": "good morning its raining so hard here i can barely see across the street",
-     "self": false
-    },
-    {
-     "who": "p2",
-     "text": "me too 🙃",
-     "self": false
-    },
-    {
-     "who": "p1",
-     "text": "marry please",
-     "self": true
-    },
-    {
-     "who": "p1",
-     "text": "one day im making the pasta tonight the one with too much lemon",
-     "self": false
-    },
-    {
-     "who": "p2",
-     "text": "sorry i fell asleep mid sentence apparently that was very rude of me",
-     "self": false
-    }
-   ],
-   "origin": "auto",
-   "topic": "days-until-marriage-word"
   },
   {
    "id": "more-lol",

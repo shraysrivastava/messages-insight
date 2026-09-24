@@ -45,7 +45,7 @@ body{
 /* A long-press on an answer tile during a timed round pops the iOS text-select
    callout instead of answering. Text you might want to read stays selectable;
    the things you tap do not. */
-button,.tile,.eyebrow,.timer{
+button,.eyebrow,.timer{
   -webkit-user-select:none;user-select:none;
   -webkit-touch-callout:none;
 }

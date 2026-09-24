@@ -2,10 +2,17 @@
 """
 datasets.py — which game this server can play, and how the real one is opened.
 
-Two datasets ship in the image:
+Three datasets ship in the image:
 
     datasets/demo.json       fake, committed, safe to hand to anyone
+    datasets/dev.json.enc    the real deck with every answer blinded
     datasets/real.json.enc   ciphertext, committed, useless without the words
+
+`dev` exists so a dress rehearsal can happen on the deployed URL without
+spoiling the person who wrote the questions: same deck, same ids, same
+bubbles, answers replaced by a uniform random draw (compile.py `blind`). It
+is sealed rather than shipped in the clear because it still quotes five years
+of real messages — only the answers are gone, not the thread.
 
 The host screen shows `[ Demo ] [ Real 🔒 ]`. Clicking Real asks for the
 passphrase, which is typed on the night and never stored — not in an env var,
@@ -44,11 +51,22 @@ class Locked(Exception):
 class Library:
     """The datasets this server can play. One of them is behind a passphrase."""
 
+    #: id -> (label, ciphertext path). Both open with the same passphrase;
+    #: one secret, one unlock, and `dev` is only useful to someone who could
+    #: have opened `real` anyway.
+    SEALED = {"dev": ("Dev", "datasets/dev.json.enc"),
+              "real": ("Real", "datasets/real.json.enc")}
+
     def __init__(self, demo: str = "datasets/demo.json",
                  sealed: str = "datasets/real.json.enc",
                  root: str = ROOT):
         self.demo_path = os.path.join(root, demo)
-        self.sealed_path = os.path.join(root, sealed)
+        # `sealed` stays in the signature for callers that pass a single path;
+        # it overrides where `real` is looked for.
+        self.sealed_paths = {k: os.path.join(root, v)
+                             for k, (_, v) in self.SEALED.items()}
+        self.sealed_paths["real"] = os.path.join(root, sealed)
+        self.sealed_path = self.sealed_paths["real"]
         self.cache: dict[str, Dataset] = {}
         # The key the passphrase derived, kept for the life of the process
         # alongside the plaintext that is already here. history.py writes its
@@ -64,9 +82,10 @@ class Library:
         if os.path.exists(self.demo_path):
             out.append({"id": "demo", "label": "Demo", "locked": False,
                         "ready": True})
-        if os.path.exists(self.sealed_path):
-            out.append({"id": "real", "label": "Real", "locked": True,
-                        "ready": "real" in self.cache})
+        for key, (label, _) in self.SEALED.items():
+            if os.path.exists(self.sealed_paths[key]):
+                out.append({"id": key, "label": label, "locked": True,
+                            "ready": key in self.cache})
         return out
 
     def state(self) -> dict:
@@ -85,28 +104,29 @@ class Library:
                     self.cache["demo"] = Dataset.model_validate_json(f.read())
             return self.cache["demo"]
 
-        if which != "real":
+        if which not in self.SEALED:
             raise Locked("no such dataset")
+        path = self.sealed_paths[which]
 
         # Already open. The passphrase is asked for once per process, which is
         # once per game night.
-        if "real" in self.cache:
-            return self.cache["real"]
+        if which in self.cache:
+            return self.cache[which]
 
         if not self._allow():
             raise Locked("too many attempts")
-        if not passphrase or not os.path.exists(self.sealed_path):
+        if not passphrase or not os.path.exists(path):
             raise Locked("could not open")
 
         from tools.seal import BadPassphrase, open_with_key
         try:
-            with open(self.sealed_path, "rb") as f:
+            with open(path, "rb") as f:
                 plain, key = open_with_key(f.read(), passphrase)
             ds = Dataset.model_validate_json(plain)
         except (BadPassphrase, ValueError) as e:
             raise Locked("could not open") from e
 
-        self.cache["real"] = ds
+        self.cache[which] = ds
         self.key = key
         self.tries.clear()          # it worked; stop counting
         return ds

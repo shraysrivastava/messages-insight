@@ -10,6 +10,9 @@ questions/mine.toml
 questions/.curate.json
 questions/inbox.md
 datasets/real.json
+# same real bubbles as real.json, answers blinded. Still real text — never commit.
+datasets/dev.json
+!datasets/dev.json.enc
 data/
 .env
 

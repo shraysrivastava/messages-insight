@@ -13,13 +13,14 @@ fifteen lines.
 from __future__ import annotations
 
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Callable
 
 from tools.lexicon import EMOJI_RE, Lexicon, PhraseLex, RegexLex, normalise
 
+LAUGH_RUN_RE = re.compile(r"\b(?:l+m+f?a+o+|a?h[ae](?:h[ae])+h?)\b")
 STOPWORDS = set("""a about after all also am an and any are as at back be because been
 before being but by can cant come could did didnt do dont down even for from get go
 going good got had has have he her here hers him his how i if im in into is isnt it
@@ -93,7 +94,7 @@ class Corpus:
 def _lex(spec: dict, lexicons: dict[str, Lexicon], key: str) -> Lexicon | None:
     """Resolve whichever of the phrase-ish keys this spec used."""
     if key in ("count", "who_says_more", "first_use", "days_until",
-               "first_use_sender", "within", "lex"):
+               "first_use_sender", "within", "lex", "reciprocated"):
         name = spec.get(key)
         return lexicons.get(name) if isinstance(name, str) else None
     if key == "count_phrase":
@@ -149,7 +150,11 @@ def r_messages_between(c, spec, *_):
 
 def r_longest_message_words(c, spec, *_):
     best = max(c.messages, key=lambda m: m["words"])
-    return Resolution(value=best["words"], hits=1,
+    # hits=None, not 1: there is exactly one longest message, and reporting a
+    # count of 1 made compile.py's min_hits guard drop this question on every
+    # build. `hits` means "how many messages matched a lexicon" and has no
+    # meaning for a maximum.
+    return Resolution(value=best["words"], hits=None,
                       extras={"date": c.pretty(best)}, text=best["text"],
                       source=best.get("i"))
 
@@ -160,7 +165,8 @@ def r_longest_gap_hours(c, spec, *_):
         gap = (b["dt"] - a["dt"]).total_seconds() / 3600
         if gap > best:
             best, when = gap, a
-    return Resolution(value=round(best), hits=1,
+    # hits=None for the same reason as r_longest_message_words.
+    return Resolution(value=round(best), hits=None,
                       extras={"date": c.pretty(when)} if when else {})
 
 
@@ -199,8 +205,13 @@ def r_days_until(c, spec, lex, key):
     if not hits:
         return Resolution(error=f"no messages match {lex.name!r}")
     delta = hits[0]["dt"] - c.messages[0]["dt"]
+    # No `text`. The question is "how many days", and putting the message on
+    # the screen beside it both buries the question under a wall of text and
+    # hands over the answer to every *other* question about that first use —
+    # who sent it, and when. `source` still rides along, so the reveal can
+    # show the thread once the guessing is over.
     return Resolution(value=delta.days, hits=len(hits),
-                      extras={"date": c.pretty(hits[0])}, text=hits[0]["text"],
+                      extras={"date": c.pretty(hits[0])},
                       source=hits[0].get("i"))
 
 
@@ -302,11 +313,6 @@ def _month_counts(c, lexicons, spec):
     return list(c.density) or [0] * len(c.months)
 
 
-def _edge_safe(c, counts, pick):
-    """Ignore months outside the thread's real span when picking a minimum."""
-    return pick
-
-
 def r_busiest_month(c, spec, lexicons):
     counts = _month_counts(c, lexicons, spec)
     if counts is None or not any(counts):
@@ -324,7 +330,9 @@ def r_quietest_month(c, spec, lexicons):
     # very start or end is an artefact of the range, not a quiet month.
     inner = list(enumerate(counts))[1:-1] or list(enumerate(counts))
     ix = min(inner, key=lambda kv: kv[1])[0]
-    return Resolution(value=ix, hits=counts[ix] or 1,
+    # The quietest month is quiet by definition — guarding it on match count
+    # drops precisely the question being asked.
+    return Resolution(value=ix, hits=None,
                       extras={"month": c.pretty_month(ix)})
 
 
@@ -491,6 +499,137 @@ def r_busiest_year(c, spec, *_):
                       extras={"answer": order[0]})
 
 
+def r_longest_laugh(c, spec, *_):
+    """The longest single run of laughter anyone has typed.
+
+    His idea, from inbox.md: measure the funniest moment by how many O's ended
+    up in the LMAOOOO. Counts the whole run, so `lmao` is 4 and `lmaoooooo` is
+    9, and takes `hahaha` too. `source` points at the laughing message so the
+    reveal can show the thing that caused it.
+    """
+    best, at = 0, None
+    for m in c.messages:
+        for run in LAUGH_RUN_RE.finditer(m["norm"]):
+            if len(run.group()) > best:
+                best, at = len(run.group()), m
+    if at is None:
+        return Resolution(error="nobody has ever laughed")
+    return Resolution(
+        value=best, hits=None, source=at.get("i"),
+        extras={"date": c.pretty(at), "winner": c.name(at["from"]),
+                "loser": c.name("p2" if at["from"] == "p1" else "p1")})
+
+
+def r_who_laughs_longer(c, spec, *_):
+    """Whose laughter runs longer on average — a different question from who
+    laughs more often, and a more flattering one to lose."""
+    def mean(who):
+        runs = [len(r.group()) for m in c.by[who]
+                for r in LAUGH_RUN_RE.finditer(m["norm"])]
+        return sum(runs) / len(runs) if runs else 0.0
+    return _binary(c, round(mean("p1"), 2), round(mean("p2"), 2))
+
+
+def _years(c):
+    return sorted({m["ts"][:4] for m in c.messages})
+
+
+def r_median_reply(c, spec, *_):
+    """Median seconds to reply, optionally inside one year.
+
+    The interesting version of this is not "who is faster" — across five years
+    the two of them are within a second of each other — but how the number
+    moved. It is roughly six times slower at the end of this thread than at
+    the start, which is the single most honest statistic in the archive.
+    """
+    year = spec.get("year")
+    gaps = []
+    for a, b in zip(c.messages, c.messages[1:]):
+        if a["from"] == b["from"]:
+            continue
+        if year and b["ts"][:4] != str(year):
+            continue
+        d = (b["dt"] - a["dt"]).total_seconds()
+        if 0 < d < 3600:                      # an hour+ is a new conversation
+            gaps.append(d)
+    if len(gaps) < 200:
+        return Resolution(error=f"only {len(gaps)} replies to measure")
+    gaps.sort()
+    return Resolution(value=round(gaps[len(gaps) // 2]), hits=len(gaps))
+
+
+def r_words_per_message(c, spec, *_):
+    """Mean words per message, optionally for one year or one person."""
+    year, who = spec.get("year"), spec.get("by")
+    ms = [m for m in c.side(who) if not year or m["ts"][:4] == str(year)]
+    if len(ms) < 200:
+        return Resolution(error=f"only {len(ms)} messages")
+    return Resolution(value=round(sum(m["words"] for m in ms) / len(ms), 1),
+                      hits=len(ms))
+
+
+def r_reciprocated(c, spec, lex, key):
+    """Of the times one of them says a thing, how often does the other say it
+    straight back — within `window` messages. Answers as a percentage.
+
+    A different question from "who says it more", and a more revealing one:
+    it measures the reply, not the habit.
+    """
+    if lex is None:
+        return Resolution(error=f"unknown lexicon {spec.get(key)!r}")
+    if lex.draft:
+        return Resolution(error=f"lexicon {lex.name!r} still says TODO")
+    window = int(spec.get("window", 4))
+    said = back = 0
+    for i, m in enumerate(c.messages):
+        if not lex.matches(m["norm"]):
+            continue
+        said += 1
+        for j in range(i + 1, min(i + 1 + window, len(c.messages))):
+            if c.messages[j]["from"] != m["from"] and lex.matches(c.messages[j]["norm"]):
+                back += 1
+                break
+    if said < 50:
+        return Resolution(error=f"only {said} uses to measure")
+    return Resolution(value=_pct(back, said), hits=said,
+                      extras={"n1": back, "n2": said})
+
+
+def r_era_word(c, spec, *_):
+    """A word that belongs to one end of the thread and not the other.
+
+    `era_word = "arrived"` picks words that barely existed in the first two
+    years and are everywhere now; `"faded"` does the reverse. Options are
+    three words from the *other* era plus the answer, so every tile is a word
+    they really used — the round is about when, not whether.
+    """
+    which = str(spec.get("era_word", "arrived"))
+    years = _years(c)
+    if len(years) < 4:
+        return Resolution(error="thread is too short to have eras")
+    split = years[: max(2, len(years) // 2)]
+    early, late = Counter(), Counter()
+    for m in c.messages:
+        (early if m["ts"][:4] in split else late).update(
+            set(w for w in m["norm"].split() if len(w) > 3 and w.isalpha()))
+    te, tl = sum(early.values()) or 1, sum(late.values()) or 1
+    scored = []
+    for word in set(early) | set(late):
+        e, l = early[word], late[word]
+        if e + l < 150:
+            continue
+        scored.append(((((l + 1) / tl) / ((e + 1) / te)), word))
+    if len(scored) < 8:
+        return Resolution(error="not enough vocabulary drift")
+    scored.sort()
+    faded = [w for _, w in scored[:14]]
+    arrived = [w for _, w in scored[-14:]]
+    answer, others = (arrived[-1], faded) if which == "arrived" else (faded[0], arrived)
+    picks = [answer] + others[:3]
+    return Resolution(value=0, options=picks, hits=len(scored),
+                      extras={"answer": answer})
+
+
 RESOLVERS: dict[str, Callable] = {
     "count": r_count, "count_phrase": r_count, "count_regex": r_count,
     "count_emoji": r_count,
@@ -511,6 +650,12 @@ RESOLVERS: dict[str, Callable] = {
     "top_emoji": r_top_emoji, "top_word": r_top_word,
     "busiest_weekday": r_busiest_weekday, "peak_hour": r_peak_hour,
     "busiest_year": r_busiest_year,
+    "longest_laugh": r_longest_laugh,
+    "median_reply": r_median_reply,
+    "words_per_message": r_words_per_message,
+    "reciprocated": r_reciprocated,
+    "era_word": r_era_word,
+    "who_laughs_longer": r_who_laughs_longer,
 }
 
 # Resolvers that want the whole lexicon table rather than one lexicon.
@@ -526,7 +671,8 @@ FROM_DENSITY = {"busiest_month", "quietest_month"}
 
 # Resolvers whose spec key names a lexicon or phrase.
 WANTS_LEX = {"count", "count_phrase", "count_regex", "count_emoji",
-             "who_says_more", "first_use", "first_use_sender", "days_until"}
+             "who_says_more", "first_use", "first_use_sender", "days_until",
+             "reciprocated"}
 
 
 def resolve(corpus: Corpus, spec: dict, lexicons: dict[str, Lexicon]) -> Resolution:

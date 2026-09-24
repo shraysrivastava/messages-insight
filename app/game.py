@@ -21,14 +21,11 @@ import random
 import string
 import time
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 from app.schema import Dataset, Question
 
 COLORS = ["#F2A65A", "#8B8CE8", "#7BD389", "#E8709A", "#5FC9D6", "#D9C05A"]
-
-# Every type the scorer understands.
-SCORABLE = {"binary", "choice", "number", "month", "percent", "wager", "mutual"}
 
 # The subset the *clients* can currently render. compile.py filters on this, so
 # a question type is never dealt before there's an input for it. Widening this

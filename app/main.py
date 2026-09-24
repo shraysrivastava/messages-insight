@@ -60,6 +60,7 @@ import asyncio
 import io
 import json
 import os
+import random
 import secrets
 import socket
 import sys
@@ -69,7 +70,7 @@ from contextlib import asynccontextmanager
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.datasets import Library, Locked
@@ -513,8 +514,14 @@ def local_ip() -> str:
 
 def build_room(data: Dataset, rounds: int | None, seconds: float | None,
                library: Library | None = None,
-               history: History | None = None) -> Room:
-    return Room(Game(data, rounds=rounds, seconds=seconds, rules=DealRules()),
+               history: History | None = None,
+               seed: int | None = None) -> Room:
+    """`seed` fixes the deal order. Only the audit pass uses it: reviewing a
+    deck means naming questions by their round number, and an unseeded deal
+    renumbers them every restart."""
+    rng = random.Random(seed) if seed is not None else None
+    return Room(Game(data, rounds=rounds, seconds=seconds, rules=DealRules(),
+                     rng=rng),
                 library=library, history=history)
 
 
@@ -523,6 +530,9 @@ def main() -> None:
     ap.add_argument("--data", default="datasets/demo.json")
     ap.add_argument("--rounds", type=int)
     ap.add_argument("--seconds", type=float)
+    ap.add_argument("--seed", type=int,
+                    help="fix the deal order, so round numbers are stable "
+                         "between runs (used by `make audit`)")
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)))
     ap.add_argument("--host", default="0.0.0.0")
     args = ap.parse_args()
@@ -534,7 +544,7 @@ def main() -> None:
                          f"  make compile   builds the real one")
     library = Library()
     room = build_room(load(path), args.rounds, args.seconds, library=library,
-                      history=History())
+                      history=History(), seed=args.seed)
     g = room.game
     ip = local_ip()
     sealed = (f"    Real data                 {D}on the host screen, "

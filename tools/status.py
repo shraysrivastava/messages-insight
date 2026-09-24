@@ -82,6 +82,7 @@ CHECKS = [
     (2, "S2.10", "Dockerfile",                         lambda: exists("Dockerfile")),
     (2, "S2.11", "fly.toml, scale-to-zero off",        lambda: _grep("fly.toml", r"auto_stop_machines\s*=\s*false")),
     (2, "S2.12", "fonts self-hosted",                  lambda: bool(glob.glob(p("static/fonts/*"))) or bool(glob.glob(p("poc/static/fonts/*")))),
+    (2, "S2.13", "datasets/dev.json.enc (rehearsal deck)", lambda: exists("datasets/dev.json.enc")),
 
     # The month slider is a phone input, so the histogram behind it is in
     # player.html. This used to look in host.html and could never have fired.
@@ -93,6 +94,8 @@ CHECKS = [
     (3, "S3.6", "percent type",                        lambda: _grep("app/game.py", r"percent")),
     (3, "S3.7", "wager / Final Receipt",               lambda: _grep("app/game.py", r"wager")),
     (3, "S3.8", "weighted dealing (mine first)",       lambda: _grep("app/game.py", r"authored_share|weight_mine")),
+    (3, "S3.9", "blind audit mode (make audit)",       lambda: _grep("tools/compile.py", r"def blind") and _grep("Makefile", r"\naudit:")),
+    (3, "S3.10", "text audit (make questions)",        lambda: exists("tools/audit.py") and _grep("Makefile", r"\nquestions:")),
 
     # `svg` used to be in this pattern and matched the join QR's /qr.svg —
     # a dashboard that ticks itself is worse than no dashboard. Name the

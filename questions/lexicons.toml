@@ -52,8 +52,20 @@ any = ["miss you", "miss u", "missing you", "missin you", "miss ya",
 
 [lex.pet_names]
 label = "pet names"
-any = ["TODO"]                 # ← babe, bub, whatever you actually call her
-status = "draft"
+# Every one of these is in the thread. `nu` and `shru` are the two that matter
+# — they run in opposite directions and each is used almost exclusively by
+# one of them. `momma` and `munchkin` are his; `bubba` is the one both use.
+# Bare "love" and "baby" are left out on purpose: "i love that" and "baby
+# shower" swamp them, and the expansion rule already catches the elongations
+# (nuuuu, shruuuu) without a separate entry.
+any = ["nu", "shru", "bubba", "munchkin", "momma", "babe", "manu",
+       "nilu", "nolu", "niku", "choppu", "dadu", "bilu"]
+exclude = ["nu metal", "gnu", "menu", "manu ginobili"]
+
+[lex.pet_names_his]
+label = "what he calls her"
+any = ["nu", "momma", "munchkin", "manu", "nilu", "nolu", "niku", "choppu"]
+exclude = ["menu", "gnu"]
 
 [lex.compliment]
 # Bare "you look" and "youre so" are not compliments — they matched "if you
@@ -120,11 +132,6 @@ any = ["thank you", "thanks", "thank u", "thx", "thnx", "ty", "tysm", "tyvm",
        "thanku", "appreciate it", "appreciate you", "much appreciated",
        "youre the best", "life saver"]
 
-[lex.lateness]
-any = ["running late", "be there in", "omw", "on my way", "sorry im late",
-       "five minutes", "almost there", "just left", "leaving now",
-       "stuck in", "ten minutes out"]
-
 [lex.driving]
 any = ["traffic", "parking", "driving", "uber", "lyft", "the subway",
        "the train", "my car", "gas station", "highway", "detour", "rush hour"]
@@ -159,11 +166,6 @@ any = ["lets go", "we should", "next time", "book it", "tickets", "planning",
 
 
 # ── PEOPLE ────────────────────────────────────────────────────────────────
-
-[lex.parents]
-any = ["my mom", "my mum", "my dad", "my parents", "my family", "meet my mom",
-       "meet my parents", "your mom", "your parents", "moms house", "my sister",
-       "my brother"]
 
 [lex.friends]
 any = ["my friend", "hang out", "the party", "dinner with", "group chat",
@@ -217,13 +219,6 @@ any = ["lol", "lolz", "lolol", "loool"]
 regex = ["\\b(a?h[aeiu]){2,}h?\\b"]
 any = ["hah", "heh"]
 
-[lex.laughing]
-any = ["lol", "lmao", "lmfao", "rofl", "im dead", "im dying", "im crying",
-       "im screaming", "im wheezing", "cant breathe", "dead", "screaming",
-       "not the", "im weak"]
-regex = ["\\b(a?h[aeiu]){2,}h?\\b"]
-emoji = ["😂", "😭", "💀", "🤣", "😹"]
-
 [lex.please]
 any = ["please", "pls", "plz", "plss", "pretty please", "begging you"]
 
@@ -238,20 +233,26 @@ any = ["literally", "litrally", "litterally", "legit", "genuinely", "actually"]
 any = ["obsessed", "obsessing", "obsession", "cant stop thinking about",
        "living for", "in love with this"]
 
-[lex.affirm]
-any = ["ok", "okay", "k", "kk", "sure", "yeah", "yea", "yup", "yep", "ya",
-       "mhm", "bet", "sounds good", "word", "fine"]
-
 [lex.crying_emoji]
 emoji = ["😭"]
 
 [lex.inside_jokes]
 label = "the inside joke"
-any = ["TODO"]                 # ← the phrase that means nothing to anyone else
-status = "draft"
+# The `-u` bit: he takes a word describing her and sticks a u on the end.
+# Collected from the thread rather than from memory — `manu` is by far the
+# most used and did not appear until 2026, which is its own question.
+any = ["choppu", "clingu", "independentu", "manu", "sleepu", "happu",
+       "poopu", "nolu", "niku", "bilu", "shivabu", "dadu"]
 
+[lex.the_u_bit]
+label = "the -u bit"
+# Narrower than inside_jokes: only the adjectives-with-a-u, not the name
+# variants. This is the one that is actually the gag.
+any = ["choppu", "clingu", "independentu", "sleepu", "happu", "poopu"]
 
-# ── THE WORLD ─────────────────────────────────────────────────────────────
+[lex.hey_nu]
+label = "hey nu"
+any = ["hey nu", "oh no nu", "oh hey momma"]
 
 [lex.work]
 any = ["my meeting", "my boss", "deadline", "promotion", "the interview",
@@ -279,3 +280,72 @@ any = ["the episode", "the season", "the finale", "watching", "the show",
 [lex.photos]
 any = ["that pic", "this picture", "a photo", "selfie", "send me a pic",
        "camera roll", "delete that", "post it", "in my photos"]
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  THE SPELLING TELLS
+#  The strongest signal in the whole thread. These are the same words — they
+#  just spell them differently, and almost without exception. Each pair is a
+#  `who_says_more` binary that is not a coin flip, and together they are the
+#  "which of these is hers" round.
+#  `at_start` is deliberately not used: the tell holds mid-sentence too.
+# ══════════════════════════════════════════════════════════════════════════
+
+[lex.spell_yea]
+label = "yea"
+regex = ["\\byea\\b"]
+
+[lex.spell_imma]
+label = "imma"
+regex = ["\\bimma\\b"]
+
+[lex.spell_tryna]
+label = "tryna"
+regex = ["\\btryna\\b"]
+
+[lex.spell_bc]
+label = "bc"
+regex = ["\\bbc\\b"]
+
+[lex.spell_wdym]
+label = "wdym"
+regex = ["\\bwdym\\b"]
+
+[lex.spell_abt]
+label = "abt"
+regex = ["\\babt\\b"]
+
+[lex.spell_lmfao]
+label = "lmfao"
+regex = ["\\blmfao+\\b"]
+
+[lex.kms]
+label = "kms"
+any = ["kms", "im gonna kms", "gonna kms"]
+
+[lex.kys]
+label = "kys"
+regex = ["\\bkys\\b"]
+
+[lex.okay_slay]
+label = "okay slay"
+any = ["okay slay", "ok slay", "slay"]
+
+[lex.no_yeah]
+label = "no yeah"
+any = ["no yeah", "yeah no"]
+
+[lex.tmi]
+label = "too much information"
+# The genuinely unfiltered ones. `pee` needs a word boundary or it eats
+# "peek"/"peel"; the expansion rule handles "pooped"/"pooping" on its own.
+any = ["poop", "pooped", "pooping", "fart", "farted", "farting", "diarrhea",
+       "constipated", "threw up", "throwing up", "puke", "puked", "puking",
+       "peed", "gotta pee", "have to pee", "wanna pee"]
+exclude = ["poop deck"]
+
+[lex.tired]
+label = "running on fumes"
+any = ["im tired", "so tired", "im exhausted", "exhausted", "im sleepy",
+       "so sleepy", "knackered", "running on fumes", "im dead", "im so dead",
+       "need a nap", "cant keep my eyes open"]

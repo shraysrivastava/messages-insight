@@ -27,7 +27,6 @@ STATIC = os.path.join(HERE, "static")
 
 COLORS = ["#F2A65A", "#8B8CE8", "#7BD389", "#E8709A", "#5FC9D6", "#D9C05A"]
 COUNTDOWN = 3.0
-LOBBY_WAIT_HINT = 2
 
 app = FastAPI()
 

@@ -192,17 +192,6 @@ reveal = "{winner}, {n1} times. Log off."
 status = "ready"
 
 [[q]]
-id = "more-late"
-type = "binary"
-kind = "Damning evidence"
-area = "logistics"
-prompt = "Who has said “on my way” more — while not being on their way?"
-options = ["{p1}", "{p2}"]
-answer = { who_says_more = "lateness" }
-reveal = "{winner}, {n1} times. Statistically, a lie."
-status = "ready"
-
-[[q]]
 id = "more-weather"
 type = "binary"
 kind = "The archive"

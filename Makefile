@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play extract corpus mine curate compile seal unseal poc fonts deploy clean
+.PHONY: status setup test lint demo play dev audit questions extract corpus mine curate compile seal unseal poc fonts deploy clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -69,6 +69,15 @@ candidates.json:
 
 compile:           ## questions/ + $(CORPUS) -> $(DATASET)
 	@$(PY) tools/compile.py --corpus $(CORPUS) --out $(DATASET)
+
+questions: dev     ## READ every question as text, answers hidden  (ARGS="--mine")
+	@$(PY) tools/audit.py $(ARGS)
+
+audit: dev        ## review EVERY question in the browser, answers blinded
+	$(PY) -m app.main --data datasets/dev.json --rounds 999 --seed 1 --port $(PORT)
+
+dev:               ## questions/ + $(CORPUS) -> datasets/dev.json (no answers)
+	@$(PY) tools/compile.py --corpus $(CORPUS) --out datasets/dev.json --dev
 
 seal:              ## encrypt $(DATASET) + questions/mine.toml -> .enc (committed)
 	@$(PY) tools/seal.py --all

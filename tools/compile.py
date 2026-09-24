@@ -26,6 +26,7 @@ import difflib
 import glob
 import json
 import os
+import random
 import sys
 from collections import Counter, defaultdict
 
@@ -274,6 +275,7 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
             continue
 
         options = q.get("options")
+        resolver_options = False
         ctx = build_context(meta, res, q, options)
         try:
             out = {
@@ -290,7 +292,8 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
             if options:
                 out["options"] = [render(o, ctx, qid) for o in options]
             elif res is not None and res.options:
-                out["options"] = res.options
+                out["options"] = list(res.options)
+                resolver_options = True
             if q.get("text"):
                 out["text"] = render(q["text"], ctx, qid)
             elif res is not None and res.text:
@@ -305,6 +308,8 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
                 out["context"] = ctx
             out["answer"] = None if q["type"] == "mutual" else (
                 res.value if res is not None else q.get("answer"))
+            if resolver_options:
+                shuffle_options(out, qid)
         except ValueError as e:
             rep.drop("template error", qid, str(e))
             continue
@@ -342,6 +347,28 @@ def resolve_source(corpus: Corpus, src: dict, lexicons):
                 "winner": corpus.name(m["from"]),
                 "loser": corpus.name("p2" if m["from"] == "p1" else "p1")},
     )
+
+
+def shuffle_options(out: dict, qid: str) -> None:
+    """Resolver-built options arrive in rank order with the answer at index 0.
+
+    `top_emoji`, `top_word`, `busiest_weekday` and `peak_hour` all return
+    `most_common(n)` and `value=0`, so before this existed *every* `choice`
+    question in the compiled dataset answered to option A. One player noticing
+    that wins every one of those rounds for the rest of the night.
+
+    Seeded by question id, so the order is stable across recompiles — a
+    question doesn't silently change shape between the audit pass and the
+    game. Authored options are never touched: a binary's `["{p1}", "{p2}"]`
+    means option 0 *is* p1, and the resolvers encode the winner that way.
+    """
+    opts = out.get("options")
+    if not opts or not isinstance(out.get("answer"), int):
+        return
+    order = list(range(len(opts)))
+    random.Random(qid).shuffle(order)
+    out["options"] = [opts[i] for i in order]
+    out["answer"] = order.index(out["answer"])
 
 
 def dedupe(qs: list[dict], cfg: dict, rep: Report) -> list[dict]:
@@ -386,6 +413,56 @@ def dedupe(qs: list[dict], cfg: dict, rep: Report) -> list[dict]:
     return kept
 
 
+# ── dev mode ──────────────────────────────────────────────────────────────
+
+REVEAL_MASK = "— answer hidden · dev mode —"
+
+
+def blind(questions: list[dict], months: int, seed: int = 0) -> list[dict]:
+    """Strip every answer out of a compiled dataset, keeping the questions.
+
+    This is the audit surface. The question set is *identical* to the real
+    one — same ids, same order, same prompts, same bubbles — so a question can
+    be discussed by its number and cut by its id. What changes is that nothing
+    downstream of the guess survives.
+
+    The replacement answer is drawn uniformly at random from the valid range,
+    **ignoring the real one entirely**. That is deliberate and it is the whole
+    guarantee: a uniform draw carries zero information about the value it
+    replaced, so no amount of staring at `dev.json` — or at this function —
+    tells you anything about the real thread. Sometimes it will coincide with
+    the truth. You cannot know when, which is the point.
+
+    Also dropped: `reveal` (it states the answer in words), `context` (the
+    surrounding thread shows who was talking), and `histogram` (the density
+    curve behind the month slider narrows the answer on sight).
+    """
+    rng = random.Random(seed)
+    out = []
+    for q in questions:
+        d = dict(q)
+        t = d["type"]
+        if t == "mutual":
+            pass                                   # no answer to hide
+        elif t in ("binary", "choice", "wager"):
+            d["answer"] = rng.randrange(len(d.get("options") or [0, 1]))
+        elif t == "percent":
+            d["answer"] = rng.randrange(0, 101)
+        elif t == "month":
+            d["answer"] = rng.randrange(months)
+        elif t == "number":
+            # A flat range, not one scaled off the real value. The player types
+            # a free number — nothing in the UI is sized from the answer — so
+            # there is no reason to preserve its magnitude, and preserving it
+            # would hand over the single most useful hint a count has.
+            d["answer"] = rng.randrange(20, 10000)
+        d["reveal"] = REVEAL_MASK
+        d.pop("context", None)
+        d["histogram"] = False
+        out.append(d)
+    return out
+
+
 # ── output ────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -398,6 +475,8 @@ def main() -> None:
     ap.add_argument("--p1", help="override the player names (else config.toml, else corpus)")
     ap.add_argument("--p2")
     ap.add_argument("--verbose", action="store_true", help="list every dropped question")
+    ap.add_argument("--dev", action="store_true",
+                    help="blind the answers — same questions, no reveals. This is the dataset you audit; see blind().")
     ap.add_argument("--no-mine", action="store_true",
                     help="build from auto/ only — what the committed demo "
                          "dataset uses, so no curated message can reach it")
@@ -415,6 +494,9 @@ def main() -> None:
     meta, questions = compile_dataset(args.corpus, args.questions, playable, rep,
                                       names=(args.p1, args.p2),
                                       include_mine=not args.no_mine)
+
+    if args.dev:
+        questions = blind(questions, len(meta["months"]))
 
     try:
         data = Dataset.model_validate({"meta": meta, "questions": questions})
@@ -453,7 +535,9 @@ def main() -> None:
             if args.verbose:
                 for i in ids:
                     print(f"       {D}{i}{X}")
-    hidden = [q.id for q in qs if not q.histogram]
+    # month questions only: `--dev` clears the histogram on everything, and
+    # reporting "hidden on 148 month questions" out of 148 total was nonsense.
+    hidden = [q.id for q in qs if q.type == "month" and not q.histogram]
     if hidden:
         print(f"  {D}histogram hidden on {len(hidden)} month question"
               f"{'s' if len(hidden) > 1 else ''} the slider would answer{X}")

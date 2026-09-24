@@ -59,6 +59,10 @@ MIN_LENGTH = 8          # below this, refuse
 SHORT_LENGTH = 12       # below this, say something
 
 DEFAULTS = [("datasets/real.json", "datasets/real.json.enc"),
+            # The blinded deck ships too, so a dress rehearsal can happen on
+            # the deployed URL without spoiling whoever wrote the questions.
+            # It has no answers in it but still quotes the real thread.
+            ("datasets/dev.json", "datasets/dev.json.enc"),
             ("questions/mine.toml", "questions/mine.toml.enc")]
 
 G, Y, R, D, B, X = "\033[32m", "\033[33m", "\033[31m", "\033[2m", "\033[1m", "\033[0m"

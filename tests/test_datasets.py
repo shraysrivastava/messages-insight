@@ -187,3 +187,60 @@ async def test_only_the_host_is_told_which_datasets_exist(lib):
     await r.broadcast()
     assert host.last()["datasets"]["current"] == "demo"
     assert "datasets" not in ws.last()
+
+
+# ── the dev dataset, for a dress rehearsal on the deployed URL ───────────
+
+@pytest.fixture
+def lib3(tmp_path, monkeypatch):
+    """All three as they ship: demo in the clear, dev and real sealed."""
+    monkeypatch.setattr("tools.seal.KDF", {"n": 1 << 12, "r": 8, "p": 1})
+    def deck(tag):
+        return make_dataset(rounds=3, questions=[
+            {"id": f"{tag}{i}", "type": "binary", "kind": f"k{i % 3}",
+             "prompt": "who?", "reveal": "them.", "answer": 0,
+             "options": ["A", "B"], "origin": "mine"} for i in range(12)])
+    (tmp_path / "datasets").mkdir()
+    (tmp_path / "datasets" / "demo.json").write_text(
+        make_dataset(rounds=3).model_dump_json())
+    (tmp_path / "datasets" / "dev.json.enc").write_bytes(
+        seal(deck("d").model_dump_json().encode(), PASS))
+    (tmp_path / "datasets" / "real.json.enc").write_bytes(
+        seal(deck("r").model_dump_json().encode(), PASS))
+    return Library(root=str(tmp_path))
+
+
+def test_the_host_screen_offers_all_three(lib3):
+    opts = {o["id"]: o for o in lib3.options()}
+    assert set(opts) == {"demo", "dev", "real"}
+    assert opts["demo"]["locked"] is False
+    assert opts["dev"]["locked"] is True, "dev quotes the real thread"
+    assert opts["real"]["locked"] is True
+
+
+def test_dev_opens_with_the_same_passphrase_and_is_a_different_deck(lib3):
+    dev = lib3.load("dev", PASS)
+    real = lib3.load("real", PASS)
+    assert [q.id for q in dev.questions] != [q.id for q in real.questions]
+
+
+def test_a_wrong_passphrase_does_not_open_dev_either(lib3):
+    with pytest.raises(Locked):
+        lib3.load("dev", "not the words")
+
+
+def test_opening_dev_does_not_open_real(lib3):
+    lib3.load("dev", PASS)
+    assert {o["id"]: o["ready"] for o in lib3.options()}["real"] is False
+
+
+def test_a_dev_rehearsal_is_never_written_to_disk(tmp_path):
+    """Game night's shelf has to be clean. Only `real` persists."""
+    from app.history import History, GameSummary
+    h = History(path=str(tmp_path / "history.jsonl"))
+    h.key = None
+    for tag in ("demo", "dev"):
+        h.remember(GameSummary(id=tag, played_at="2026-09-23T00:00:00Z",
+                               dataset=tag))
+    assert h.pending == [], "a dev game queued itself for the real log"
+    assert not (tmp_path / "history.jsonl").exists()

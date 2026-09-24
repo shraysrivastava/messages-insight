@@ -66,7 +66,9 @@ COMPILE_VARS = {"p1", "p2", "total", "years", "months_n"}
 # Which candidate kinds fill which shape of question. The slot's `source.mine`
 # names one of these.
 TEXT_KINDS = {"who_said_it", "complaint", "apology", "longest"}
-BLANK_KINDS = {"fill_blank", "fill_emoji", "redact"}
+BLANK_KINDS = {"fill_blank", "fill_emoji", "redact", "finish_sentence"}
+# finish_sentence carries the same shape as fill_blank — `blanked`,
+# `options`, `answer` — so it mints through the same branch.
 REPLY_KINDS = {"reply", "reply_inverted"}
 
 G, Y, R, D, B, X = "\033[32m", "\033[33m", "\033[31m", "\033[2m", "\033[1m", "\033[0m"
@@ -106,13 +108,6 @@ def load_slots(qdir: str) -> list[Slot]:
                     file=os.path.relpath(path, ROOT),
                 ))
     return out
-
-
-def existing_ids(mine_path: str) -> set[str]:
-    if not os.path.exists(mine_path):
-        return set()
-    with open(mine_path, "rb") as f:
-        return {q.get("id", "") for q in tomllib.load(f).get("q", [])}
 
 
 def all_ids(qdir: str) -> set[str]:
