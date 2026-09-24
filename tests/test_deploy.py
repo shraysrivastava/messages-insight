@@ -16,8 +16,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COPY = re.compile(r"^COPY\s+(.+)$", re.M)
 
 # Never in the image. Real message text, or the machinery that produces it.
-FORBIDDEN = ("corpus.json", "candidates.json", "questions/", "datasets/real.json",
-             "tools/mine.py", "tools/extract.py", "tools/curate.py", "poc/")
+# Directories end in "/" and match by prefix; everything else must match the
+# whole path. `startswith` alone called `datasets/real.json.enc` a leak — the
+# ciphertext is *supposed* to ship (docs/PLAN.md §4), and the test only passed
+# before because nobody had run `make seal` yet.
+FORBIDDEN_DIRS = ("questions/", "poc/")
+FORBIDDEN_FILES = ("corpus.json", "candidates.json",
+                   "datasets/real.json", "datasets/dev.json",
+                   "tools/mine.py", "tools/extract.py", "tools/curate.py")
 
 
 def dockerfile():
@@ -97,10 +103,34 @@ def test_everything_the_server_imports_is_in_the_image():
     assert not missing, "\n".join(missing)
 
 
+def _forbidden(path: str) -> bool:
+    return (path in FORBIDDEN_FILES
+            or any(path.startswith(d) for d in FORBIDDEN_DIRS))
+
+
 def test_the_image_carries_no_real_data_and_no_authoring_tools():
     shipped = copied_paths()
-    leaked = [p for p in shipped if any(p.startswith(f) for f in FORBIDDEN)]
+    leaked = [p for p in shipped if _forbidden(p)]
     assert not leaked, f"these would ship: {leaked}"
+
+
+def test_the_plaintext_decks_are_a_leak_but_the_ciphertext_is_not():
+    """The distinction the prefix check used to get wrong."""
+    assert _forbidden("datasets/real.json")
+    assert _forbidden("datasets/dev.json")
+    assert not _forbidden("datasets/real.json.enc")
+    assert not _forbidden("datasets/dev.json.enc")
+    assert not _forbidden("datasets/demo.json")
+
+
+def test_the_rehearsal_deck_ships_sealed():
+    """`dev` is how the deployed instance gets tested without spoiling him,
+    so its ciphertext has to reach the image and its plaintext must not."""
+    with open(os.path.join(ROOT, ".dockerignore"), encoding="utf-8") as f:
+        ignored = f.read()
+    assert "datasets/dev.json" in ignored
+    shipped = copied_paths()
+    assert any(p.startswith("datasets/") for p in shipped)
 
 
 def test_the_sealed_dataset_ships_but_the_plaintext_does_not():

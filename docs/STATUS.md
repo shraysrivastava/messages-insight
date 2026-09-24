@@ -184,8 +184,10 @@ press Start. No question text appears before round one.
 - **Fly needs a volume for history to survive a deploy.** `data/` is on the
   machine's disk. Without `fly volumes create`, every deploy forgets the past
   games. Not urgent before the first game; urgent before the second.
-- The friend-thread test data is in `corpus.json` / `datasets/test.json`. Both
-  gitignored. Re-running `make corpus` with her identifier overwrites it.
+- `corpus.json` is her thread (248,345 messages, Oct 2021 → Sept 2026). The
+  earlier friend-thread corpus and `datasets/test.json` are both gone.
+  `make try CHAT=...` still builds a throwaway pair for testing on someone
+  else; both outputs are gitignored.
 
 ---
 

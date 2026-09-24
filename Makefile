@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play dev audit questions extract corpus mine curate compile seal unseal poc fonts deploy clean
+.PHONY: status setup test lint demo play dev audit questions check extract corpus mine curate compile seal unseal poc fonts deploy clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -31,8 +31,8 @@ demo_corpus.json:
 play: demo         ## play the demo (fake) dataset
 	$(PY) -m app.main --data datasets/demo.json
 
-serve:             ## serve any dataset:  make serve DATA=datasets/test.json
-	$(PY) -m app.main --data $(DATA) --rounds $(ROUNDS) --seconds $(SECONDS)
+serve:             ## serve any dataset:  make serve DATA=datasets/demo.json PORT=8900
+	$(PY) -m app.main --data $(DATA) --rounds $(ROUNDS) --seconds $(SECONDS) --port $(PORT)
 
 poc:               ## the original proof of concept, kept runnable as a fallback
 	$(PY) poc/server.py --data datasets/demo.json
@@ -48,7 +48,7 @@ DATASET ?= datasets/real.json
 # questions/config.toml. These just keep the command short.
 P1 ?= Me
 P2 ?= Her
-DATA    ?= datasets/test.json
+DATA    ?= datasets/demo.json
 ROUNDS  ?= 10
 SECONDS ?= 25
 PORT    ?= 8900
@@ -81,6 +81,9 @@ dev:               ## questions/ + $(CORPUS) -> datasets/dev.json (no answers)
 
 seal:              ## encrypt $(DATASET) + questions/mine.toml -> .enc (committed)
 	@$(PY) tools/seal.py --all
+
+check:             ## verify your passphrase opens the sealed .enc files
+	@$(PY) tools/seal.py --check
 
 unseal:            ## restore questions/mine.toml from its .enc
 	@$(PY) tools/seal.py --open questions/mine.toml.enc --out questions/mine.toml
