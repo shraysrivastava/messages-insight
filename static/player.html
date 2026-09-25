@@ -38,6 +38,9 @@
   .prompt{font-family:var(--display);font-variation-settings:"opsz" 40;
     font-weight:600;font-size:23px;line-height:1.22;letter-spacing:-.01em}
   .bubble{font-size:16px;line-height:1.45}
+  /* The phone is not the screen the photo is for — the big one is. Keep it
+     small enough that the options stay above the fold. */
+  .photo img{max-height:32vh}
 
   /* the read receipt (DESIGN 2.4) */
   .sentwrap{display:flex;justify-content:flex-end}
@@ -271,11 +274,46 @@ function questionView() {
 
   const tint = me ? me.color : "var(--cream)";
   const kids = [h("div", "eyebrow", q.kind), h("h2", "prompt", q.prompt)];
-  if (q.text) kids.push(h("div", "bubble", q.text));
+  const block = messageBlock(q, "bubble");   // `format`, read — see shared.js
+  if (block) kids.push(block);
+  /* The one round with no correct answer. Say so, or it reads as a trivia
+     question you happened to both get wrong. */
+  if (q.type === "mutual") {
+    kids.push(h("p", "lede", "No right answer — you score by picking the same one."));
+  }
 
   const lock = h("button", "cta", "Lock it in");
   lock.disabled = true;
   const enable = v => { pending = v; lock.disabled = false; };
+
+  /* The Final Receipt. The stake goes up before the options, because that is
+     the order you decide in: how much this is worth to you, then who you
+     think it was. Both travel in one message — see Game.record_answer. */
+  let stake = null, picked = null;
+  if (q.type === "wager") {
+    /* Never above what you actually have, rounded down to the slider's step,
+       and never below the floor Game.stake_cap grants everyone — at zero
+       points there is nothing to risk and the last round is a formality. */
+    const cap = Math.max(500, Math.floor((me ? me.score : 0) / 50) * 50);
+    stake = Math.round(cap / 2 / 50) * 50;
+    const out = h("div", "slider-val", "Staking " + stake.toLocaleString());
+    out.style.color = tint;
+    const sl = document.createElement("input");
+    sl.type = "range"; sl.min = 0; sl.max = cap; sl.step = 50; sl.value = stake;
+    sl.style.color = tint;
+    sl.setAttribute("aria-label", "How much to stake");
+    sl.oninput = () => {
+      stake = parseInt(sl.value, 10);
+      out.textContent = stake ? "Staking " + stake.toLocaleString() : "Staking nothing";
+      if (picked !== null) enable({ pick: picked, stake });
+    };
+    const ends = h("div", "ends");
+    ends.append(h("span", null, "Nothing"), h("span", null, "All in"));
+    const box = h("div", "monthpick");
+    box.append(out, sl, ends);
+    kids.push(h("p", "lede", "Last round. Stake what you like, then answer — " +
+                             "right and you win it, wrong and you lose it."), box);
+  }
 
   if (q.options) {
     const wrap = h("div", "opts");
@@ -289,7 +327,8 @@ function questionView() {
       b.onclick = () => {
         wrap.querySelectorAll("button").forEach(x => x.classList.remove("sel"));
         b.classList.add("sel");
-        enable(i);
+        picked = i;
+        enable(q.type === "wager" ? { pick: i, stake } : i);
       };
       wrap.append(b);
     });
@@ -330,6 +369,24 @@ function questionView() {
     box.append(...[out, hist && hist.el, sl, ends].filter(Boolean));
     kids.push(box);
     enable(mid);
+  } else if (q.type === "percent") {
+    /* Same shape as the month slider, minus the histogram — there is nothing
+       to draw behind a percentage. Starts at 50 and is pre-enabled, so a
+       question you have no feel for still costs you a tap, not the round. */
+    const out = h("div", "slider-val", "50%");
+    out.style.color = tint;
+    const sl = document.createElement("input");
+    sl.type = "range"; sl.min = 0; sl.max = 100; sl.value = 50;
+    sl.style.color = tint;
+    sl.setAttribute("aria-label", "Pick a percentage");
+    sl.oninput = () => { out.textContent = sl.value + "%";
+                         enable(parseInt(sl.value, 10)); };
+    const ends = h("div", "ends");
+    ends.append(h("span", null, "0%"), h("span", null, "100%"));
+    const box = h("div", "monthpick");
+    box.append(out, sl, ends);
+    kids.push(box);
+    enable(50);
   }
 
   const timer = h("div", "timer");
@@ -448,6 +505,18 @@ function lockedView() {
    shrugs the phone has stopped saying anything. */
 function verdict(q, mine, acc, S) {
   if (!mine || mine.answer === null || mine.answer === undefined) return "No answer";
+
+  /* Mutual has no truth to be near, so "Nailed it" would be claiming one. */
+  if (q.type === "mutual") return acc >= 0.999 ? "Same brain" : "You two disagreed";
+
+  if (q.type === "wager") {
+    const st = (mine.stake || 0).toLocaleString();
+    if (!mine.stake) return acc >= 0.999 ? "Right, and you risked nothing"
+                                         : "Wrong, but you risked nothing";
+    return acc >= 0.999 ? `Worth every one of those ${st}`
+                        : `That cost you ${st}`;
+  }
+
   if (acc >= 0.999) return "Nailed it";
 
   if (q.type === "month" && typeof mine.answer === "number"
@@ -459,7 +528,23 @@ function verdict(q, mine, acc, S) {
     return "Wrong year entirely";
   }
 
-  if ((q.type === "number" || q.type === "percent")
+  /* A percentage is scored on a flat 30-point band, not a relative one, so
+     the verdict has to read the same way — off by 7 on an answer of 3% is a
+     near miss worth most of the points, and calling it "wildly over" while
+     paying out 500 makes the phone look like it isn't watching. The 30 here
+     is the same 30 as in Game.accuracy: past it you scored nothing, and only
+     past it does it say so. */
+  if (q.type === "percent"
+      && typeof mine.answer === "number" && typeof q.answer === "number") {
+    const d = mine.answer - q.answer;
+    const off = Math.abs(d);
+    if (off <= 2) return "Almost exactly";
+    if (off <= 10) return d > 0 ? "A bit high" : "A bit low";
+    if (off < 30) return `${d > 0 ? "High" : "Low"} by ${Math.round(off)} points`;
+    return d > 0 ? "Wildly over" : "Wildly under";
+  }
+
+  if (q.type === "number"
       && typeof mine.answer === "number" && typeof q.answer === "number") {
     const d = mine.answer - q.answer;
     const near = Math.abs(d) / Math.max(Math.abs(q.answer), 1);
@@ -480,14 +565,16 @@ function revealView() {
 
   const v = h("div", "verdict");
   const label = verdict(q, mine, acc, S);
-  const p = h("div", "pts", "+" + pts);
+  /* A lost wager is the only negative in the game, and "+-800" is not a
+     number anyone reads. */
+  const p = h("div", "pts", (pts < 0 ? "−" : "+") + Math.abs(pts).toLocaleString());
   p.style.color = pts > 0 ? "var(--right)" : "var(--wrong)";
   v.append(p, h("div", "lab", label));
   v.append(h("div", "sub", "You said " + shownGuess(q, mine ? mine.answer : null, S)));
 
   const truth = h("div", "truth");
   truth.style.color = me ? me.color : "var(--cream)";
-  truth.append(h("div", "lab", "The truth"),
+  truth.append(h("div", "lab", q.type === "mutual" ? "No right answer" : "The truth"),
                textNode(q.reveal, "var(--cream)"));
 
   const mini = h("div", "mini");

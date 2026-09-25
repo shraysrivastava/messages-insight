@@ -91,11 +91,17 @@ CHECKS = [
     (3, "S3.3", "locked / read-receipt state",         lambda: _grep("static/player.html", r"Delivered") or _grep("poc/static/player.html", r"Delivered")),
     (3, "S3.4", "app/superlatives.py",                 lambda: exists("app/superlatives.py")),
     (3, "S3.5", "superlatives tested",                 lambda: exists("tests/test_superlatives.py")),
-    (3, "S3.6", "percent type",                        lambda: _grep("app/game.py", r"percent")),
-    (3, "S3.7", "wager / Final Receipt",               lambda: _grep("app/game.py", r"wager")),
+    # These three used to grep game.py for the word, which was true from the
+    # day the scorer was written and stayed true for months while no client
+    # could play any of them. A type ships when it is in PLAYABLE *and* a
+    # phone can answer it, so that is what they check now.
+    (3, "S3.6", "percent type",                        lambda: _playable("percent") and _grep("static/player.html", r'q\.type === "percent"')),
+    (3, "S3.7", "wager / Final Receipt",               lambda: _playable("wager") and _grep("static/player.html", r'q\.type === "wager"') and _grep("app/game.py", r"_final_receipt")),
     (3, "S3.8", "weighted dealing (mine first)",       lambda: _grep("app/game.py", r"authored_share|weight_mine")),
     (3, "S3.9", "blind audit mode (make audit)",       lambda: _grep("tools/compile.py", r"def blind") and _grep("Makefile", r"\naudit:")),
     (3, "S3.10", "text audit (make questions)",        lambda: exists("tools/audit.py") and _grep("Makefile", r"\nquestions:")),
+    (3, "S3.11", "the clients read `format`",          lambda: _grep("static/shared.js", r"function messageBlock") and _grep("static/app.css", r"\.compare") and _grep("static/host.html", r"messageBlock")),
+    (3, "S3.12", "photos (extract -> photos/ -> dataset)", lambda: exists("tools/photos.py") and _grep("tools/extract.py", r"def load_attachments") and _grep("tools/compile.py", r"def load_photo") and _grep("app/main.py", r"/photo/current")),
 
     # `svg` used to be in this pattern and matched the join QR's /qr.svg —
     # a dashboard that ticks itself is worse than no dashboard. Name the
@@ -107,8 +113,10 @@ CHECKS = [
     # Synthesised rather than sampled — there is no static/sounds/ and there
     # never will be. Every cue is oscillators and an envelope (static/sound.js).
     (4, "S4.5", "sound design",                        lambda: _grep("static/sound.js", r"function voice") or bool(glob.glob(p("static/sounds/*")))),
-    (4, "S4.6", "mutual type",                         lambda: _grep("app/game.py", r"mutual")),
+    (4, "S4.6", "mutual type",                         lambda: _playable("mutual") and _grep("static/host.html", r"agreedOption")),
     (4, "S4.7", "end-to-end smoke test",               lambda: any_exists("tests/test_smoke.py", "tests/smoke.spec.js", "tests/e2e")),
+    (4, "S4.8", "music beds under each phase",        lambda: _grep("static/sound.js", r"const BEDS") and _grep("static/host.html", r"Sound\.bed")),
+    (4, "S4.9", "the opener (five years, on the lobby)", lambda: _grep("static/host.html", r"function opener") and _grep("static/app.css", r"\.opener-bars")),
 ]
 
 STAGES = {
@@ -130,6 +138,19 @@ GATES = {
 
 
 # ── helpers ────────────────────────────────────────────────────────────────
+
+def _playable(qtype):
+    """Is this type in game.PLAYABLE? Reading the line rather than importing
+    keeps status.py runnable on the system python (3.9), which app/ is not."""
+    if not exists("app/game.py"):
+        return False
+    try:
+        with open(p("app/game.py"), encoding="utf-8", errors="ignore") as f:
+            m = re.search(r"^PLAYABLE = \{(.*?)\}", f.read(), re.M | re.S)
+    except OSError:
+        return False
+    return bool(m) and f'"{qtype}"' in m.group(1)
+
 
 def _grep(path, pattern):
     if not exists(path):

@@ -10,6 +10,7 @@ MONTHS = [f"2021-{m:02d}" for m in range(3, 13)] + \
 
 
 def q(id, type="binary", kind="k", answer=0, origin="auto", **kw):
+    """`subject` and the rest ride in through **kw straight onto the block."""
     base = dict(id=id, type=type, kind=kind, prompt="p?", reveal="r.", answer=answer,
                 origin=origin)
     if type in ("binary", "choice", "wager", "mutual"):

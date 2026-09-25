@@ -112,6 +112,14 @@ scoring testable, and scoring is the thing that breaks silently.
 Superlatives, the score graph, the history shelf and the receipts reel are all
 pure functions over that log. Keep it complete even where it looks redundant.
 
+**`subject` is what stops a game repeating itself.** `kind` is the eyebrow and
+`topic` is the compile-time dedup key; neither can see that "who says goodnight
+more", "how many goodnights" and "when was the first goodnight" are one subject
+in three costumes. `compile.py` derives `subject` from the resolver, the dealer
+allows one per game, and the Final Receipt is chosen first so nothing in the
+body can pre-answer it. A question baked from a real message has no subject on
+purpose — it can only collide with itself.
+
 **`PLAYABLE` in `game.py` gates which types get dealt.** `percent`, `wager` and
 `mutual` are scored but not in `PLAYABLE`, because no client input exists yet.
 `compile.py` filters on it and reports what it skipped, which is what lets the

@@ -25,12 +25,32 @@ QType = Literal["binary", "choice", "number", "month", "percent", "wager", "mutu
 # Rendering hints. Unknown values fall back to "bubble" on the client, so a new
 # format can never break a game — but we still enumerate the known ones here so
 # a typo gets caught at compile time rather than silently rendering plain.
-QFormat = Literal["bubble", "blank", "redacted", "compare", "thread", "timestamp"]
+QFormat = Literal["bubble", "blank", "redacted", "compare", "thread",
+                  "timestamp", "photo"]
 
 MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 # Types whose `answer` is an index into `options`.
 INDEXED = {"binary", "choice", "wager"}
+
+
+class Deal(BaseModel):
+    """questions/config.toml [deal], carried in the dataset.
+
+    `questions/` is not in the Docker image — the compiled JSON is the only
+    thing the server reads — so a dealing rule that lives only in config.toml
+    is a rule the deployed game does not have. compile.py copies the block in
+    here; `main.py` builds `game.DealRules` from it. Defaults match DealRules.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    authored_share: float = Field(default=0.65, ge=0.0, le=1.0)
+    weight_mine: int = Field(default=4, ge=1)
+    weight_auto: int = Field(default=1, ge=1)
+    max_per_kind: int = Field(default=3, ge=1)
+    max_per_subject: int = Field(default=1, ge=1)
+    freshness: bool = True
+    final_receipt: bool = True
 
 
 class Meta(BaseModel):
@@ -42,6 +62,7 @@ class Meta(BaseModel):
     density: list[int] | None = None
     rounds: int = Field(default=14, ge=1, le=50)
     seconds: float = Field(default=25.0, gt=0, le=300)
+    deal: Deal = Field(default_factory=Deal)
     total: int | None = None
     first: str | None = None
     last: str | None = None
@@ -117,12 +138,34 @@ class Question(BaseModel):
     origin: Literal["mine", "auto"] = "auto"
     topic: str | None = None
 
+    # What fact this question is about — the lexicon or the resolver behind it,
+    # derived by compile.py. `kind` is the eyebrow and `topic` is the dedup key
+    # at compile time; neither stops a game asking the same thing twice in two
+    # different costumes, which is what this is for. None means "nothing else
+    # can collide with it": a question built on one real message is only ever
+    # about that message.
+    subject: str | None = None
+
+    # A downscaled JPEG, base64, no data: prefix — the picture this question is
+    # about. It rides inside the dataset so it is sealed with everything else
+    # and nothing has to be served off disk on game night, but it is NOT in the
+    # state snapshot: main.py hands it out at /photo/current instead. A 120 KB
+    # image re-sent on every heartbeat, every answer and every reconnect is a
+    # different thing from one the browser fetches once and caches.
+    photo: str | None = None
+
     @model_validator(mode="after")
     def _shape(self) -> "Question":
         t = self.type
 
         if "TODO" in f"{self.prompt}{self.reveal}{self.text or ''}{self.options or ''}":
             raise ValueError(f"{self.id}: still contains TODO")
+
+        # `format = "photo"` with no picture renders an empty frame, and a
+        # picture nothing renders is 120 KB of dataset nobody sees.
+        if (self.format == "photo") != (self.photo is not None):
+            raise ValueError(
+                f"{self.id}: format 'photo' and a `photo` must come together")
 
         if t in INDEXED or t == "mutual":
             if not self.options or not (2 <= len(self.options) <= 4):

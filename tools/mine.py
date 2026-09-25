@@ -332,6 +332,144 @@ def g_unanswered(c, pool, freq, rng, n):
     return top(out, n)
 
 
+# Words and emoji that belong almost entirely to one of them. A round that
+# asks who spoke is over the moment one of these appears — and the deck asks
+# about these tells directly elsewhere, so quoting one here gives the same
+# answer away twice.
+TELL_RE = re.compile(
+    r"\b(cus|bc|yea|yeah|imma|ima|tryna|trynna|abt|wym|wdym|lmfao|jus|kms|"
+    r"shru|nu|momma|munchkin)\b|😹|🥲", re.I)
+
+
+JUNK_RE = re.compile(
+    r"https?://|www\.|ask alexa|check this out|give this playlist|"
+    r"soundcloud|#\w+|\bhttps\b", re.I)
+
+
+def clean(*ms) -> bool:
+    """Reject forwarded promos and runs where the same text repeats — both
+    produce questions with no answer worth guessing."""
+    texts = [m["text"] if isinstance(m, dict) else m for m in ms]
+    if any(JUNK_RE.search(t) for t in texts):
+        return False
+    return len({t.strip().lower() for t in texts}) == len(texts)
+
+
+def g_callback(c, pool, freq, rng, n):
+    """The same distinctive phrase, said twice, years apart.
+
+    Two messages that echo each other across the whole thread — show both,
+    ask which came first. The point is not the date, it is the recognition:
+    they said the same odd thing in 2022 and again in 2026 and neither of them
+    noticed. A thread rather than a pile.
+
+    Finds 4-word phrases that appear in exactly two messages, far enough apart
+    that the question is not guessable from context, and content-bearing
+    enough that the echo means something — four stopwords in a row recur
+    constantly and say nothing.
+    """
+    GRAM, MIN_MONTHS = 4, 24
+    seen = defaultdict(list)
+    for m in c.messages:
+        if not readable(m, 5, 26):
+            continue
+        toks = WORD_RE.findall(m["norm"])
+        for i in range(len(toks) - GRAM + 1):
+            gram = toks[i:i + GRAM]
+            if sum(1 for w in gram if w in STOPWORDS) > 1:
+                continue
+            seen[" ".join(gram)].append(m)
+
+    out, used = [], set()
+    for phrase, ms in seen.items():
+        if len(ms) != 2:                      # twice is an echo; ten is a habit
+            continue
+        a, b = sorted(ms, key=lambda m: m["i"])
+        if a["i"] in used or b["i"] in used:
+            continue
+        if c.month_of(b) - c.month_of(a) < MIN_MONTHS:
+            continue
+        if not clean(a, b):
+            continue
+        used.add(a["i"]); used.add(b["i"])
+        out.append(candidate(c, a, "callback",
+                             (c.month_of(b) - c.month_of(a)) / 12
+                             + interestingness(a, freq),
+                             phrase=phrase,
+                             pair={"A": a["text"], "B": b["text"]},
+                             other_i=b["i"], other_date=c.pretty(b),
+                             answer=0))
+    return top(out, n)
+
+
+def g_whose_turn(c, pool, freq, rng, n):
+    """A short exchange with both sides showing and neither name on it.
+
+    Harder than a single message and better, because the contrast is the clue:
+    you are not recognising a voice in isolation, you are working out which of
+    two voices starts. Wants an exchange that alternates cleanly and where
+    both messages could plausibly belong to either of them.
+    """
+    out = []
+    for i in range(len(c.messages) - 3):
+        a, b, d = c.messages[i], c.messages[i + 1], c.messages[i + 2]
+        if a["from"] == b["from"] or b["from"] == d["from"]:
+            continue
+        if not all(readable(m, 4, 18) for m in (a, b, d)):
+            continue
+        # a real back-and-forth, not three messages hours apart
+        if (d["dt"] - a["dt"]).total_seconds() > 900 or not clean(a, b, d):
+            continue
+        # The opener is the thing being guessed, so it is the one that must
+        # not carry a tell. The replies may — by then the round is decided.
+        if TELL_RE.search(a["norm"]):
+            continue
+        out.append(candidate(c, a, "whose_turn",
+                             interestingness(a, freq) + interestingness(b, freq),
+                             exchange=[a["text"], b["text"], d["text"]],
+                             answer=0 if a["from"] == "p1" else 1))
+    return top(out, n)
+
+
+def g_escalation(c, pool, freq, rng, n):
+    """Three messages from one person, mid-flight, shuffled.
+
+    A thought arriving in pieces — put it back in order. It is the only shape
+    that tests tone rather than content: you work out which came first from
+    how wound up it sounds, not from what it says.
+
+    Wants an unbroken run from one sender, close together, with nothing from
+    the other person in between to give the order away.
+    """
+    out = []
+    for i in range(len(c.messages) - 3):
+        run = c.messages[i:i + 3]
+        if len({m["from"] for m in run}) != 1:
+            continue
+        if i and c.messages[i - 1]["from"] == run[0]["from"]:
+            continue                          # start of the run, not the middle
+        if not all(readable(m, 4, 20) for m in run):
+            continue
+        if (run[-1]["dt"] - run[0]["dt"]).total_seconds() > 240 or not clean(*run):
+            continue
+
+        def heat(m):
+            t = m["text"]
+            return (t.count("!") + t.count("?") + 3 * t.isupper()
+                    + sum(1 for ch in t if ch.isupper()) / max(len(t), 1) * 4)
+
+        h = [heat(m) for m in run]
+        # Three consecutive messages are not an escalation unless they build.
+        # Without this the generator returns any three texts in a row and the
+        # order is unguessable, which is a worse round than no round.
+        if h[-1] <= h[0]:
+            continue
+        out.append(candidate(c, run[0], "escalation",
+                             (h[-1] - h[0]) + interestingness(run[0], freq),
+                             run=[m["text"] for m in run], answer=0))
+    return top(out, n)
+
+
 def top(items, n):
     return sorted(items, key=lambda x: -x["score"])[:n]
 
@@ -363,6 +501,9 @@ def main() -> None:
         ("fill_blank", g_fill_blank),
         ("finish_sentence", g_finish_sentence),
         ("unanswered", g_unanswered),
+        ("callback", g_callback),
+        ("whose_turn", g_whose_turn),
+        ("escalation", g_escalation),
         ("fill_emoji", g_fill_emoji),
         ("reply", g_reply),
         ("datable", g_datable),

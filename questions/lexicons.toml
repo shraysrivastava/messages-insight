@@ -43,7 +43,16 @@ any = ["i love you", "i love u", "ily", "ilysm", "ily2", "ilu", "iluvu",
        "i <3 you", "<3 you", "love youuu"]
 exclude = ["i love your", "love your", "id love to", "would love to",
            "i love it", "i love that", "i love this", "i love how",
-           "i love when", "love it when"]
+           "i love when", "love it when",
+           # Platonic and third-party. Without these the *first* match in this
+           # thread is a drunk happy-birthday text four months before the real
+           # one — "love u homie" — and six questions about the first "I love
+           # you" all pointed at it. "girl" is deliberately NOT here: these two
+           # call each other girl constantly and it would cut real ones.
+           "love you homie", "love u homie", "love you bro", "love u bro",
+           "bro i love you", "bro i love u", "love you man", "love u man",
+           "love you dude", "love u dude", "love you bestie", "love u bestie",
+           "love you mate", "love u mate"]
 
 [lex.miss_you]
 any = ["miss you", "miss u", "missing you", "missin you", "miss ya",
@@ -59,12 +68,12 @@ label = "pet names"
 # shower" swamp them, and the expansion rule already catches the elongations
 # (nuuuu, shruuuu) without a separate entry.
 any = ["nu", "shru", "bubba", "munchkin", "momma", "babe", "manu",
-       "nilu", "nolu", "niku", "choppu", "dadu", "bilu"]
+       "nolu", "niku", "choppu", "dadu", "bilu"]
 exclude = ["nu metal", "gnu", "menu", "manu ginobili"]
 
 [lex.pet_names_his]
 label = "what he calls her"
-any = ["nu", "momma", "munchkin", "manu", "nilu", "nolu", "niku", "choppu"]
+any = ["nu", "momma", "munchkin", "manu", "nolu", "niku", "choppu"]
 exclude = ["menu", "gnu"]
 
 [lex.compliment]

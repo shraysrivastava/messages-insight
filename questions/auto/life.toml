@@ -11,16 +11,6 @@
 # ── LONG DISTANCE ─────────────────────────────────────────────────────────
 
 [[q]]
-id = "ld-countdown"
-type = "number"
-kind = "The distance"
-area = "long-distance"
-prompt = "How many times have we counted down the days to seeing each other?"
-answer = { count = "long_distance" }
-reveal = "{answer:,} countdowns. Every one of them ended."
-status = "ready"
-
-[[q]]
 id = "ld-busiest-travel-month"
 type = "month"
 kind = "The distance"
@@ -28,39 +18,6 @@ area = "travel"
 prompt = "Which month had the most airport talk?"
 answer = { busiest_month = true, within = "travel" }
 reveal = "{month}. Peak airport."
-status = "ready"
-
-[[q]]
-id = "ld-first-visit-plan"
-type = "month"
-kind = "The distance"
-area = "travel"
-prompt = "When did we first book a flight to see each other?"
-answer = { first_use = "travel" }
-reveal = "{month}. The month seeing each other became a logistics problem."
-status = "ready"
-
-[[q]]
-id = "ld-who-books"
-type = "binary"
-kind = "The distance"
-area = "travel"
-prompt = "Who talks about logistics — flights, dates, timing — more?"
-options = ["{p1}", "{p2}"]
-answer = { who_says_more = "travel" }
-reveal = "{winner}, {n1} times. Somebody's the planner."
-status = "ready"
-
-# ── WORK ──────────────────────────────────────────────────────────────────
-
-[[q]]
-id = "work-count"
-type = "number"
-kind = "Nine to five"
-area = "work"
-prompt = "How many of our messages are about somebody's job?"
-answer = { count = "work" }
-reveal = "{answer:,}. We should talk about literally anything else."
 status = "ready"
 
 [[q]]
@@ -109,65 +66,6 @@ status = "ready"
 # ── MONEY ─────────────────────────────────────────────────────────────────
 
 [[q]]
-id = "money-who-more"
-type = "binary"
-kind = "Joint account"
-area = "money"
-prompt = "Who brings up money more?"
-options = ["{p1}", "{p2}"]
-answer = { who_says_more = "money" }
-reveal = "{winner}: {n1} times."
-status = "ready"
-
-# ── MEDIA ─────────────────────────────────────────────────────────────────
-
-[[q]]
-id = "music-count"
-type = "number"
-kind = "Aux cord"
-area = "media"
-prompt = "How many songs, playlists, or concerts have made it into this thread?"
-answer = { count = "music" }
-reveal = "{answer:,}."
-status = "ready"
-
-[[q]]
-id = "music-who-sends"
-type = "binary"
-kind = "Aux cord"
-area = "media"
-prompt = "Who sends the other more music?"
-options = ["{p1}", "{p2}"]
-answer = { who_says_more = "music" }
-reveal = "{winner}, {n1} times. The aux is not a democracy."
-status = "ready"
-
-[[q]]
-id = "tv-first"
-type = "month"
-kind = "One more episode"
-area = "media"
-prompt = "When did we start watching something together?"
-answer = { first_use = "tv" }
-reveal = "{month}. Statistically, we still haven't finished it."
-status = "ready"
-
-# ── PETS AND CREATURES ────────────────────────────────────────────────────
-
-[[q]]
-id = "pets-who-more"
-type = "binary"
-kind = "Third party"
-area = "people"
-prompt = "Who talks about animals more?"
-options = ["{p1}", "{p2}"]
-answer = { who_says_more = "pets" }
-reveal = "{winner}, {n1} times."
-status = "ready"
-
-# ── WEATHER ───────────────────────────────────────────────────────────────
-
-[[q]]
 id = "holidays-busiest"
 type = "month"
 kind = "Occasions"
@@ -176,18 +74,6 @@ prompt = "Which month has the most occasion-talk in it?"
 answer = { busiest_month = true, within = "holidays" }
 reveal = "{month}."
 status = "ready"
-
-[[q]]
-id = "gifts-first"
-type = "month"
-kind = "Occasions"
-area = "milestones"
-prompt = "When did the first present get mentioned?"
-answer = { first_use = "gifts" }
-reveal = "{month}. The beginning of {years} years of overthinking presents."
-status = "ready"
-
-# ── FRICTION ──────────────────────────────────────────────────────────────
 
 [[q]]
 id = "sorry-first"
@@ -219,7 +105,8 @@ area = "language"
 prompt = "Which emoji have we used the most?"
 answer = { top_emoji = 4 }
 reveal = "{answer}. By a humiliating margin."
-status = "ready"
+# cut 2026-09-24: same resolver as my-emoji-top
+status = "draft"
 
 [[q]]
 id = "top-word"
@@ -229,7 +116,8 @@ area = "language"
 prompt = "Which of these words do we say most?"
 answer = { top_word = 4 }
 reveal = "“{answer}”."
-status = "ready"
+# cut 2026-09-24: names the word same-page-overused asks you both to guess
+status = "draft"
 
 [[q]]
 id = "peak-hour"

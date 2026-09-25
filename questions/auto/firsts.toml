@@ -53,7 +53,7 @@ id = "first-our-place"
 type = "month"
 kind = "Soft launch"
 area = "milestones"
-prompt = "When did we first say “our place”?"
+prompt = "When did somewhere first become *ours* — our place, our apartment, our room?"
 answer = { first_use = "our_place" }
 reveal = "{month}. Nobody announced it. It just started."
 status = "ready"
@@ -66,46 +66,6 @@ area = "milestones"
 prompt = "When did we first talk about living together?"
 answer = { first_use = "move_in" }
 reveal = "{month}. Said long before it actually happened."
-status = "ready"
-
-[[q]]
-id = "first-friends"
-type = "month"
-kind = "Ancient history"
-area = "people"
-prompt = "When did we first talk about meeting each other's friends?"
-answer = { first_use = "friends" }
-reveal = "{month}."
-status = "ready"
-
-[[q]]
-id = "first-future"
-type = "month"
-kind = "First time we said it"
-area = "milestones"
-prompt = "When did we first talk about the far future — “one day”, “someday”?"
-answer = { first_use = "future" }
-reveal = "{month}."
-status = "ready"
-
-[[q]]
-id = "first-travel"
-type = "month"
-kind = "The archive"
-area = "travel"
-prompt = "When did we first plan a trip together?"
-answer = { first_use = "travel" }
-reveal = "{month}."
-status = "ready"
-
-[[q]]
-id = "first-obsessed"
-type = "month"
-kind = "Chronically online"
-area = "language"
-prompt = "When did “obsessed” enter the vocabulary?"
-answer = { first_use = "obsessed" }
-reveal = "{month}. It has never left."
 status = "ready"
 
 [[q]]

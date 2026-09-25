@@ -48,6 +48,15 @@ weight_auto = 1
 # Never let one `kind` dominate a single game.
 max_per_kind = 3
 
+# Never ask the same thing twice in one game, however differently it is
+# dressed. `kind` is only the eyebrow label, so "what share goes out after
+# midnight" filed under Deep cut, The archive and Chronically online used to be
+# three questions that could all land in the same fourteen rounds. compile.py
+# derives `subject` from the resolver behind each question — the lexicon, or
+# the resolver plus its argument — and a question built from one real message
+# has no subject at all, because it can only collide with itself.
+max_per_subject = 1
+
 # Prefer questions that haven't come up in recent games, using history.jsonl.
 # This is what makes five replays feel like five different games.
 freshness = true

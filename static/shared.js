@@ -28,11 +28,141 @@ function monthLabel(key) {
 
 function shownGuess(q, guess, S) {
   if (guess === null || guess === undefined) return "no answer";
-  if (q.type === "binary" || q.type === "choice") return q.options[guess];
+  /* Options first, by shape rather than by type name: binary, choice, mutual
+     and wager all answer with an index, and only this one branch has to know
+     that. */
+  if (q.options && q.options[guess] !== undefined) return q.options[guess];
   if (q.type === "number") return Number(guess).toLocaleString();
+  if (q.type === "percent") return guess + "%";
   if (q.type === "month") return monthLabel(S.meta.months[guess]);
   return String(guess);
 }
+
+/* ------------------------------------------------------- the presentation */
+
+/* `format` is a rendering hint on every question, and for a long time nothing
+   read it — `redacted`, `compare` and `thread` all came out as one plain
+   bubble, which for the multi-message ones meant three messages run together
+   into a single sentence. This is the one place that reads it. Unknown values
+   fall back to a bubble, so a format the client has never heard of can never
+   break a game (schema.QFormat says the same thing from the other side).
+
+   `cls` is the page's own bubble class — the two screens size them very
+   differently — and everything else is shape, not size. */
+
+/* Every value schema.QFormat allows, so a seventh one added there and not
+   here fails a test rather than silently rendering as a bubble on game night.
+   `bubble` is the fallback and has no branch. `blank` and `redacted` have no
+   branch either, on purpose: the marker is in the text and `inked()` runs on
+   every format, so they are a bubble that happens to contain slots. */
+const FORMATS = ["bubble", "blank", "redacted", "compare", "thread",
+                 "timestamp", "photo"];
+
+const INK = "\u2581";                 // curate.py's blank marker, BLANK
+
+function inked(text, el) {
+  /* Split on runs of the blank marker so they can be drawn as slots rather
+     than as a row of low underscores nobody can see across a room. */
+  for (const part of text.split(new RegExp("(" + INK + "+)"))) {
+    if (!part) continue;
+    if (part[0] === INK) el.append(h("i", "ink", part));
+    else el.append(document.createTextNode(part));
+  }
+  return el;
+}
+
+/* "A: “three words”" -> {tag: "A", body: "three words"}. curate.py writes the
+   labels into the text for `compare`; parsing them back out is what lets the
+   two halves sit side by side with the label above each. */
+const SIDE_RE = /^([A-Z])\s*:\s*(.*)$/;
+
+function messageBlock(q, cls) {
+  const text = q.text || "";
+  const fmt = q.format || "bubble";
+  if (fmt === "photo" && q.photo) return photoBlock(q, cls);
+  if (!text) return null;
+  const lines = text.split("\n").map(s => s.trim()).filter(Boolean);
+
+  if (fmt === "compare" && lines.length > 1) {
+    const box = h("div", "compare");
+    lines.forEach((line, i) => {
+      const m = SIDE_RE.exec(line);
+      const side = h("div", "side");
+      side.append(h("div", "tag", m ? m[1] : String.fromCharCode(65 + i)));
+      const body = (m ? m[2] : line).replace(/^[“"']|[”"']$/g, "");
+      side.append(inked(body, h("div", cls)));
+      box.append(side);
+    });
+    return box;
+  }
+
+  if (fmt === "thread" && lines.length > 1) {
+    /* One column, not two. The exchanges in this format are a mix — some are
+       two people taking turns, some are one person sending three in a row —
+       and `format` alone does not say which. Putting them on alternating
+       sides would be a guess, and on the ones it got wrong it would give away
+       or destroy the answer. So: a conversation, in order, unattributed. */
+    const box = h("div", "convo");
+    lines.forEach((line, i) => {
+      const b = inked(line, h("div", cls + " cm"));
+      b.style.animationDelay = (i * 0.12) + "s";
+      box.append(b);
+    });
+    return box;
+  }
+
+  const one = inked(lines.join(" "), h("div", cls));
+  if (fmt === "timestamp") {
+    /* Left Hanging. The message is not the joke — the silence after it is, so
+       the bubble gets a receipt and a clock that visibly runs on. It counts
+       this round's own seconds, starting at zero when the question lands, so
+       it can't be mistaken for the answer to "how long did it sit". */
+    const box = h("div", "hanging");
+    box.append(one);
+    const foot = h("div", "receipt");
+    foot.append(h("span", null, "Delivered"));
+    const clock = h("span", "clock", "0:00");
+    clock.dataset.clock = "1";
+    foot.append(clock);
+    box.append(foot);
+    return box;
+  }
+  return one;
+}
+
+/* A photograph, and its caption if it had one.
+
+   The bytes are not in the state snapshot — `q.photo` is a flag and the image
+   comes from /photo/current, once, cached by the browser for the round. The
+   `r=` is the round number: the next round's picture lives at the same URL,
+   so without it the browser would helpfully show the last one. */
+function photoBlock(q, cls) {
+  const box = h("div", "photo");
+  const img = document.createElement("img");
+  img.src = "/photo/current?r=" + (typeof S !== "undefined" && S ? S.round : 0);
+  img.alt = "A photo from the thread";
+  img.decoding = "async";
+  /* A picture that fails to load must not leave a round with nothing on the
+     screen — the prompt and the options still work without it. */
+  img.onerror = () => box.classList.add("gone");
+  box.append(img);
+  if (q.text) box.append(inked(q.text, h("div", cls + " cap")));
+  return box;
+}
+
+/* One interval for every clock on the page. Per-element timers would leak on
+   every re-render, and both screens re-render on every state message. */
+setInterval(() => {
+  const els = document.querySelectorAll("[data-clock]");
+  /* `S` is a top-level `let` in each page, which does NOT put it on `window` —
+     it is reachable by name through the shared global scope and nowhere else.
+     Testing `window.S` here meant the clock never ticked once. */
+  if (!els.length || typeof S === "undefined" || !S || !S.endsAt) return;
+  const from = S.endsAt - S.seconds;
+  const secs = Math.max(0, Math.floor(serverNow() - from));
+  const txt = Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0");
+  els.forEach(el => { el.textContent = txt; });
+}, 1000);
 
 /* ---------------------------------------------------------------- clock -- */
 

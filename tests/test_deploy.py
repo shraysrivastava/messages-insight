@@ -193,3 +193,36 @@ def test_every_font_the_css_asks_for_is_actually_here():
     assert wanted
     for rel in wanted:
         assert os.path.exists(os.path.join(ROOT, "static", rel)), rel
+
+
+# ── the clients keep up with the schema ───────────────────────────────────
+
+def test_every_format_the_schema_allows_has_a_branch_in_the_client():
+    """`format` was dead metadata for months — every value rendered as a plain
+    bubble, which for the multi-message ones ran three messages together into
+    one sentence. shared.js/messageBlock is the only reader; this is what
+    catches a format being added to the schema and nowhere else."""
+    import typing
+
+    from app.schema import QFormat
+    with open(os.path.join(ROOT, "static", "shared.js"), encoding="utf-8") as f:
+        js = f.read()
+    declared = re.search(r"const FORMATS = \[(.*?)\];", js, re.S)
+    assert declared, "shared.js no longer declares FORMATS"
+    known = set(re.findall(r'"([a-z]+)"', declared.group(1)))
+    assert known == set(typing.get_args(QFormat)), (
+        "shared.js and schema.QFormat disagree about the formats: "
+        f"{known ^ set(typing.get_args(QFormat))}")
+
+
+def test_every_playable_type_has_an_input_on_the_phone():
+    """A type in PLAYABLE with no input is a round nobody can answer. `binary`,
+    `choice`, `mutual` and `wager` all answer through the options grid, which
+    branches on `q.options` rather than on the type name."""
+    from app.game import PLAYABLE
+    with open(os.path.join(ROOT, "static", "player.html"), encoding="utf-8") as f:
+        js = f.read()
+    for t in PLAYABLE:
+        assert f'q.type === "{t}"' in js or t in ("binary", "choice", "mutual"), \
+            f"no input on the phone for {t!r}"
+    assert "q.options" in js

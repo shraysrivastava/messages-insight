@@ -282,6 +282,28 @@ def test_an_extremum_question_is_not_dropped_for_having_one_match(res_name):
     assert guard({"id": "x", "type": "number", "answer": 99}, r, {}, 3, rep)
 
 
+def test_a_source_picked_message_is_not_dropped_for_having_one_match():
+    """`source = {first_message = true}` and `source = {search = ...}` select
+    ONE message. Reporting `hits=1` put them under the default min_hits of 3,
+    which silently dropped the Final Receipt from every build — invisible for
+    as long as wagers were also being dropped as unplayable."""
+    import json as _json
+    from tools.compile import resolve_source
+    from tools.resolvers import Corpus
+    corpus = Corpus(_json.loads(_json.dumps({
+        "meta": {"p1": "A", "p2": "B", "months": ["2024-01", "2024-02"]},
+        "messages": [{"i": i, "ts": f"2024-0{1 + i % 2}-0{1 + i % 9}T12:00:00",
+                      "from": "p1" if i % 2 else "p2", "text": "hello there"}
+                     for i in range(10)],
+    })))
+    for src in ({"first_message": True}, {"search": "hello"}):
+        r = resolve_source(corpus, src, {})
+        assert r.error is None, r.error
+        assert r.hits is None, f"{src} still reports a match count"
+        rep = Report()
+        assert guard({"id": "x", "type": "wager", "answer": 0}, r, CFG, 2, rep)
+
+
 # ── the text audit must not be able to print an answer ───────────────────
 
 def test_the_text_audit_refuses_a_dataset_that_still_has_reveals(tmp_path):
@@ -323,3 +345,137 @@ def test_a_days_until_question_does_not_print_the_message_itself():
     assert r.error is None and r.value == 5
     assert r.text is None, "the message reached the question screen"
     assert r.source is not None, "the reveal still needs the thread"
+
+
+# ── photographs ───────────────────────────────────────────────────────────
+
+def _photo_corpus(tmp_path, name="IMG_0001.HEIC"):
+    """A corpus with one downscaled photo on disk, as `make photos` leaves it."""
+    import base64 as _b64
+    from tools.resolvers import Corpus
+    # A one-pixel JPEG. The bytes don't matter; the path through does.
+    jpg = _b64.b64decode(
+        "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRof"
+        "Hh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAAB"
+        "AAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==")
+    thumb = tmp_path / "0.jpg"
+    thumb.write_bytes(jpg)
+    return Corpus({
+        "meta": {"p1": "A", "p2": "B", "months": ["2024-01", "2024-02"]},
+        "messages": [{"i": 0, "ts": "2024-01-05T10:00:00+00:00",
+                      "from": "p2", "text": "", "photo": 0}],
+        "photos": [{"k": 0, "i": 0, "ts": "2024-01-05T10:00:00+00:00", "from": "p2",
+                    "src": "/nowhere/x.heic", "mime": "image/heic", "name": name,
+                    "thumb": str(thumb)}],
+    }), _b64.b64encode(jpg).decode()
+
+
+def test_a_photo_is_embedded_by_name(tmp_path):
+    """Named, not indexed: `k` renumbers on every re-extraction and a question
+    pointing at the wrong photograph is worse than one with none."""
+    from tools.compile import load_photo
+    corpus, expect = _photo_corpus(tmp_path)
+    assert load_photo(corpus, "IMG_0001.HEIC", "q1") == expect
+
+
+def test_a_photo_that_was_never_downscaled_is_a_reason_not_a_crash(tmp_path):
+    from tools.compile import load_photo
+    corpus, _ = _photo_corpus(tmp_path)
+    corpus.photos[0].pop("thumb")
+    with pytest.raises(ValueError, match="make photos"):
+        load_photo(corpus, "IMG_0001.HEIC", "q1")
+
+
+def test_an_unknown_photo_name_says_so(tmp_path):
+    from tools.compile import load_photo
+    corpus, _ = _photo_corpus(tmp_path)
+    with pytest.raises(ValueError, match="no photo named"):
+        load_photo(corpus, "IMG_9999.HEIC", "q1")
+
+
+def test_two_photos_with_the_same_name_refuse_to_be_guessed_between(tmp_path):
+    from tools.compile import load_photo
+    corpus, _ = _photo_corpus(tmp_path)
+    corpus.photos.append(dict(corpus.photos[0], k=1))
+    with pytest.raises(ValueError, match="2 photos named"):
+        load_photo(corpus, "IMG_0001.HEIC", "q1")
+
+
+def test_a_corpus_with_no_photos_says_to_re_extract(tmp_path):
+    from tools.compile import load_photo
+    corpus, _ = _photo_corpus(tmp_path)
+    corpus.photos = []
+    with pytest.raises(ValueError, match="re-extract"):
+        load_photo(corpus, "IMG_0001.HEIC", "q1")
+
+
+def test_the_photo_never_rides_in_the_state_snapshot(tmp_path):
+    """It is 120 KB and the snapshot goes out on every heartbeat. The client
+    gets a flag and fetches /photo/current once."""
+    import random as _random
+
+    from app.game import Game
+    from tests.conftest import make_dataset, q as _q
+    _, b64 = _photo_corpus(tmp_path)
+    qs = [_q(f"k{i}", kind=f"k{i}") for i in range(4)]
+    qs.append(_q("pic", kind="Photo", format="photo", photo=b64))
+    g = Game(make_dataset(qs, rounds=5), rng=_random.Random(1))
+    g.deal()
+    g.add_player("a", "A")
+    ix = next(i for i, x in enumerate(g.deck) if x.id == "pic")
+    g.begin_round(ix)
+    g.open_question(now=1000.0)
+    pub = g.snapshot()["question"]
+    assert pub["photo"] is True
+    assert b64 not in json.dumps(pub)
+
+
+# ── subject derivation ────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("spec,want", [
+    ({"count": "love_you"}, "love_you"),
+    ({"count": "love_you", "by": "p1"}, "love_you"),          # a slice, not a subject
+    ({"count": "love_you", "year": 2022}, "love_you"),
+    ({"who_says_more": "sorry"}, "sorry"),
+    ({"first_use_sender": "love_you"}, "love_you"),
+    ({"busiest_month": True, "within": "travel"}, "travel"),  # within is the subject
+    ({"busiest_month": True}, "busiest_month"),
+    ({"share_between": [0, 5]}, "share_between:[0, 5]"),
+    ({"share_between": [9, 17]}, "share_between:[9, 17]"),    # a different subject
+    ({"share_of_messages": "p1"}, "share_of_messages:p1"),
+    ({"top_emoji": 4}, "top_emoji:4"),
+    (None, None),
+    ({}, None),
+])
+def test_subject_is_the_fact_not_the_slice(spec, want):
+    from tools.compile import subject_of
+    assert subject_of(spec) == want
+
+
+def test_a_question_baked_from_one_message_has_no_subject():
+    """It is about that message. Giving it a subject would make the dealer
+    treat every Who Said It round as interchangeable and deal one per game."""
+    from tools.compile import subject_of
+    assert subject_of({"mine": "who_said_it"}) == "mine:who_said_it"
+    assert subject_of(None) is None
+
+
+def test_the_shipped_bank_asks_nothing_twice_in_one_game():
+    """The regression guard for the whole audit: deal the real deck a hundred
+    times and no game may contain two questions about the same fact."""
+    import collections
+    import random as _random
+
+    from app.game import DealRules, Game
+    from app.schema import load
+    path = os.path.join(ROOT, "datasets", "real.json")
+    if not os.path.exists(path):
+        pytest.skip("no compiled real.json on this machine")
+    data = load(path)
+    rules = DealRules(**data.meta.deal.model_dump())
+    for seed in range(100):
+        g = Game(data, rng=_random.Random(seed), rules=rules)
+        g.deal()
+        subs = [q.subject for q in g.deck if q.subject]
+        dupes = [s for s, n in collections.Counter(subs).items() if n > 1]
+        assert not dupes, f"seed {seed} asks about {dupes} twice"

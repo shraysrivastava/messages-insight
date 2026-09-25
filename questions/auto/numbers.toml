@@ -12,7 +12,8 @@ area = "affection"
 prompt = "We've sent {total:,} messages. How many said “I love you”?"
 answer = { count = "love_you" }
 reveal = "{answer:,} times. Still not enough."
-status = "ready"
+# cut 2026-09-24: same count as my-final-ily-total
+status = "draft"
 
 [[q]]
 id = "goodnight-count"
@@ -20,149 +21,10 @@ type = "number"
 kind = "Soft launch"
 area = "habits"
 prompt = "How many times have we said goodnight?"
-answer = { count = "goodnight" }
+answer = { count = "goodnight", mode = "occurrences" }
 reveal = "{answer:,} goodnights. Most of them from different time zones."
-status = "ready"
-
-[[q]]
-id = "good-morning-count"
-type = "number"
-kind = "Cold open"
-area = "habits"
-prompt = "And how many good mornings?"
-answer = { count = "good_morning" }
-reveal = "{answer:,}."
-status = "ready"
-
-[[q]]
-id = "sorry-count-p1"
-type = "number"
-kind = "Damning evidence"
-area = "conflict"
-prompt = "How many times has {p1} apologised?"
-answer = { count = "sorry", by = "p1" }
-reveal = "{answer:,}. Some of them even meant it."
-status = "ready"
-
-[[q]]
-id = "thanks-count"
-type = "number"
-kind = "Character witness"
-area = "affection"
-prompt = "How many times have we thanked each other?"
-answer = { count = "thank_you" }
-reveal = "{answer:,}. {years} years of not taking it for granted."
-status = "ready"
-
-[[q]]
-id = "miss-you-count"
-type = "number"
-kind = "Soft launch"
-area = "long-distance"
-prompt = "How many times has one of us said “miss you”?"
-answer = { count = "miss_you" }
-reveal = "{answer:,}. Long distance is a numbers game."
-status = "ready"
-
-[[q]]
-id = "compliment-count"
-type = "number"
-kind = "Receipts"
-area = "affection"
-prompt = "How many outright compliments have we paid each other?"
-answer = { count = "compliment" }
-reveal = "{answer:,}. Worth rereading on a bad day."
-status = "ready"
-
-[[q]]
-id = "hearts-count"
-type = "number"
-kind = "Receipts"
-area = "affection"
-prompt = "How many hearts have we sent each other?"
-answer = { count = "hearts", mode = "occurrences" }
-reveal = "{answer:,}."
-status = "ready"
-
-[[q]]
-id = "crying-emoji"
-type = "number"
-kind = "Chronically online"
-area = "humor"
-prompt = "How many 😭 have we sent?"
-answer = { count = "crying_emoji", mode = "occurrences" }
-reveal = "{answer:,}. Almost none of them about anything sad."
-status = "ready"
-
-[[q]]
-id = "facetime-count"
-type = "number"
-kind = "By the numbers"
-area = "long-distance"
-prompt = "How many times have we tried to schedule a call over text?"
-answer = { count = "long_distance" }
-reveal = "{answer:,}. The real cost of two time zones."
-status = "ready"
-
-[[q]]
-id = "travel-count"
-type = "number"
-kind = "The archive"
-area = "travel"
-prompt = "How many of our messages mention a flight, an airport, or packing?"
-answer = { count = "travel" }
-reveal = "{answer:,}. A relationship measured in boarding passes."
-status = "ready"
-
-[[q]]
-id = "tired-count"
-type = "number"
-kind = "Petty grievances"
-area = "sleep"
-prompt = "How many times has one of us announced being tired?"
-answer = { count = "sleep" }
-reveal = "{answer:,}. Nobody has ever done anything about it."
-status = "ready"
-
-[[q]]
-id = "longest-gap"
-type = "number"
-kind = "The archive"
-area = "archive"
-prompt = "What's the longest we've ever gone without texting? (hours)"
-answer = { longest_gap_hours = true }
-reveal = "{answer} hours. The longest silence in {years} years — and then it ended."
-status = "ready"
-
-[[q]]
-id = "busiest-day-count"
-type = "number"
-kind = "By the numbers"
-area = "archive"
-prompt = "Most messages we've ever sent in a single day?"
-answer = { max_day_count = true }
-reveal = "{answer:,} messages, on {date}. Neither of us got anything else done that day."
-status = "ready"
-
-[[q]]
-id = "longest-streak"
-type = "number"
-kind = "Receipts"
-area = "habits"
-prompt = "Longest run of consecutive days we both texted?"
-answer = { longest_streak_days = true }
-reveal = "{answer:,} days in a row, without one of us dropping it."
-status = "ready"
-
-[[q]]
-id = "avg-per-day"
-type = "number"
-kind = "By the numbers"
-area = "archive"
-prompt = "On an average day, how many messages do we send each other?"
-answer = { avg_per_day = true }
-reveal = "{answer} a day. Every day, for {years} years."
-status = "ready"
+# cut 2026-09-24: third question on lex.goodnight, and a bare count
+status = "draft"
 
 [[q]]
 id = "three-am-club"
@@ -172,36 +34,6 @@ area = "sleep"
 prompt = "How many messages have we sent between 2am and 5am?"
 answer = { messages_between = [2, 5] }
 reveal = "{answer:,}. Nothing good has ever been said at 4am and we said it anyway."
-status = "ready"
-
-[[q]]
-id = "distinct-emoji"
-type = "number"
-kind = "By the numbers"
-area = "language"
-prompt = "How many different emoji have we used between us?"
-answer = { distinct_emoji = true }
-reveal = "{answer}. Of which we actually use about six."
-status = "ready"
-
-[[q]]
-id = "photos-sent"
-type = "number"
-kind = "The archive"
-area = "media"
-prompt = "How many photos have we sent each other?"
-answer = { attachments = true }
-reveal = "{answer:,}."
-status = "ready"
-
-[[q]]
-id = "questions-asked"
-type = "number"
-kind = "Character witness"
-area = "language"
-prompt = "How many questions has {p2} asked {p1}?"
-answer = { question_count = true, by = "p2" }
-reveal = "{answer:,}. Roughly {answer} more than were strictly necessary."
 status = "ready"
 
 [[q]]

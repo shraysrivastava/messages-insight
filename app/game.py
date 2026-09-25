@@ -30,12 +30,20 @@ COLORS = ["#F2A65A", "#8B8CE8", "#7BD389", "#E8709A", "#5FC9D6", "#D9C05A"]
 # The subset the *clients* can currently render. compile.py filters on this, so
 # a question type is never dealt before there's an input for it. Widening this
 # set is how a new mechanic ships: add the input, add the name here.
-PLAYABLE = {"binary", "choice", "number", "month"}
+#
+# `wager` is in it, but it never lands in the body of the game: `deal()` holds
+# the wagers back and appends one as the last round (the Final Receipt).
+PLAYABLE = {"binary", "choice", "number", "month", "percent", "mutual", "wager"}
 
 # Types whose answer is an index into `options`.
 INDEXED = {"binary", "choice", "wager", "mutual"}
 
 MUTUAL_POINTS = 500      # flat — a co-op round shouldn't reward buzzing in
+
+# The Final Receipt. You stake before you answer, you win or lose the stake,
+# and speed is worth nothing — the whole round is the decision, not the reflex.
+WAGER_STEP = 50          # the slider's granularity, so the number reads round
+WAGER_FLOOR = 500        # you can always stake this much, even at zero
 
 
 @dataclass
@@ -45,6 +53,9 @@ class PlayerResult:
     accuracy: float
     elapsed: float
     rank_after: int
+    # Only the Final Receipt sets this. superlatives.py needs it for All In and
+    # Ice in the Veins, which are about how much you risked, not what you knew.
+    stake: int | None = None
 
 
 @dataclass
@@ -76,15 +87,23 @@ class Player:
     answered_at: float | None = None
     last: dict | None = None
     online: bool = True
+    stake: int | None = None         # the Final Receipt only
 
 
 @dataclass
 class DealRules:
-    """Mirrors questions/config.toml [deal]."""
+    """Mirrors questions/config.toml [deal].
+
+    It gets there through the dataset, not through the file: `compile.py`
+    copies the block into `meta.deal` and `main.build_room` unpacks it here.
+    The deployed image has no `questions/` directory (see schema.Deal), so the
+    fields and defaults below have to stay in step with that model.
+    """
     authored_share: float = 0.65
     weight_mine: int = 4
     weight_auto: int = 1
     max_per_kind: int = 3
+    max_per_subject: int = 1
     freshness: bool = True
     final_receipt: bool = True
 
@@ -100,7 +119,12 @@ class Game:
     ) -> None:
         self.data = data
         self.meta = data.meta
-        self.bank = [q for q in data.questions if q.type in PLAYABLE]
+        # Wagers are playable but never dealt into the body of the game — one
+        # of them is appended as the last round instead, so `rounds` counts
+        # the ordinary rounds and the deck comes out one longer.
+        self.bank = [q for q in data.questions
+                     if q.type in PLAYABLE and q.type != "wager"]
+        self.finals = [q for q in data.questions if q.type == "wager"]
         self.rules = rules or DealRules()
         self.rng = rng or random.Random()
         self.seconds = seconds if seconds is not None else data.meta.seconds
@@ -125,8 +149,16 @@ class Game:
         """Build this game's deck.
 
         Authored questions come first and are sampled at higher weight; a single
-        `kind` is capped; recently-seen questions are down-weighted so replays
-        differ. Deterministic given the rng, which is what makes it testable.
+        `kind` and a single `subject` are both capped; recently-seen questions
+        are down-weighted so replays differ. Deterministic given the rng, which
+        is what makes it testable.
+
+        The subject cap is the one that stops a game feeling repetitive.
+        `kind` is only the eyebrow, so three questions about what gets sent
+        after midnight — filed under Deep cut, The archive and Chronically
+        online — used to be free to land in the same fourteen rounds. They are
+        the same question in three costumes, and a bank of 160 has no need to
+        ask twice.
         """
         seen = seen or {}
         r = self.rules
@@ -135,13 +167,29 @@ class Game:
 
         picked: list[Question] = []
         per_kind: dict[str, int] = {}
+        per_subject: dict[str, int] = {}
+
+        # Choose the closer first so the body of the game can be dealt around
+        # it. A wager on who said "I love you" first is worth nothing at round
+        # 15 if round 4 already showed the message and named the date.
+        final = (self._final_receipt(seen)
+                 if r.final_receipt and self.finals else None)
+        if final is not None and final.subject:
+            per_subject[final.subject] = r.max_per_subject
 
         def can_take(q: Question) -> bool:
-            return per_kind.get(q.kind, 0) < r.max_per_kind
+            if per_kind.get(q.kind, 0) >= r.max_per_kind:
+                return False
+            # A question with no subject is about one specific message and can
+            # only ever collide with itself.
+            return (q.subject is None
+                    or per_subject.get(q.subject, 0) < r.max_per_subject)
 
         def take(q: Question) -> None:
             picked.append(q)
             per_kind[q.kind] = per_kind.get(q.kind, 0) + 1
+            if q.subject:
+                per_subject[q.subject] = per_subject.get(q.subject, 0) + 1
 
         def weight(q: Question) -> float:
             w = float(r.weight_mine if q.origin == "mine" else r.weight_auto)
@@ -150,7 +198,7 @@ class Game:
             return w
 
         def draw(pool: list[Question], upto: int) -> None:
-            """Weighted sample without replacement, respecting the kind cap."""
+            """Weighted sample without replacement, respecting both caps."""
             avail = [q for q in pool if q not in picked]
             while avail and len(picked) < upto:
                 eligible = [q for q in avail if can_take(q)]
@@ -173,12 +221,11 @@ class Game:
 
         self.deck = self._interleave(picked)
 
-        if r.final_receipt:
-            wagers = [q for q in self.deck if q.type == "wager"]
-            if wagers:
-                last = wagers[-1]
-                self.deck.remove(last)
-                self.deck.append(last)
+        # The Final Receipt is round 15 of 14: a permanent closer, outside the
+        # interleave and outside the caps, because it is the only round whose
+        # position is the point. It was chosen before the draw, above.
+        if final is not None:
+            self.deck.append(final)
 
     def _interleave(self, questions: list[Question]) -> list[Question]:
         """Round-robin by `kind` so the same category never lands twice running.
@@ -196,6 +243,19 @@ class Game:
                 if lst:
                     out.append(lst.pop(0))
         return out
+
+    def _final_receipt(self, seen: dict[str, int]) -> Question:
+        """Pick the wager to close on, favouring yours and the unseen."""
+        r = self.rules
+        weights = []
+        for q in self.finals:
+            w = float(r.weight_mine if q.origin == "mine" else r.weight_auto)
+            if r.freshness:
+                w /= 1 + seen.get(q.id, 0)
+            weights.append(w)
+        if sum(weights) <= 0:
+            return self.rng.choice(self.finals)
+        return self.rng.choices(self.finals, weights=weights, k=1)[0]
 
     # ── players ───────────────────────────────────────────────────────────
 
@@ -227,9 +287,36 @@ class Game:
         p = self.players.get(pid)
         if not p or self.phase != "question" or p.answer is not None:
             return False
+        q = self.question
+        if q is not None and q.type == "wager":
+            # The phone sends the pick and the stake together, because they are
+            # one decision. Splitting them into two messages would let a client
+            # stake, see the board move, and pick afterwards.
+            if not isinstance(value, dict):
+                return False
+            pick = value.get("pick")
+            if not isinstance(pick, int) or isinstance(pick, bool):
+                return False
+            p.stake = self.stake_cap(p, value.get("stake"))
+            value = pick
         p.answer = value
         p.answered_at = self._clamp_time(at)
         return True
+
+    def stake_cap(self, p: Player, want: Any = None) -> int:
+        """What this player may stake, and what they actually staked.
+
+        Called with no `want` it is the ceiling the phone draws its slider to;
+        called with one it clamps. The floor matters: at zero points there is
+        nothing to risk and the last round would be a formality, so everyone
+        gets something to put on the table.
+        """
+        cap = max(p.score, WAGER_FLOOR)
+        if want is None:
+            return cap
+        if not isinstance(want, (int, float)) or isinstance(want, bool):
+            return 0
+        return max(0, min(int(want), cap))
 
     def _clamp_time(self, at: float | None) -> float:
         """Clamp a client-supplied timestamp into the question window.
@@ -291,6 +378,8 @@ class Game:
 
         if q.type == "mutual":
             scores = self._grade_mutual()
+        elif q.type == "wager":
+            scores = self._grade_wager()
         else:
             scores = {}
             for p in self.players.values():
@@ -301,6 +390,8 @@ class Game:
         for p in self.players.values():
             acc, pts = scores.get(p.id, (0.0, 0))
             p.last = {"points": pts, "accuracy": round(acc, 3), "answer": p.answer}
+            if q.type == "wager":
+                p.last["stake"] = p.stake or 0
             p.score += pts
 
         order = sorted(self.players.values(), key=lambda p: -p.score)
@@ -328,6 +419,7 @@ class Game:
                     accuracy=round(scores.get(p.id, (0.0, 0))[0], 3),
                     elapsed=round(max(0.0, (p.answered_at or self.ends_at or started) - started), 2),
                     rank_after=ranks[p.id],
+                    stake=p.stake if q.type == "wager" else None,
                 )
                 for p in self.players.values()
             },
@@ -347,6 +439,26 @@ class Game:
             matched = sum(1 for o in others if o.answer == p.answer)
             acc = matched / len(others)
             out[p.id] = (acc, round(MUTUAL_POINTS * acc))
+        return out
+
+    def _grade_wager(self) -> dict[str, tuple[float, int]]:
+        """Win the stake or lose it. No speed bonus — the decision is the round.
+
+        A loss cannot take anyone below zero. There is no round after this one
+        to win it back, and a negative number on the last screen of the night
+        is a worse ending than a small one.
+        """
+        q = self.question
+        assert q is not None
+        out: dict[str, tuple[float, int]] = {}
+        for p in self.players.values():
+            stake = p.stake or 0
+            if p.answer is None:
+                out[p.id] = (0.0, 0)
+                continue
+            right = p.answer == q.answer
+            out[p.id] = (1.0 if right else 0.0,
+                         stake if right else -min(stake, p.score))
         return out
 
     # ── snapshot ──────────────────────────────────────────────────────────
@@ -369,6 +481,10 @@ class Game:
                 pub["options"] = q.options
             if q.unit is not None:
                 pub["unit"] = q.unit
+            # A flag, not the bytes. The picture is 120 KB and this dict goes
+            # out on every heartbeat; the client fetches /photo/current once.
+            if q.photo is not None:
+                pub["photo"] = True
             # Only sent when it's off — the slider draws the histogram unless
             # told not to, and a question whose answer is the density array
             # would be giving itself away (schema.Question.histogram).
@@ -432,6 +548,7 @@ class Game:
             p.answer = None
             p.answered_at = None
             p.last = None
+            p.stake = None
 
     def open_question(self, now: float | None = None) -> None:
         self.phase = "question"

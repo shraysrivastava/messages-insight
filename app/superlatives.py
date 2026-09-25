@@ -23,10 +23,9 @@ margin clears a stated bar.
 `award()` takes the top few. Different games surface different awards, which
 is what makes them feel earned rather than issued.
 
-Two awards in the design catalog are not here: **All In** and **Ice in the
-Veins**, both of which need the size of a Final Receipt wager. `PlayerResult`
-records the answer, not the stake, so they cannot be computed yet — they
-arrive with the field, when `wager` joins `PLAYABLE` in game.py.
+**All In** and **Ice in the Veins** read `PlayerResult.stake`, which only the
+Final Receipt sets. They are the two awards that are about what someone risked
+rather than what they knew, and they are logically exclusive — see `_all_in`.
 """
 
 from __future__ import annotations
@@ -35,7 +34,7 @@ import statistics
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from app.game import RoundRecord
+from app.game import WAGER_FLOOR, RoundRecord
 
 # A hit. Exact types are 1.0 or 0.0, so this only bites on the graded ones,
 # where it is a judgement call: a month guess two months out scores points and
@@ -56,6 +55,13 @@ PETTY = "Petty grievances"
 
 # The last few seconds of the clock, for Buzzer Beater.
 BUZZER = 3.0
+
+# The share of what you were *allowed* to stake that counts as going all in.
+# Against the cap, not against the score: Game.stake_cap gives everyone a floor
+# of WAGER_FLOOR, so a player on 300 points who shoves 500 has put in
+# everything available to them, and measuring against their score would call
+# that 166% and measuring against 90% of it would miss the point.
+ALL_IN = 0.9
 
 
 @dataclass(frozen=True)
@@ -433,6 +439,65 @@ def split_brain(t: Tally) -> Award | None:
                  len(hits) / 2)
 
 
+def _all_in(t: Tally) -> list[tuple[str, int, int, bool]]:
+    """Everyone who shoved on the Final Receipt: (pid, stake, cap, won).
+
+    The cap is what `Game.stake_cap` would have allowed — their score going
+    into the round, floored at WAGER_FLOOR — so this asks "did you put in
+    everything you could" rather than "how big was the number". Reconstructed
+    from the log rather than read off the game, because everything in this file
+    is a pure function of `list[RoundRecord]` and has to stay one.
+    """
+    ix = next((i for i in range(len(t.log) - 1, -1, -1)
+               if t.log[i].type == "wager"), None)
+    if ix is None:
+        return []
+    run = t.running()
+    out = []
+    for pid in t.pids:
+        res = t.result(t.log[ix], pid)
+        if res is None or res.stake is None or res.answer is None:
+            continue
+        before = run[pid][ix - 1] if ix > 0 and ix - 1 < len(run[pid]) else 0
+        cap = max(before, WAGER_FLOOR)
+        if cap > 0 and res.stake / cap >= ALL_IN:
+            out.append((pid, res.stake, cap, res.accuracy >= 0.999))
+    return out
+
+
+def all_in(t: Tally) -> Award | None:
+    """Shoved, and it didn't come off.
+
+    Exclusive with Ice in the Veins by construction rather than by suppression:
+    this one takes the ones who lost, that one takes the ones who won, and
+    between them every player who went all in gets exactly one card.
+    """
+    lost = [(pid, stake) for pid, stake, _, won in _all_in(t) if not won]
+    if not lost:
+        return None
+    pids = tuple(pid for pid, _ in lost)
+    most = max(stake for _, stake in lost)
+    who = " and ".join(t.name(pid) for pid in pids)
+    verb = "both put" if len(pids) > 1 else "put"
+    return Award("all_in", "All In", pids,
+                 f"{who} {verb} everything on the Final Receipt. It was wrong.",
+                 1.4 + most / 5000)
+
+
+def ice_in_the_veins(t: Tally) -> Award | None:
+    """Shoved on the last round of the night and was right."""
+    won = [(pid, stake) for pid, stake, _, w in _all_in(t) if w]
+    if not won:
+        return None
+    pids = tuple(pid for pid, _ in won)
+    most = max(stake for _, stake in won)
+    who = " and ".join(t.name(pid) for pid in pids)
+    verb = "both staked" if len(pids) > 1 else "staked"
+    return Award("ice_in_the_veins", "Ice in the Veins", pids,
+                 f"{who} {verb} {most:,} on the last question and called it right",
+                 2.4 + most / 5000)
+
+
 def sniper(t: Tally) -> Award | None:
     best: tuple[float, str, RoundRecord] | None = None
     for r in t.rounds(lambda r: r.type == "number"):
@@ -523,6 +588,7 @@ CATALOG: list[Callable[[Tally], Award | None]] = [
     historian, accountant, mind_reader, ice_cold, on_fire, comeback_kid,
     wire_to_wire, quietly_devastating, same_page, split_brain, sniper,
     wildly_optimistic, sentimental, realist, the_constant,
+    all_in, ice_in_the_veins,
 ]
 
 

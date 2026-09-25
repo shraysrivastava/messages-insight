@@ -287,6 +287,15 @@ that unnecessary.
 `questions/auto/*.toml` is generated. There is no field to remember and no way to
 mislabel anything.
 
+**Two caps, and only one of them is obvious** — `max_per_kind` guards the
+eyebrow label, `max_per_subject` guards the *fact*. The second exists because
+an audit on 2026-09-24 found `lex.love_you` carrying eight questions across six
+different kinds, four of them built on the same single message, two of which
+put that message on screen and dated it — while the Final Receipt, which always
+plays, asks who sent it. The game could answer its own closer at round 4.
+`compile.py` derives `subject` from the resolver; `deal()` picks the Final
+Receipt *before* drawing the body so the closer owns its subject.
+
 **Dealing** (`S3.8`, `config.toml [deal]`):
 
 - `authored_share = 0.65` — the dealer fills 65% of every 14-round game from
@@ -391,6 +400,8 @@ ship line.**
 | `S3.8` | Weighted dealing — yours first | 1h |
 | `S3.9` | Blind audit mode — `make audit` | 1h |
 | `S3.10` | Text audit — `make questions` | 1h |
+| `S3.11` | The clients read `format` | 2h |
+| `S3.12` | Photos — chat.db to the sealed dataset | 4h |
 
 `S3.9` exists because he designs the game *and* plays it. `compile.py --dev`
 emits the same question set as `real.json` — same ids, same order, same bubbles —
@@ -410,8 +421,54 @@ answer, because the file it reads does not contain one — pointed at
 height = volume. She's sliding across a picture of your relationship and the spikes
 are landmarks. The data is already in `meta.density`.
 
-`S3.7` matters more than it looks — right now a 2,000-point deficit makes the last
-round dead. A wager makes the endgame live.
+`S3.7` matters more than it looks — a 2,000-point deficit makes the last round
+dead, and a wager makes the endgame live. It is round **15 of 14**: the wagers
+are held out of the body of the game entirely and one is appended as the
+closer, so it can never land at round 3 and there is always one to land. The
+stake and the pick travel in one message, because splitting them would let a
+client stake, watch the board, and answer afterwards.
+
+`S3.11` is the cheapest big change in the project, because the data was already
+there. `format` sat on every question and nothing read it, so `redacted`,
+`compare` and `thread` all rendered as one plain bubble — and for the
+multi-message ones that meant three messages run together into a single
+sentence. `shared.js/messageBlock` is the only reader: inked slots for Redact,
+two labelled sides for Callback, a conversation column for Whose Turn and
+Reply Roulette, a receipt with a running clock for Left Hanging. Unknown values
+still fall back to a bubble, so a format the client has never heard of cannot
+break a game.
+
+`S3.12` is the personal-touch item. `extract.py` knew about `attachment` and
+`message_attachment_join` for a year and never queried either, so every
+photograph in five years was invisible: a message that was *only* a picture was
+dropped as "undecodable", and one with a caption kept nothing but an `att` flag.
+The chain is four steps, and each one is somewhere different on purpose:
+
+1. **`extract.py`** joins the attachment tables, keeps the captionless
+   messages, and records each picture's absolute path in `corpus.json`.
+   Pictures only — a video is an attachment too, and a round is a photograph on
+   a big screen.
+2. **`make photos`** (`tools/photos.py`) downscales them into `photos/`, which
+   is gitignored. `sips`, not Pillow: this can only ever run on the Mac with
+   the Messages database, so a dependency buys nothing and `sips` reads HEIC.
+   Re-runnable, because five years of photographs is slow and iCloud will have
+   offloaded some of them.
+3. **`compile.py`** embeds the ones a question actually names —
+   `photo = "IMG_0042.HEIC"` — as base64 inside the dataset, so they are sealed
+   with everything else and the deployed image serves nothing off disk.
+   **By name, not by index**: `k` renumbers on every re-extraction, and the
+   same logic that makes `curate.py` bake context applies to a picture.
+4. **`/photo/current`** hands out the round that is on screen and no other.
+   The bytes are deliberately *not* in the state snapshot — that goes out on
+   every heartbeat, every answer and every reconnect — and there is deliberately
+   no `/photo/{id}`, because an id is the one thing that would let a player
+   pull a picture out of a round nobody has played yet.
+
+Keeping captionless messages means the corpus gains rows, so counts move
+slightly. That is correct — a photograph is a message — and the one place it
+would have lied is `words_per_message`, which now filters wordless messages at
+the point of use rather than reporting that the messages got shorter when what
+happened is that more of them were pictures.
 
 **Gate:** the game feels designed rather than assembled.
 
@@ -426,6 +483,8 @@ round dead. A wager makes the endgame live.
 | `S4.5` | Sound design | 3h |
 | `S4.6` | `mutual` type — Same Page rounds | 4h |
 | `S4.7` | Playwright smoke test in CI | 2h |
+| `S4.8` | Music beds under each phase | 2h |
+| `S4.9` | The opener — five years on the lobby screen | 1.5h |
 
 **Gate:** past games, awards, and a receipts reel.
 

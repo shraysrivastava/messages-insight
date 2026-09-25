@@ -439,3 +439,44 @@ async def test_a_second_screen_still_cannot_take_a_live_host_over():
     await hello(r, FakeSocket(), role="host")
     other = await hello(r, FakeSocket(), role="host")
     assert r.sockets[other]["role"] == "watcher"
+
+
+# ── the photo route ───────────────────────────────────────────────────────
+
+def test_the_photo_route_serves_only_the_round_on_screen(tmp_path):
+    """There is deliberately no /photo/{id}: an id is the one thing that would
+    let a player pull a picture out of a round that hasn't been played."""
+    import base64
+    import random
+
+    from fastapi.testclient import TestClient
+
+    from app.game import Game
+    from tests.conftest import make_dataset, q as _q
+
+    jpg = b"\xff\xd8\xff\xe0 not really a jpeg \xff\xd9"
+    b64 = base64.b64encode(jpg).decode()
+    qs = [_q(f"k{i}", kind=f"k{i}") for i in range(4)]
+    qs.append(_q("pic", kind="Photo", format="photo", photo=b64))
+    data = make_dataset(qs, rounds=5)
+
+    g = Game(data, rounds=5, seconds=20.0, rng=random.Random(1))
+    app = create_app(Room(g))
+    with TestClient(app) as client:
+        g.deal()
+        # the lobby has no question on screen, so there is no picture to get
+        assert client.get("/photo/current").status_code == 404
+
+        ix = next(i for i, x in enumerate(g.deck) if x.id == "pic")
+        g.begin_round(ix)
+        g.open_question(now=1000.0)
+        r = client.get("/photo/current")
+        assert r.status_code == 200
+        assert r.headers["content-type"] == "image/jpeg"
+        assert r.content == jpg
+
+        # a round without a picture serves nothing, rather than the last one
+        other = next(i for i, x in enumerate(g.deck) if x.id != "pic")
+        g.begin_round(other)
+        g.open_question(now=1000.0)
+        assert client.get("/photo/current").status_code == 404

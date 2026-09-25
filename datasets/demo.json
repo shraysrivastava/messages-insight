@@ -138,11 +138,133 @@
   ],
   "rounds": 14,
   "seconds": 25.0,
+  "deal": {
+   "authored_share": 0.65,
+   "weight_mine": 4,
+   "weight_auto": 1,
+   "max_per_kind": 3,
+   "max_per_subject": 1,
+   "freshness": true,
+   "final_receipt": true
+  },
   "total": 5243,
   "first": "March 2021",
   "last": "July 2026"
  },
  "questions": [
+  {
+   "id": "final-first-message",
+   "type": "wager",
+   "kind": "Final receipt",
+   "prompt": "Final Receipt. Who sent the very first message between us?",
+   "reveal": "Shray. March 1, 2021. Five years ago tonight.",
+   "answer": 0,
+   "text": "just got out of the meeting and it went so much better than expected 😂 lol",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "milestones",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "final-first-message",
+   "subject": "first_message"
+  },
+  {
+   "id": "final-love-you-first",
+   "type": "wager",
+   "kind": "Final receipt",
+   "prompt": "Final Receipt. Who said “I love you” first?",
+   "reveal": "Shray said it first, on October 5, 2021. Some things you don't forget.",
+   "answer": 0,
+   "text": "i love you absolutely not",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "milestones",
+   "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "i keep laughing about what you said in the car yesterday 🫠",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "yeah 🫠",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "i love you absolutely not",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "the flight got delayed two hours so im just sitting at the gate",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "the dog would not stop barking at absolutely nothing for an hour ❤️",
+     "self": false
+    }
+   ],
+   "origin": "auto",
+   "topic": "final-love-you-first",
+   "subject": "love_you"
+  },
+  {
+   "id": "same-page-best-year",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Which year was our best year?",
+   "reveal": "Match, and it's settled. Miss, and you've each been quietly living a different favourite year.",
+   "options": [
+    "2021",
+    "2022",
+    "2023",
+    "2024"
+   ],
+   "area": "milestones",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-best-year"
+  },
+  {
+   "id": "same-page-overused",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Which word do we both overuse the most?",
+   "reveal": "“morning”. You both know it. You both do it.",
+   "options": [
+    "morning",
+    "minutes",
+    "sorry",
+    "absolutely"
+   ],
+   "area": "language",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-overused",
+   "subject": "top_word:4"
+  },
+  {
+   "id": "same-page-worst-habit",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Whose texting habit is more annoying?",
+   "reveal": "No wrong answer here. Only an awkward one.",
+   "options": [
+    "Shray's",
+    "Nilu's"
+   ],
+   "area": "habits",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-worst-habit"
+  },
   {
    "id": "first-love-you",
    "type": "month",
@@ -181,13 +303,14 @@
     }
    ],
    "origin": "auto",
-   "topic": "first-love-you"
+   "topic": "first-love-you",
+   "subject": "love_you"
   },
   {
    "id": "first-our-place",
    "type": "month",
    "kind": "Soft launch",
-   "prompt": "When did we first say “our place”?",
+   "prompt": "When did somewhere first become *ours* — our place, our apartment, our room?",
    "reveal": "June 2023. Nobody announced it. It just started.",
    "answer": 27,
    "text": "so good our place 🥺",
@@ -221,7 +344,8 @@
     }
    ],
    "origin": "auto",
-   "topic": "first-our-place"
+   "topic": "first-our-place",
+   "subject": "our_place"
   },
   {
    "id": "first-move-in",
@@ -261,47 +385,8 @@
     }
    ],
    "origin": "auto",
-   "topic": "first-move-in"
-  },
-  {
-   "id": "first-future",
-   "type": "month",
-   "kind": "First time we said it",
-   "prompt": "When did we first talk about the far future — “one day”, “someday”?",
-   "reveal": "April 2022.",
-   "answer": 13,
-   "text": "one day absolutely not",
-   "area": "milestones",
-   "format": "bubble",
-   "context": [
-    {
-     "who": "p2",
-     "text": "not true 😂",
-     "self": false
-    },
-    {
-     "who": "p2",
-     "text": "same",
-     "self": false
-    },
-    {
-     "who": "p2",
-     "text": "one day absolutely not",
-     "self": true
-    },
-    {
-     "who": "p1",
-     "text": "deal cant wait to see you",
-     "self": false
-    },
-    {
-     "who": "p2",
-     "text": "genuinely obsessed with the playlist you made me last weekend",
-     "self": false
-    }
-   ],
-   "origin": "auto",
-   "topic": "first-future"
+   "topic": "first-move-in",
+   "subject": "move_in"
   },
   {
    "id": "first-forever",
@@ -341,7 +426,8 @@
     }
    ],
    "origin": "auto",
-   "topic": "first-forever"
+   "topic": "first-forever",
+   "subject": "forever"
   },
   {
    "id": "quietest-month",
@@ -354,31 +440,8 @@
    "format": "bubble",
    "histogram": false,
    "origin": "auto",
-   "topic": "quietest-month"
-  },
-  {
-   "id": "ld-countdown",
-   "type": "number",
-   "kind": "The distance",
-   "prompt": "How many times have we counted down the days to seeing each other?",
-   "reveal": "148 countdowns. Every one of them ended.",
-   "answer": 148,
-   "area": "long-distance",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "ld-countdown"
-  },
-  {
-   "id": "work-count",
-   "type": "number",
-   "kind": "Nine to five",
-   "prompt": "How many of our messages are about somebody's job?",
-   "reveal": "119. We should talk about literally anything else.",
-   "answer": 119,
-   "area": "work",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "work-count"
+   "topic": "quietest-month",
+   "subject": "quietest_month"
   },
   {
    "id": "work-worst-month",
@@ -390,51 +453,8 @@
    "area": "work",
    "format": "bubble",
    "origin": "auto",
-   "topic": "work-worst-month"
-  },
-  {
-   "id": "money-who-more",
-   "type": "binary",
-   "kind": "Joint account",
-   "prompt": "Who brings up money more?",
-   "reveal": "Nilu: 58 times.",
-   "answer": 1,
-   "options": [
-    "Shray",
-    "Nilu"
-   ],
-   "area": "money",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "money-who-more"
-  },
-  {
-   "id": "music-count",
-   "type": "number",
-   "kind": "Aux cord",
-   "prompt": "How many songs, playlists, or concerts have made it into this thread?",
-   "reveal": "123.",
-   "answer": 123,
-   "area": "media",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "music-count"
-  },
-  {
-   "id": "pets-who-more",
-   "type": "binary",
-   "kind": "Third party",
-   "prompt": "Who talks about animals more?",
-   "reveal": "Nilu, 142 times.",
-   "answer": 1,
-   "options": [
-    "Shray",
-    "Nilu"
-   ],
-   "area": "people",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "pets-who-more"
+   "topic": "work-worst-month",
+   "subject": "work"
   },
   {
    "id": "busiest-weekday",
@@ -452,43 +472,8 @@
    "area": "habits",
    "format": "bubble",
    "origin": "auto",
-   "topic": "busiest-weekday"
-  },
-  {
-   "id": "top-emoji",
-   "type": "choice",
-   "kind": "Chronically online",
-   "prompt": "Which emoji have we used the most?",
-   "reveal": "🥺. By a humiliating margin.",
-   "answer": 3,
-   "options": [
-    "😭",
-    "❤",
-    "😂",
-    "🥺"
-   ],
-   "area": "language",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "top-emoji"
-  },
-  {
-   "id": "top-word",
-   "type": "choice",
-   "kind": "By the numbers",
-   "prompt": "Which of these words do we say most?",
-   "reveal": "“morning”.",
-   "answer": 3,
-   "options": [
-    "absolutely",
-    "minutes",
-    "sorry",
-    "morning"
-   ],
-   "area": "language",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "top-word"
+   "topic": "busiest-weekday",
+   "subject": "busiest_weekday"
   },
   {
    "id": "peak-hour",
@@ -506,7 +491,8 @@
    "area": "habits",
    "format": "bubble",
    "origin": "auto",
-   "topic": "peak-hour"
+   "topic": "peak-hour",
+   "subject": "peak_hour:4"
   },
   {
    "id": "which-year-loudest",
@@ -524,163 +510,8 @@
    "area": "archive",
    "format": "bubble",
    "origin": "auto",
-   "topic": "which-year-loudest"
-  },
-  {
-   "id": "love-you-count",
-   "type": "number",
-   "kind": "Receipts",
-   "prompt": "We've sent 5,243 messages. How many said “I love you”?",
-   "reveal": "240 times. Still not enough.",
-   "answer": 240,
-   "area": "affection",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "love-you-count"
-  },
-  {
-   "id": "goodnight-count",
-   "type": "number",
-   "kind": "Soft launch",
-   "prompt": "How many times have we said goodnight?",
-   "reveal": "594 goodnights. Most of them from different time zones.",
-   "answer": 594,
-   "area": "habits",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "goodnight-count"
-  },
-  {
-   "id": "good-morning-count",
-   "type": "number",
-   "kind": "Cold open",
-   "prompt": "And how many good mornings?",
-   "reveal": "219.",
-   "answer": 219,
-   "area": "habits",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "good-morning-count"
-  },
-  {
-   "id": "sorry-count-p1",
-   "type": "number",
-   "kind": "Damning evidence",
-   "prompt": "How many times has Shray apologised?",
-   "reveal": "123. Some of them even meant it.",
-   "answer": 123,
-   "area": "conflict",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "sorry-count-p1"
-  },
-  {
-   "id": "thanks-count",
-   "type": "number",
-   "kind": "Character witness",
-   "prompt": "How many times have we thanked each other?",
-   "reveal": "245. 5 years of not taking it for granted.",
-   "answer": 245,
-   "area": "affection",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "thanks-count"
-  },
-  {
-   "id": "miss-you-count",
-   "type": "number",
-   "kind": "Soft launch",
-   "prompt": "How many times has one of us said “miss you”?",
-   "reveal": "175. Long distance is a numbers game.",
-   "answer": 175,
-   "area": "long-distance",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "miss-you-count"
-  },
-  {
-   "id": "compliment-count",
-   "type": "number",
-   "kind": "Receipts",
-   "prompt": "How many outright compliments have we paid each other?",
-   "reveal": "57. Worth rereading on a bad day.",
-   "answer": 57,
-   "area": "affection",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "compliment-count"
-  },
-  {
-   "id": "hearts-count",
-   "type": "number",
-   "kind": "Receipts",
-   "prompt": "How many hearts have we sent each other?",
-   "reveal": "212.",
-   "answer": 212,
-   "area": "affection",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "hearts-count"
-  },
-  {
-   "id": "crying-emoji",
-   "type": "number",
-   "kind": "Chronically online",
-   "prompt": "How many 😭 have we sent?",
-   "reveal": "257. Almost none of them about anything sad.",
-   "answer": 257,
-   "area": "humor",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "crying-emoji"
-  },
-  {
-   "id": "facetime-count",
-   "type": "number",
-   "kind": "By the numbers",
-   "prompt": "How many times have we tried to schedule a call over text?",
-   "reveal": "148. The real cost of two time zones.",
-   "answer": 148,
-   "area": "long-distance",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "facetime-count"
-  },
-  {
-   "id": "travel-count",
-   "type": "number",
-   "kind": "The archive",
-   "prompt": "How many of our messages mention a flight, an airport, or packing?",
-   "reveal": "118. A relationship measured in boarding passes.",
-   "answer": 118,
-   "area": "travel",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "travel-count"
-  },
-  {
-   "id": "longest-gap",
-   "type": "number",
-   "kind": "The archive",
-   "prompt": "What's the longest we've ever gone without texting? (hours)",
-   "reveal": "119 hours. The longest silence in 5 years — and then it ended.",
-   "answer": 119,
-   "area": "archive",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "longest-gap"
-  },
-  {
-   "id": "longest-streak",
-   "type": "number",
-   "kind": "Receipts",
-   "prompt": "Longest run of consecutive days we both texted?",
-   "reveal": "29 days in a row, without one of us dropping it.",
-   "answer": 29,
-   "area": "habits",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "longest-streak"
+   "topic": "which-year-loudest",
+   "subject": "busiest_year"
   },
   {
    "id": "three-am-club",
@@ -692,19 +523,8 @@
    "area": "sleep",
    "format": "bubble",
    "origin": "auto",
-   "topic": "three-am-club"
-  },
-  {
-   "id": "photos-sent",
-   "type": "number",
-   "kind": "The archive",
-   "prompt": "How many photos have we sent each other?",
-   "reveal": "277.",
-   "answer": 277,
-   "area": "media",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "photos-sent"
+   "topic": "three-am-club",
+   "subject": "messages_between:[2, 5]"
   },
   {
    "id": "days-until-love",
@@ -743,23 +563,64 @@
     }
    ],
    "origin": "auto",
-   "topic": "days-until-love"
+   "topic": "days-until-love",
+   "subject": "love_you"
   },
   {
-   "id": "more-lol",
-   "type": "binary",
-   "kind": "Character witness",
-   "prompt": "Who has typed “lol” more?",
-   "reveal": "Shray. 370 to 0. Not close, and never was.",
-   "answer": 0,
-   "options": [
-    "Shray",
-    "Nilu"
-   ],
+   "id": "share-days-covered",
+   "type": "percent",
+   "kind": "Receipts",
+   "prompt": "Out of every day in the last 5 years, on what share did we text at all?",
+   "reveal": "88%. That's the whole game, really.",
+   "answer": 88,
+   "unit": "%",
+   "area": "habits",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "share-days-covered",
+   "subject": "share_days_covered"
+  },
+  {
+   "id": "share-one-word",
+   "type": "percent",
+   "kind": "Petty grievances",
+   "prompt": "What share of our messages are a single word?",
+   "reveal": "9%. Efficiency.",
+   "answer": 9,
+   "unit": "%",
    "area": "language",
    "format": "bubble",
    "origin": "auto",
-   "topic": "more-lol"
+   "topic": "share-one-word",
+   "subject": "share_one_word"
+  },
+  {
+   "id": "share-quick-reply",
+   "type": "percent",
+   "kind": "Character witness",
+   "prompt": "What share of Shray's messages did Nilu reply to within a minute?",
+   "reveal": "0%. Attention is the sincerest form of affection.",
+   "answer": 0,
+   "unit": "%",
+   "area": "habits",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "share-quick-reply",
+   "subject": "share_quick_reply"
+  },
+  {
+   "id": "share-weekend",
+   "type": "percent",
+   "kind": "The archive",
+   "prompt": "What share of our texting happens on weekends?",
+   "reveal": "29%. Weekdays are for logistics.",
+   "answer": 29,
+   "unit": "%",
+   "area": "habits",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "share-weekend",
+   "subject": "share_weekend"
   },
   {
    "id": "more-haha",
@@ -775,23 +636,8 @@
    "area": "humor",
    "format": "bubble",
    "origin": "auto",
-   "topic": "more-haha"
-  },
-  {
-   "id": "more-compliments",
-   "type": "binary",
-   "kind": "Soft launch",
-   "prompt": "Who gives more compliments?",
-   "reveal": "Nilu, 33 times to 24.",
-   "answer": 1,
-   "options": [
-    "Shray",
-    "Nilu"
-   ],
-   "area": "affection",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "more-compliments"
+   "topic": "more-haha",
+   "subject": "haha"
   },
   {
    "id": "more-love-you",
@@ -807,23 +653,8 @@
    "area": "affection",
    "format": "bubble",
    "origin": "auto",
-   "topic": "more-love-you"
-  },
-  {
-   "id": "more-hearts",
-   "type": "binary",
-   "kind": "By the numbers",
-   "prompt": "Who sends more hearts?",
-   "reveal": "Nilu, 212 to 0.",
-   "answer": 1,
-   "options": [
-    "Shray",
-    "Nilu"
-   ],
-   "area": "affection",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "more-hearts"
+   "topic": "more-love-you",
+   "subject": "love_you"
   },
   {
    "id": "more-emoji",
@@ -839,7 +670,8 @@
    "area": "language",
    "format": "bubble",
    "origin": "auto",
-   "topic": "more-emoji"
+   "topic": "more-emoji",
+   "subject": "who_more:more_emoji"
   },
   {
    "id": "more-double-text",
@@ -855,23 +687,8 @@
    "area": "habits",
    "format": "bubble",
    "origin": "auto",
-   "topic": "more-double-text"
-  },
-  {
-   "id": "more-last-of-day",
-   "type": "binary",
-   "kind": "Soft launch",
-   "prompt": "Who gets the last word before bed more often?",
-   "reveal": "Nilu, 991 nights out of 749.",
-   "answer": 1,
-   "options": [
-    "Shray",
-    "Nilu"
-   ],
-   "area": "habits",
-   "format": "bubble",
-   "origin": "auto",
-   "topic": "more-last-of-day"
+   "topic": "more-double-text",
+   "subject": "who_more:double_texts"
   }
  ]
 }

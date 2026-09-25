@@ -33,6 +33,13 @@ from datetime import datetime, timezone
 
 APPLE_EPOCH = 978307200  # 2001-01-01 in unix seconds
 OBJ_REPLACEMENT = "￼"  # attachment placeholder
+
+# What counts as a picture. `mime_type` is NULL on a surprising number of old
+# rows, so the UTI is the fallback rather than the other way round.
+IMAGE_UTIS = {
+    "public.jpeg", "public.png", "public.heic", "public.heif", "public.tiff",
+    "com.compuserve.gif", "public.webp", "org.webmproject.webp",
+}
 URL_RE = re.compile(r"https?://|www\.")
 TAPBACK_RE = re.compile(
     r'^(Liked|Loved|Disliked|Laughed at|Emphasized|Questioned|Removed a[a-z ]*from)\s+[“"]',
@@ -159,7 +166,75 @@ def count_per_identifier(conn, identifiers: list[str]) -> dict[str, int]:
     return out
 
 
-def load_messages(conn, identifiers: list[str]) -> list[dict]:
+def load_attachments(conn, identifiers: list[str]) -> dict[int, list[dict]]:
+    """The pictures, by message ROWID.
+
+    `extract.py` knew about these tables for a year and never queried them, so
+    every photograph in five years was invisible to the game — a message that
+    was only a picture was dropped as "undecodable" and one with a caption kept
+    nothing but an `att` flag.
+
+    Returns the images only. Video, audio, PDFs and the rest are counted and
+    discarded: a round is a picture on a big screen, and everything else is a
+    filename.
+    """
+    ph = ",".join("?" for _ in identifiers)
+    try:
+        rows = conn.execute(
+            f"""
+            SELECT DISTINCT maj.message_id AS rid, a.ROWID AS aid,
+                   a.filename, a.mime_type, a.uti, a.transfer_name
+            FROM message_attachment_join maj
+            JOIN attachment a ON a.ROWID = maj.attachment_id
+            JOIN chat_message_join cmj ON cmj.message_id = maj.message_id
+            JOIN chat c ON c.ROWID = cmj.chat_id
+            WHERE c.chat_identifier IN ({ph})
+            ORDER BY maj.message_id, a.ROWID
+            """,
+            identifiers,
+        ).fetchall()
+    except sqlite3.OperationalError as e:
+        # Every macOS this has run on has both tables, but a missing column
+        # should cost the photographs, not the whole extraction.
+        print(f"  no attachments ({e}) — continuing without photos")
+        return {}
+
+    out: dict[int, list[dict]] = {}
+    skipped = Counter()
+    for r in rows:
+        mime = (r["mime_type"] or "").lower()
+        uti = (r["uti"] or "").lower()
+        if not (mime.startswith("image/") or uti in IMAGE_UTIS):
+            skipped[mime or uti or "unknown"] += 1
+            continue
+        path = r["filename"]
+        if not path:
+            skipped["no filename"] += 1
+            continue
+        out.setdefault(r["rid"], []).append({
+            "src": os.path.expanduser(path),
+            "mime": mime or uti,
+            "name": r["transfer_name"] or os.path.basename(path),
+        })
+    if skipped:
+        top = ", ".join(f"{v:,} {k}" for k, v in skipped.most_common(4))
+        print(f"  attachments that aren't pictures, skipped: {top}")
+    return out
+
+
+def load_messages(conn, identifiers: list[str],
+                  attachments: dict[int, list[dict]] | None = None
+                  ) -> tuple[list[dict], list[dict]]:
+    """The thread, in order, plus the photo table it points into.
+
+    Returns `(messages, photos)`. A message with a picture carries
+    `photo` — an index into `photos` — and a message that was *only* a picture
+    is kept with an empty `text` rather than dropped. Empty text is safe
+    downstream because matching normalises to "" and never hits; the things
+    that measure text length filter on `words` at the point of use, which is
+    where that filter belongs.
+    """
+    attachments = attachments or {}
     ph = ",".join("?" for _ in identifiers)
     rows = conn.execute(
         f"""
@@ -176,7 +251,9 @@ def load_messages(conn, identifiers: list[str]) -> list[dict]:
         identifiers,
     ).fetchall()
 
-    out, dropped = [], Counter()
+    out: list[dict] = []
+    photos: list[dict] = []
+    dropped = Counter()
     for r in rows:
         when = apple_time_to_dt(r["date"])
         if not when:
@@ -184,29 +261,42 @@ def load_messages(conn, identifiers: list[str]) -> list[dict]:
             continue
         text = (r["text"] or "").strip() or decode_attributed_body(r["attributedBody"]) or ""
         text = text.replace(OBJ_REPLACEMENT, "").strip()
-        if not text:
+        pics = attachments.get(r["rid"]) or []
+        if not text and not pics:
             dropped["attachment only / undecodable"] += 1
             continue
-        if TAPBACK_RE.match(text):
+        if text and TAPBACK_RE.match(text):
             dropped["tapback"] += 1
             continue
-        if URL_RE.search(text) and len(text.split()) < 6:
+        if text and URL_RE.search(text) and len(text.split()) < 6:
             dropped["link only"] += 1
             continue
         # Deliberately NOT filtering short messages. "ok" and "haha" are the
         # raw material for one-word-reply stats and for "what did she reply".
         # The display pool gets filtered downstream in mine.py's readable().
-        out.append({
+        who = "p1" if r["is_from_me"] else "p2"
+        msg = {
             "i": len(out),
             "ts": when.isoformat(),
-            "from": "p1" if r["is_from_me"] else "p2",
+            "from": who,
             "text": text,
             **({"att": 1} if r["cache_has_attachments"] else {}),
-        })
+        }
+        if pics:
+            # One picture per message. A burst of nine is still one round, and
+            # carrying the rest would only ever be a thing to choose between.
+            first = pics[0]
+            msg["photo"] = len(photos)
+            photos.append({
+                "k": len(photos), "i": msg["i"], "ts": msg["ts"], "from": who,
+                "src": first["src"], "mime": first["mime"], "name": first["name"],
+                **({"of": len(pics)} if len(pics) > 1 else {}),
+            })
+        out.append(msg)
 
     if dropped:
         print("  dropped:", ", ".join(f"{v:,} {k}" for k, v in dropped.most_common()))
-    return out
+    return out, photos
 
 
 def month_range(messages: list[dict]) -> list[str]:
@@ -222,7 +312,8 @@ def month_range(messages: list[dict]) -> list[str]:
     return out
 
 
-def build_corpus(messages: list[dict], p1: str, p2: str) -> dict:
+def build_corpus(messages: list[dict], p1: str, p2: str,
+                 photos: list[dict] | None = None) -> dict:
     months = month_range(messages)
     idx = {m: i for i, m in enumerate(months)}
     density = [0] * len(months)
@@ -246,6 +337,10 @@ def build_corpus(messages: list[dict], p1: str, p2: str) -> dict:
             "last_ts": last,
         },
         "messages": messages,
+        # Absolute paths into ~/Library/Messages/Attachments. corpus.json is
+        # gitignored and never leaves this machine; `tools/photos.py` turns
+        # these into downscaled copies the dataset can actually carry.
+        **({"photos": photos} if photos else {}),
     }
 
 
@@ -339,7 +434,8 @@ def main() -> None:
             print(f"\n  WARNING: {', '.join(empty)} matched nothing. Continuing "
                   f"with the rest — rerun if that was a typo.\n")
 
-        messages = load_messages(conn, idents)
+        attachments = load_attachments(conn, idents)
+        messages, photos = load_messages(conn, idents, attachments)
     finally:
         conn.close()
         tmp.cleanup()          # the POC left this copy of your history on disk
@@ -347,7 +443,7 @@ def main() -> None:
     if len(messages) < 200:
         sys.exit(f"Only {len(messages)} usable messages — check the identifier with --list.")
 
-    corpus = build_corpus(messages, args.p1, args.p2)
+    corpus = build_corpus(messages, args.p1, args.p2, photos)
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(corpus, f, ensure_ascii=False)
 
@@ -358,6 +454,15 @@ def main() -> None:
     print(f"  {args.p1} {sent['p1']:,}  ·  {args.p2} {sent['p2']:,}")
     print(f"  busiest month: {m['months'][m['density'].index(max(m['density']))]} "
           f"({max(m['density']):,})")
+    if photos:
+        pic = Counter(x["from"] for x in photos)
+        alone = sum(1 for x in photos if not messages[x["i"]]["text"])
+        print(f"  {len(photos):,} photos · {args.p1} {pic['p1']:,} · "
+              f"{args.p2} {pic['p2']:,} · {alone:,} with no caption")
+        print("    next:  make photos    (downscales them into photos/)")
+    else:
+        print("  no photos found — if that's wrong, check --schema for the "
+              "attachment tables")
     print(f"\n  wrote {args.out}  ({os.path.getsize(args.out) / 1e6:.1f} MB, gitignored)\n")
 
 

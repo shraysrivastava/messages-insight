@@ -22,6 +22,7 @@ Everything else is reported with a reason.
 from __future__ import annotations
 
 import argparse
+import base64
 import difflib
 import glob
 import json
@@ -38,7 +39,11 @@ except ModuleNotFoundError:                     # py < 3.11
     import tomli as tomllib
 
 from app.game import PLAYABLE
-from app.schema import Dataset
+from app.schema import Dataset, Deal
+
+# The [deal] keys the dataset carries. Anything else in the block (comments,
+# freshness_window, keys a later version adds) is config.toml's business.
+DEAL_FIELDS = set(Deal.model_fields)
 from tools.lexicon import load_lexicons
 from tools.resolvers import FROM_DENSITY, RESOLVERS, Corpus, resolve
 
@@ -238,6 +243,13 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
     corpus.meta["p1"], corpus.meta["p2"] = meta["p1"], meta["p2"]
     meta["rounds"] = meta_cfg.get("rounds", 14)
     meta["seconds"] = float(meta_cfg.get("seconds", 25))
+    # The dealing rules ride along in the dataset: `questions/` never reaches
+    # the deployed image, so this is the only way config.toml [deal] gets to
+    # the server. schema.Deal names the fields and supplies the defaults.
+    deal_cfg = {k: v for k, v in cfg.get("deal", {}).items()
+                if k in DEAL_FIELDS}
+    if deal_cfg:
+        meta["deal"] = deal_cfg
     meta.pop("first_ts", None)
     meta.pop("last_ts", None)
 
@@ -300,6 +312,16 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
                 out["text"] = res.text
             if q.get("unit"):
                 out["unit"] = q["unit"]
+            # An explicit `subject` in the block wins, which is the escape
+            # hatch for the two cases derivation cannot see: forcing two
+            # questions apart when they share a fact the resolvers don't, and
+            # forcing two together when they don't share a resolver at all.
+            subj = q.get("subject") or subject_of(spec or src)
+            if subj:
+                out["subject"] = subj
+            if q.get("photo"):
+                out["photo"] = load_photo(corpus, q["photo"], qid)
+                out["format"] = "photo"
             if not shows_histogram(q, spec):
                 out["histogram"] = False
             ctx = q.get("context") or (
@@ -322,6 +344,69 @@ def compile_dataset(corpus_path: str, qdir: str, playable: set[str], rep: Report
     return meta, built
 
 
+# Keys whose value names a lexicon. In priority order, because a spec can
+# carry more than one — `{count = "travel", within = "flights"}` is about
+# travel, and `within` is the modifier.
+LEXICON_KEYS = ("count", "who_says_more", "first_use", "first_use_sender",
+                "days_until", "reciprocated", "lex", "within")
+
+# Arguments that slice a subject rather than define one. Two questions about
+# the same lexicon are the same subject whether or not one of them is filtered
+# to one person or one year — that is exactly the repeat worth catching.
+SLICE_KEYS = {"by", "mode", "year", "window", "hours", "blanks",
+              "spread_months", "unit", "min_gap_hours"}
+
+
+def subject_of(spec: dict | None) -> str | None:
+    """What fact is this question about? `Question.subject`, and the key the
+    dealer caps on.
+
+    A lexicon if there is one, otherwise the resolver plus whatever literal
+    parameterises it — `share_between:[0, 5]` is a different subject from
+    `share_between:[9, 17]`. None when there is no resolver at all, which means
+    a question baked from one real message: it is about that message and can
+    only collide with itself.
+    """
+    if not isinstance(spec, dict):
+        return None
+    for k in LEXICON_KEYS:
+        v = spec.get(k)
+        if isinstance(v, str) and v:
+            return v
+    for k, v in spec.items():
+        if k in SLICE_KEYS:
+            continue
+        return k if v is True else f"{k}:{v}"
+    return None
+
+
+def load_photo(corpus: Corpus, name: str, qid: str) -> str:
+    """`photo = "IMG_0042.HEIC"` -> the downscaled JPEG, base64.
+
+    Named, not indexed. `k` renumbers itself the next time the thread is
+    extracted and a question pointing at the wrong photograph is worse than one
+    with none — the same reason curate.py bakes context instead of storing an
+    index. Raises ValueError, which the caller reports as a drop with a reason.
+    """
+    photos = getattr(corpus, "photos", None) or []
+    hits = [p for p in photos if p.get("name") == name]
+    if not hits:
+        raise ValueError(
+            f"no photo named {name!r} in the corpus"
+            + ("" if photos else " — the corpus has no photos at all, re-extract"))
+    if len(hits) > 1:
+        raise ValueError(
+            f"{len(hits)} photos named {name!r}; rename the file or pick another")
+    p = hits[0]
+    if not p.get("thumb"):
+        raise ValueError(f"{name!r} has not been downscaled yet — run `make photos`")
+    path = p["thumb"] if os.path.isabs(p["thumb"]) else os.path.join(ROOT, p["thumb"])
+    if not os.path.exists(path):
+        raise ValueError(f"{p['thumb']} is missing — re-run `make photos`")
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode("ascii")
+
+
 def resolve_source(corpus: Corpus, src: dict, lexicons):
     """`source` picks a real message into `text` rather than computing a number."""
     from tools.resolvers import Resolution
@@ -341,8 +426,14 @@ def resolve_source(corpus: Corpus, src: dict, lexicons):
 
     ix = corpus.month_of(m)
     return Resolution(
+        # hits=None, not 1, for the same reason the extremum resolvers report
+        # None: there is exactly one first message and `search` takes the first
+        # match, so "how many matched" is not a fact about this question. Left
+        # at 1 the min_hits guard drops every `source` question silently —
+        # which is what it was doing to the Final Receipt, unnoticed, because
+        # wagers were being dropped one step earlier as unplayable.
         value=0 if m["from"] == "p1" else 1,
-        hits=1, text=m["text"],
+        hits=None, text=m["text"],
         extras={"date": corpus.pretty(m), "month": corpus.pretty_month(ix),
                 "winner": corpus.name(m["from"]),
                 "loser": corpus.name("p2" if m["from"] == "p1" else "p1")},

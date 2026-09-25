@@ -57,6 +57,16 @@
   .qhead{display:flex;align-items:baseline;gap:16px}
   .prompt{font-size:clamp(30px,4.4vw,50px);max-width:22ch}
   .qbubble{font-size:clamp(19px,2.2vw,27px);line-height:1.42;max-width:38ch}
+  /* the presentation formats — shape is in app.css, size is here */
+  .compare .side{flex:1 1 320px}
+  .compare .qbubble{max-width:100%}
+  .convo{max-width:44ch}
+  .receipt{font-size:13px}
+  /* Tall enough to read across a room, short enough to leave the prompt and
+     the options on screen without scrolling. */
+  .photo img{max-height:46vh}
+  .photo .cap{max-width:38ch}
+
   .opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .opt{
     background:var(--raised);border-radius:18px;padding:22px 24px;
@@ -351,6 +361,9 @@ function topbar() {
     mute.textContent = off ? "🔇" : "🔊";
     mute.title = off ? "Sound off" : "Sound on";
     mute.setAttribute("aria-label", mute.title);
+    /* Unmuting is a gesture, so it is also the earliest moment the bed for
+       whatever is already on screen is allowed to start. */
+    if (!off && S) cue(S, true);
   };
   bar.append(mute);
   S.players.forEach(p => {
@@ -369,6 +382,81 @@ function main(...kids) {
 }
 
 /* ------------------------------------------------------------------ views  */
+
+/* ── the opener ─────────────────────────────────────────────────────────────
+ *
+ * Five years of the thread, drawn once, on the lobby screen. `meta.density`
+ * is already a message count per month — the same array the phone draws
+ * behind the month slider — so this costs no new data and no request.
+ *
+ * It fills left to right over ~14 seconds while the room settles, with the
+ * month label and a running total climbing underneath. The point is that she
+ * watches the quiet first year, then the month it goes vertical, and knows
+ * exactly what that spike was before a single question is asked.
+ *
+ * Runs once per page load. A re-render while people join must not restart it,
+ * so the finished bars are cached and re-attached rather than rebuilt.
+ */
+let openerEl = null;
+
+function opener() {
+  if (openerEl) return openerEl;                 // already ran; don't replay
+
+  const d = S.meta && S.meta.density;
+  const months = S.meta && S.meta.months;
+  if (!Array.isArray(d) || !Array.isArray(months) || d.length !== months.length
+      || d.length < 12) return null;
+
+  const wrap = h("div", "opener");
+  const chart = h("div", "opener-bars");
+  const peak = Math.max(...d, 1);
+  const bars = d.map((v, i) => {
+    const b = h("b");
+    /* sqrt, like the phone's histogram: one frantic month would otherwise
+       flatten five years into a spike and a floor. */
+    b.dataset.h = Math.max(2, Math.round(Math.sqrt(v / peak) * 100));
+    b.style.left = (i / (d.length - 1)) * 100 + "%";
+    b.style.width = "calc(" + (100 / d.length) + "% - 2px)";
+    chart.append(b);
+    return b;
+  });
+
+  const foot = h("div", "opener-foot");
+  const when = h("span", "opener-when", monthLabel(months[0]));
+  const tally = h("span", "opener-tally", "0");
+  foot.append(when, tally);
+  wrap.append(chart, foot);
+
+  /* One rAF loop rather than a transition per bar: 60 staggered CSS
+     transitions on a TV browser is where this would start dropping frames. */
+  const DUR = 14000;
+  let running = 0;
+  const totals = d.map(v => (running += v));
+  const start = performance.now();
+  (function step(now) {
+    const t = Math.min(1, (now - start) / DUR);
+    /* ease-out: the early months are nearly empty and would otherwise crawl */
+    const e = 1 - Math.pow(1 - t, 2);
+    const upto = e * (d.length - 1);
+    bars.forEach((b, i) => {
+      const on = i <= upto;
+      b.style.height = (on ? b.dataset.h : 0) + "%";
+      b.classList.toggle("lit", on);
+    });
+    const ix = Math.min(d.length - 1, Math.round(upto));
+    when.textContent = monthLabel(months[ix]);
+    tally.textContent = Math.round(totals[ix]).toLocaleString();
+    if (t < 1) requestAnimationFrame(step);
+    else {
+      when.textContent = S.meta.first + " — " + S.meta.last;
+      tally.textContent = (S.meta.total || totals[totals.length - 1]).toLocaleString()
+        + " messages";
+    }
+  })(start);
+
+  openerEl = wrap;
+  return wrap;
+}
 
 function lobby() {
   const left = h("div", "stack");
@@ -404,11 +492,17 @@ function lobby() {
                                                     : "Waiting for players…");
   start.disabled = !S.players.length;
   start.onclick = () => { Sound.init(); send({ t: "start" }); };
+  /* Browsers refuse audio before a gesture, so the lobby bed cannot start on
+     load. The mute button is the other gesture that unlocks it, and it is
+     the one that is there before anyone has pressed Start. */
   const startWrap = h("div", "controls");
   startWrap.style.marginTop = "26px";
   startWrap.append(start);
 
-  left.append(title, sub, roster, startWrap);
+  left.append(title, sub);
+  const arc = opener();
+  if (arc) left.append(arc);
+  left.append(roster, startWrap);
 
   const box = h("div", "joinbox");
   box.append(h("div", "eyebrow", "Join from your phone"));
@@ -566,6 +660,22 @@ function countdown() {
   return main(n);
 }
 
+/* What a player said, plus what they put on it. The stake is only interesting
+   on the Final Receipt, and it is the most interesting thing there. */
+function saidWith(q, last) {
+  const said = shownGuess(q, last.answer, S);
+  if (q.type !== "wager") return said;
+  return said + (last.stake ? "  ·  " + last.stake.toLocaleString() : "  ·  nothing");
+}
+
+/* The option every player picked, or null if they split or someone sat out.
+   Only meaningful for `mutual`. */
+function agreedOption() {
+  const said = S.players.map(p => (p.last ? p.last.answer : null));
+  if (!said.length || said.some(a => a === null || a === undefined)) return null;
+  return said.every(a => a === said[0]) ? said[0] : null;
+}
+
 function question(revealed) {
   const q = S.question;
   const rows = [];
@@ -576,25 +686,44 @@ function question(revealed) {
   rows.push(h("h2", "prompt serif", q.prompt));
   /* At the reveal the context thread carries this same message, highlighted
      in place — showing it twice reads as a repeat rather than as "and here is
-     where it was". */
-  if (q.text && !(revealed && q.context && q.context.length > 1)) {
-    const b = h("div", "bubble qbubble", q.text);
-    rows.push(b);
+     where it was". A photograph is never in that thread, so it is never the
+     thing being repeated; this used to test `q.text`, which meant a photo with
+     no caption rendered nothing at all on the big screen. */
+  const inThread = revealed && q.context && q.context.length > 1;
+  if (!(inThread && q.text && q.format !== "photo")) {
+    /* `format` decides the shape — inked slots, two sides, a conversation, a
+       receipt with a clock, a picture. shared.js/messageBlock is the only
+       reader, and it returns null when there is nothing to draw. */
+    const b = messageBlock(q, "bubble qbubble");
+    if (b) rows.push(b);
   }
 
   if (q.options) {
     const grid = h("div", "opts");
     const isEmoji = q.options.every(o => o.length <= 3 && !/[a-z0-9]/i.test(o));
+    /* Mutual has no correct answer, so there is nothing to light up unless the
+       two of them landed on the same tile — which is the whole result of the
+       round, and worth showing as one. Disagree and nothing is dimmed: neither
+       of them was wrong. */
+    const hit = q.type === "mutual" ? agreedOption() : q.answer;
     q.options.forEach((opt, i) => {
       const cell = h("div", "opt" + (isEmoji ? " emoji" : ""), opt);
-      if (revealed) cell.classList.add(i === q.answer ? "hit" : "miss");
+      if (revealed && hit !== null) cell.classList.add(i === hit ? "hit" : "miss");
       grid.append(cell);
     });
     rows.push(grid);
   } else if (!revealed) {
     rows.push(h("div", "hint",
       q.type === "number" ? "Type your number on your phone."
+      : q.type === "percent" ? "Slide to a percentage on your phone."
                           : "Slide to a month on your phone."));
+  }
+
+  if (q.type === "mutual" && !revealed) {
+    rows.push(h("div", "hint", "No right answer. You score by agreeing."));
+  }
+  if (q.type === "wager" && !revealed) {
+    rows.push(h("div", "hint", "Stake first, then answer. Win it or lose it."));
   }
 
   if (!revealed) {
@@ -709,7 +838,8 @@ function reveal() {
   const truth = h("div", "truth" + (fresh ? " chor" : ""));
   truth.style.animationDelay = at("typing");
   const val = h("div", "val");
-  truth.append(h("div", "lab", "The truth"), val);
+  truth.append(h("div", "lab",
+                 q.type === "mutual" ? "No right answer" : "The truth"), val);
   if (fresh) {
     /* 4. the typing indicator first, then the line lands. */
     const dots = h("div", "typing");
@@ -730,14 +860,16 @@ function reveal() {
     row.style.animationDelay = ((fresh ? BEAT.board : 0) + i * 0.12) + "s";
     row.style.color = p.color;
     const pts = p.last ? p.last.points : 0;
-    /* 5. the points arrive after the row does, not with it. */
+    /* 5. the points arrive after the row does, not with it. A lost wager is
+       the only negative in the game, and "+-800" is not a number. */
     const delta = h("div", "delta " + (pts > 0 ? "good" : "zero") +
-                            (fresh ? " pop" : ""), "+" + pts);
+                            (fresh ? " pop" : ""),
+                    (pts < 0 ? "−" : "+") + Math.abs(pts).toLocaleString());
     delta.style.animationDelay = ((fresh ? BEAT.board : 0) + i * 0.12 + 0.3) + "s";
     row.append(
       h("div", "rank", "#" + (i + 1)),
       textNode(p.name, "var(--cream)", "nm"),
-      h("div", "said", p.last ? shownGuess(q, p.last.answer, S) : "—"),
+      h("div", "said", p.last ? saidWith(q, p.last) : "—"),
       delta,
       h("div", "tot", String(p.score))
     );
@@ -840,6 +972,7 @@ function reelGuess(r, answer, g) {
   if (answer === null || answer === undefined) return "nothing";
   if (r.options && r.options[answer] !== undefined) return "“" + r.options[answer] + "”";
   if (r.type === "number") return Number(answer).toLocaleString();
+  if (r.type === "percent") return answer + "%";
   if (r.type === "month" && S.meta && S.meta.months && S.meta.months[answer]) {
     return monthLabel(S.meta.months[answer]);
   }
@@ -1079,6 +1212,22 @@ function onDenied(why) {
   render();
 }
 
+/* Browsers will not make a sound until the page has been interacted with, and
+   the lobby — which is exactly where the bed matters, while two people settle
+   down — gets no interaction at all until someone presses Start. So the first
+   gesture of any kind unlocks the audio context and starts whatever bed the
+   current phase asks for. Once only; it removes itself.
+ *
+ * `Sound.init()` on its own is not enough on iOS Safari, where a context
+ * created before a gesture is born suspended — hence the explicit resume. */
+function unlockAudio() {
+  const ctx = Sound.init();
+  if (ctx && ctx.state === "suspended") ctx.resume();
+  if (S) cue(S, true);
+}
+["pointerdown", "keydown"].forEach(ev =>
+  window.addEventListener(ev, unlockAudio, { once: true, capture: true }));
+
 connect("host", s => {
   const phaseChanged = !S || S.phase !== s.phase || S.round !== s.round;
   /* Back in the lobby means a new game: forget which reveals and which award
@@ -1096,10 +1245,8 @@ connect("host", s => {
    re-render never replays a cue (DESIGN §6). */
 let ticked = -1;
 function cue(next, phaseChanged) {
-  if (!S) return;
-
   // someone locked in
-  if (next.answered.length > S.answered.length && next.phase === "question") {
+  if (S && next.answered.length > S.answered.length && next.phase === "question") {
     Sound.send();
   }
   if (!phaseChanged) return;
@@ -1108,6 +1255,16 @@ function cue(next, phaseChanged) {
   // the receive lands *after* the silence — the pause is the joke
   if (next.phase === "reveal") setTimeout(() => Sound.receive(), BEAT.resolve * 1000);
   if (next.phase === "final") setTimeout(() => Sound.flourish(), 350);
+
+  /* The bed under each phase. `reveal` gets silence on purpose: the 450ms of
+     nothing before the answer resolves is the whole point of the choreography
+     (DESIGN 2.5), and a pad playing through it steps on the punchline. The
+     outro starts after the flourish has had the stage to itself. */
+  if (next.phase === "lobby") Sound.bed("lobby");
+  else if (next.phase === "countdown" || next.phase === "question")
+    Sound.bed("question");
+  else if (next.phase === "reveal") Sound.bed(null);
+  else if (next.phase === "final") setTimeout(() => Sound.bed("outro"), 1400);
 }
 
 /* A low tick under the last few seconds. Driven from the timer's own frame

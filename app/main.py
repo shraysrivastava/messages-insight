@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import io
 import json
 import os
@@ -472,6 +473,33 @@ def create_app(room: Room, static_dir: str = STATIC) -> FastAPI:
             dark="#EFE7DE", light=None, xmldecl=False, svgns=True)
         return Response(content=buf.getvalue(), media_type="image/svg+xml")
 
+    @app.get("/photo/current")
+    def photo():
+        """The picture for the round that is on screen right now, and no other.
+
+        Photographs live inside the dataset so they are sealed with it, but a
+        120 KB image does not belong in the state snapshot — that goes out on
+        every heartbeat, every answer and every reconnect. This is fetched once
+        per round and cached by the browser instead.
+
+        There is no `/photo/{id}`: an id is the one thing that would let
+        somebody pull a picture out of a round that hasn't been played yet, and
+        one of the two players designed this deck without ever seeing it.
+        """
+        g = app.state.room.game
+        q = g.question
+        if q is None or q.photo is None or g.phase not in (
+                "countdown", "question", "reveal"):
+            return Response(status_code=404)
+        try:
+            raw = base64.b64decode(q.photo, validate=True)
+        except (ValueError, TypeError):
+            return Response(status_code=404)
+        # Cached for the round, not past it — the next round's picture arrives
+        # under the same URL.
+        return Response(content=raw, media_type="image/jpeg",
+                        headers={"Cache-Control": "private, max-age=600"})
+
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     @app.websocket("/ws")
@@ -520,7 +548,10 @@ def build_room(data: Dataset, rounds: int | None, seconds: float | None,
     deck means naming questions by their round number, and an unseeded deal
     renumbers them every restart."""
     rng = random.Random(seed) if seed is not None else None
-    return Room(Game(data, rounds=rounds, seconds=seconds, rules=DealRules(),
+    # The dealing rules come off the dataset, not off a config file — the
+    # image has no questions/ directory (schema.Deal says why).
+    rules = DealRules(**data.meta.deal.model_dump())
+    return Room(Game(data, rounds=rounds, seconds=seconds, rules=rules,
                      rng=rng),
                 library=library, history=history)
 

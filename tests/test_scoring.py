@@ -148,6 +148,72 @@ def test_mutual_mismatch_scores_nothing(game):
     assert game.players["b"].score == 0
 
 
+# ── wager / the Final Receipt ─────────────────────────────────────────────
+
+def wagered(game, a, b, answer=0):
+    """Run one Final Receipt. `a` and `b` are (pick, stake) tuples."""
+    game.deck = [Q(type="wager", answer=answer)]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    game.record_answer("a", {"pick": a[0], "stake": a[1]}, at=1001.0)
+    game.record_answer("b", {"pick": b[0], "stake": b[1]}, at=1019.0)
+    return game.close_question()
+
+
+def test_wager_pays_the_stake_and_ignores_speed(game):
+    game.players["a"].score = game.players["b"].score = 2000
+    wagered(game, (0, 800), (0, 300))
+    # the slow one is not punished: the decision is the round, not the reflex
+    assert game.players["a"].score == 2800
+    assert game.players["b"].score == 2300
+
+
+def test_wager_takes_the_stake_back_when_you_are_wrong(game):
+    game.players["a"].score = 2000
+    game.players["b"].score = 2000
+    wagered(game, (1, 800), (0, 300))
+    assert game.players["a"].score == 1200
+    assert game.players["b"].score == 2300
+
+
+def test_a_lost_wager_cannot_take_you_below_zero(game):
+    """There is no round after this one to win it back, and a negative number
+    is a worse last screen of the night than a small one."""
+    game.players["a"].score = 100
+    wagered(game, (1, 500), (0, 0))
+    assert game.players["a"].score == 0
+
+
+def test_the_stake_is_clamped_to_what_you_could_lose(game):
+    game.players["a"].score = 1200
+    wagered(game, (0, 99999), (0, 0))
+    assert game.players["a"].score == 2400            # capped at 1200
+
+
+def test_everyone_can_stake_the_floor_at_zero_points(game):
+    assert game.stake_cap(game.players["a"]) == 500
+    game.players["a"].score = 3000
+    assert game.stake_cap(game.players["a"]) == 3000
+
+
+def test_a_wager_without_a_pick_is_refused(game):
+    game.deck = [Q(type="wager", answer=0)]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    assert game.record_answer("a", 0) is False           # bare index
+    assert game.record_answer("a", {"stake": 500}) is False
+    assert game.players["a"].answer is None
+
+
+def test_the_stake_reaches_the_round_log(game):
+    """superlatives.py reads it off PlayerResult for All In and Ice in the
+    Veins; nothing else records how much was risked."""
+    game.players["a"].score = 2000
+    rec = wagered(game, (0, 800), (1, 50))
+    assert rec.results["a"].stake == 800
+    assert rec.results["b"].stake == 50
+
+
 # ── the round log ─────────────────────────────────────────────────────────
 
 def test_grade_appends_a_complete_round_record(game):

@@ -14,6 +14,9 @@ datasets/real.json
 datasets/dev.json
 !datasets/dev.json.enc
 data/
+# Downscaled copies of five years of photographs. The only ones that ever leave
+# this machine are the handful compile.py embeds in the sealed dataset.
+photos/
 .env
 
 # Ciphertext IS committed on purpose — see docs/PLAN.md §4:

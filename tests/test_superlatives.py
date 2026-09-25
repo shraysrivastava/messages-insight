@@ -15,9 +15,9 @@ import app.superlatives as S
 NAMES = {"a": "Shray", "b": "Nilu"}
 
 
-def res(answer=0, points=500, accuracy=1.0, elapsed=5.0, rank=1):
+def res(answer=0, points=500, accuracy=1.0, elapsed=5.0, rank=1, stake=None):
     return PlayerResult(answer=answer, points=points, accuracy=accuracy,
-                        elapsed=elapsed, rank_after=rank)
+                        elapsed=elapsed, rank_after=rank, stake=stake)
 
 
 def rec(i=0, type="binary", kind="Receipts", qid=None, correct=0, **results):
@@ -386,3 +386,94 @@ def test_the_curve_wire_shape_is_json_ready():
     assert set(d) == {"rounds", "lines", "leads", "best", "high"}
     assert d["lines"][0]["points"] == [900]
     import json; json.dumps(d)
+
+
+# ── the Final Receipt ─────────────────────────────────────────────────────
+#
+# All In and Ice in the Veins are the only two awards about what someone
+# risked rather than what they knew, and the only two that read `stake`.
+
+
+def game_to_a_wager(before_a, before_b, a_stake, b_stake, a_right, b_right):
+    """Enough ordinary rounds to put both players on a known score, then the
+    Final Receipt. `stake_cap` is the score going in, floored at 500, so the
+    body of the game is what decides whether a stake counts as all in."""
+    log = [rec(i, a=res(points=before_a // 2, rank=1),
+               b=res(points=before_b // 2, rank=2)) for i in range(2)]
+    log.append(rec(2, type="wager", kind="Final receipt",
+                   a=res(answer=0 if a_right else 1,
+                         points=a_stake if a_right else -a_stake,
+                         accuracy=1.0 if a_right else 0.0, stake=a_stake),
+                   b=res(answer=0 if b_right else 1,
+                         points=b_stake if b_right else -b_stake,
+                         accuracy=1.0 if b_right else 0.0, stake=b_stake)))
+    return log
+
+
+def test_ice_in_the_veins_fires_on_a_winning_shove():
+    log = game_to_a_wager(2000, 2000, 2000, 100, a_right=True, b_right=True)
+    a = only(log, "ice_in_the_veins")
+    assert a and a.winners == ("a",)
+    assert "2,000" in a.evidence and "Shray" in a.evidence
+
+
+def test_all_in_fires_on_a_losing_shove():
+    log = game_to_a_wager(2000, 2000, 2000, 100, a_right=False, b_right=True)
+    a = only(log, "all_in")
+    assert a and a.winners == ("a",)
+    assert "It was wrong." in a.evidence
+
+
+def test_the_two_stake_awards_cannot_both_land_on_one_player():
+    """Exclusive by construction, not by suppression: one takes the winners,
+    the other takes the losers."""
+    for right in (True, False):
+        log = game_to_a_wager(2000, 2000, 2000, 100, a_right=right, b_right=True)
+        got = {a.key for a in award(log, NAMES, limit=99)
+               if "a" in a.winners and a.key in ("all_in", "ice_in_the_veins")}
+        assert len(got) == 1, got
+
+
+def test_a_careful_stake_wins_nothing_for_being_big():
+    """1,000 of a possible 2,000 is half, not everything."""
+    log = game_to_a_wager(2000, 2000, 1000, 100, a_right=True, b_right=False)
+    assert only(log, "ice_in_the_veins") is None
+    assert only(log, "all_in") is None
+
+
+def test_both_going_all_in_shares_the_award():
+    log = game_to_a_wager(2000, 2000, 2000, 2000, a_right=False, b_right=False)
+    a = only(log, "all_in")
+    assert a and set(a.winners) == {"a", "b"}
+    assert "both put" in a.evidence
+
+
+def test_the_floor_counts_as_everything():
+    """Game.stake_cap lets anyone stake WAGER_FLOOR however little they have,
+    so shoving it is going all in — measuring against their score would call
+    500 of 300 points a 166% wager and never fire."""
+    log = game_to_a_wager(300, 4000, 500, 100, a_right=True, b_right=True)
+    a = only(log, "ice_in_the_veins")
+    assert a and a.winners == ("a",)
+
+
+def test_a_game_with_no_wager_fires_neither():
+    log = [rec(i, a=res(), b=res(points=0, accuracy=0.0)) for i in range(4)]
+    assert only(log, "all_in") is None
+    assert only(log, "ice_in_the_veins") is None
+
+
+def test_a_player_who_never_answered_the_receipt_is_not_all_in():
+    log = game_to_a_wager(2000, 2000, 2000, 100, a_right=True, b_right=True)
+    log[-1].results["b"] = PlayerResult(answer=None, points=0, accuracy=0.0,
+                                        elapsed=25.0, rank_after=2, stake=None)
+    a = only(log, "ice_in_the_veins")
+    assert a and a.winners == ("a",)
+
+
+def test_ice_in_the_veins_outranks_the_ordinary_awards():
+    """It is the last thing that happens on the last round of the night. If it
+    fires, it belongs on the podium rather than sixth in a list of five."""
+    log = game_to_a_wager(2000, 2000, 2000, 100, a_right=True, b_right=True)
+    top = award(log, NAMES, limit=5)
+    assert "ice_in_the_veins" in [a.key for a in top]

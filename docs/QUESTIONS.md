@@ -1,44 +1,50 @@
 # Read Receipts — Question Catalog
 
-45 archetypes to author against. Each one gives you a template, a real example,
-and the mining note that tells `mine.py` how to find candidates for it.
+**Thirteen archetypes ship. Three are blocked on client input.** Every question
+in the bank is one of them; anything that is not one of them is the kind of
+question that made the deck feel random, and was cut.
 
-**→ The questions themselves live in [`questions/`](../questions/)** — 156 of them.
-This document is the reasoning behind them.
+This is the contract, not a menu of ideas. Each archetype below says what the
+prompt is allowed to claim, what computes the answer, and what the reveal owes
+you. Most of the bugs found in this bank were a prompt claiming something the
+resolver did not compute — a question asking "how many times" answered by a
+count of *messages*, or naming one phrase and counting twelve.
 
 ```
 questions/
 ├── config.toml     names, dealing rules, dedup policy, fairness guards
-├── lexicons.toml   45 robust phrase sets — the matching layer
+├── lexicons.toml   the matching layer
 ├── mine.toml       YOURS. priority. 65% of every game comes from here.
 ├── auto/           generated. filler. yields to yours.
-│   ├── who.toml         34   who-says-more
-│   ├── numbers.toml     27   counts
-│   ├── percentages.toml  8   shares
-│   ├── firsts.toml      18   first time we said it
-│   ├── life.toml        31   topic coverage: work, travel, illness, money…
-│   ├── messages.toml    25   curate.py targets, all six formats
-│   └── finale.toml       8   wagers and Same Page rounds
 └── inbox.md        raw idea dump → becomes mine.toml
 ```
 
 **Provenance is the directory.** Anything in `mine.toml` is yours and wins;
-anything in `auto/` is generated and yields. No field to remember. To delete a
-generated question you don't like, write your own with the same `topic` — it
-vanishes silently and you never open `auto/`. Full mechanism in `PLAN.md` §5.
+anything in `auto/` is generated and yields. To delete a generated question you
+do not like, write your own with the same `topic` — it vanishes silently.
 
-**How to use this:** these are patterns, not a finished bank. Pick the archetypes
-that fit your thread, let `mine.py` surface candidates for the mechanical ones, and
-hand-write the ones marked ✍️ — those are the ones only you can write, and they'll
-be the best questions in the game.
+**One game never asks the same thing twice.** `compile.py` derives a `subject`
+for every resolver-backed question — the lexicon it counts, or the resolver
+plus its argument — and the dealer allows one question per subject per game
+(`config.toml [deal] max_per_subject`). This is separate from `kind`, which is
+only the eyebrow: "what share goes out after midnight" filed under *Deep cut*,
+*The archive* and *Chronically online* is one question in three costumes, and
+`max_per_kind` could never see that. A question baked from a real message has
+no subject and is never blocked — it is about that message and can only collide
+with itself. Set `subject` by hand only to force two questions apart when they
+share a fact the resolvers cannot see, or together when they share no resolver.
+
+So **you may still write two questions about one phrase.** The bank keeps six
+on `lex.love_you`. You will just never be asked two of them in one night, and
+across replays you get a different one each time.
 
 ---
 
 ## The two fields, again
 
-- **`type`** = mechanics. Six values once `percent` and `wager` land: `binary`,
-  `choice`, `number`, `month`, `percent`, `wager` (plus `mutual` if built). Adding
-  more costs code.
+- **`type`** = mechanics. Seven, and all seven now play: `binary`, `choice`,
+  `number`, `month`, `percent`, `mutual`, `wager`. Adding more costs code —
+  a scorer in `game.py`, an input on the phone, and the name in `PLAYABLE`.
 - **`kind`** = flavour. Free text. Renders as the eyebrow, and `Game.deal()`
   interleaves the deck by it so the same category never lands three rounds running.
   **Invent as many as you want.**
@@ -75,17 +81,39 @@ can't stop a category landing three rounds running. Invent freely; it's free.
 
 ## Presentation formats
 
-Same four mechanics, six very different-looking rounds. `format` is a rendering
-hint; unknown values fall back to `bubble`, so it can never break a game.
+Same mechanics, six very different-looking rounds. `format` is a rendering hint
+read by `shared.js/messageBlock`, and by nothing else; unknown values fall back
+to `bubble`, so it can never break a game.
 
 | `format` | Renders as |
 | --- | --- |
 | `bubble` | one message, centred and large |
 | `blank` | one message with a word knocked out |
 | `redacted` | one message, several words knocked out |
-| `compare` | two bubbles stacked, A above B |
-| `thread` | three messages; the question is about the middle |
-| `timestamp` | no message at all — just `3:41 AM · a Tuesday in 2023` |
+| `compare` | two bubbles side by side, labelled A and B |
+| `thread` | the messages of a real exchange, in order, stacked |
+| `timestamp` | the message, then `Delivered` and a clock that keeps running |
+| `photo` | a real photograph from the thread, and its caption if it had one |
+
+`blank` and `redacted` draw each `▁▁▁▁▁` run as a filled slot the width of the
+missing word — a row of low underscores is invisible across a room.
+
+`photo` is the one format with something outside `text` behind it. A block
+names a file — `photo = "IMG_0042.HEIC"` — `compile.py` looks it up in the
+corpus and embeds the downscaled copy in the dataset, and the client fetches it
+from `/photo/current` rather than being handed 120 KB on every heartbeat. It
+needs a corpus extracted after 2026-09-24 and one run of `make photos`; see
+PLAN §S3.12. Any `type` can wear it: who sent this, when was it taken, what was
+the caption.
+
+`compare` splits `text` on its newline and parses the `A:` / `B:` labels
+`curate.py` writes in. `thread` splits on newlines too, and renders the lines
+as a column of separate bubbles with **nobody's name on them**. It does not put
+them on alternating sides, and that is deliberate: the questions carrying this
+format are a mix — Whose Turn is two people taking turns, Escalation is one
+person sending three in a row — and `format` alone does not say which. Sides
+would be a guess, and on the ones it guessed wrong it would either give the
+answer away or destroy it. Telling them apart needs one more bit in the data.
 
 Rotate them deliberately. Three `bubble` rounds in a row is the same failure as
 three rounds of the same `kind`.
@@ -104,305 +132,187 @@ three rounds of the same `kind`.
    to the midpoint and the extremes are guessable from the range alone.
 6. **Vary the `kind` even for the same mechanic.** Twenty questions labelled
    "Who said it" makes an un-interleavable deck.
-7. **Write the reveal first for the ✍️ ones.** If you can't think of a payoff, the
-   question isn't worth a round.
+7. **Write the reveal first.** If you can't think of a payoff, the question
+   isn't worth a round.
+8. **The prompt may not claim more than the resolver computes.** This is the
+   rule the bank broke most, and it breaks in exactly two ways:
+   - *"How many times" on a `count`.* `count` counts **messages containing at
+     least one match**, so "goodnight goodnight" is one. Either say "how many
+     messages", or pass `mode = "occurrences"` and keep the wording.
+   - *A quoted phrase on a category lexicon.* "Who says “wait” more" is a lie
+     when the lexicon also holds *hold on*, *hang on*, *one sec*. Either name
+     the category ("who stalls more") or narrow the lexicon. Quoting a phrase
+     is fine when every term is a **spelling** of it — `ily` is a spelling of
+     *I love you*; `munchkin` is not a spelling of *nu*.
+9. **The reveal must not assert a fact it didn't compute.** If the reveal
+   states something, that something comes from a template var. `make lint`
+   cannot check the ones written in prose, so this one is on you.
 
 ---
 
-# `binary` — two options, all-or-nothing
+# The thirteen
 
-### 1. Who said it
-The workhorse. `kind: "Who said it"`
-```json
-{ "type": "binary", "kind": "Who said it",
-  "prompt": "Who sent this?",
-  "text": "the dog next door barked all night i got maybe four hours of sleep",
-  "options": ["Shray", "Nilu"], "answer": 1,
-  "reveal": "Nilu. March 19, 2021 — nineteen days in and already at war with a dog." }
-```
-*Mine:* any message 6–28 words with no proper nouns that give the sender away.
-Rank by "voice ambiguity" — messages whose vocabulary appears in both senders' history.
+Counts are what currently compiles against her thread.
 
-### 2. Voice swap ✍️
-A message that sounds exactly like the *other* person. Same shape as #1, but you
-pick it by hand because the joke is that it's misattributable.
-> *reveal:* `"You. Everyone gets this one wrong. You have one (1) sentence that sounds like her."`
+## A. The message is the question  (79 / 169 — aim for half the deck)
 
-### 3. Who texted first
-`kind: "Cold open"`
-```json
-{ "type": "binary", "kind": "Cold open",
-  "prompt": "On the morning of your first anniversary — who texted first?",
-  "options": ["Shray", "Nilu"], "answer": 0,
-  "reveal": "You, at 6:04am. She replied at 11:40." }
-```
-*Mine:* first message of each day; pick days with meaning (anniversaries, birthdays,
-the day after a fight).
+These put a real bubble on the big screen. They are the reason the game is
+about *them* and not about statistics, and they are the ones worth adding to.
 
-### 4. Who apologised
-`kind: "Damning evidence"` — show the exchange, ask who said sorry.
-*Mine:* messages containing sorry/my bad/i was wrong, with the ±3 context.
+### 1. Who Said It — `binary` · 25 questions
+A real message, unattributed. Guess the sender.
 
-### 5. Which came first
-Two bubbles, A and B, in date order or not.
-```json
-{ "type": "binary", "kind": "Ancient history",
-  "prompt": "Which of these came first?",
-  "text": "A: “i think i might be in love with you”\nB: “can you bring me a coffee”",
-  "options": ["A", "B"], "answer": 1,
-  "reveal": "The coffee. By four months. Romance is a marathon." }
-```
-*Mine:* pair a sentimental message with a mundane one from the opposite era.
+- **Prompt may claim:** anything about the message that is visible in it.
+- **Answer:** baked at mint time (`curate.py`), never a resolver.
+- **Reveal owes:** the sender, the date, and the surrounding thread.
+- **Rejects:** any message containing a tell the deck asks about elsewhere
+  (`cus`, `yea`, `imma`, 😹). Quoting one and then asking who sent it gives the
+  same answer away twice.
 
-### 6. Autocorrect victim
-`kind: "Chronically online"` — who sent this typo.
-*Mine:* messages with a real word that's an edit-distance-1 neighbour of a common word,
-or the classic `ducking`.
+### 2. Finish the Sentence — `choice` · 15
+A phrase one of them says constantly, cut off before the last word.
 
-### 7. Who says it more
-No bubble. Pure trivia.
-```json
-{ "type": "binary", "kind": "By the numbers",
-  "prompt": "Who has said “lol” more?",
-  "options": ["Shray", "Nilu"], "answer": 0,
-  "reveal": "You. 1,204 to her 380. She types “haha” like an adult." }
-```
-*Mine:* any token with a ≥2× ratio between senders. Generates dozens for free.
+- **Answer:** `g_finish_sentence` in `mine.py`.
+- **Distractors:** other completions *the same person actually used after the
+  same prefix*. Never invented, never from a frequency band.
+- **Rejects:** function-word answers. "what ya up ___" has one legal
+  completion and tests nothing. Rejects elongation variants as separate
+  options — `much` / `muchhhh` are one answer, not three.
 
-### 8. Double text
-> "Who double-texts more?" *Mine:* consecutive messages from the same sender with
-no reply between, gap > 5 min.
+### 3. Fill the Blank — `choice` · 6
+One content word removed from a real message.
 
-### 9. Left on read
-> "Who has left the other on read for longer?" *Mine:* max reply gap by sender.
+### 4. Redact — `choice` · 3
+Three words removed instead of one. Same shape, harder, better on a big screen.
 
-### 10. Emoji ownership
-> "Whose 🥺 is this?" *Mine:* per-sender emoji frequency with a strong skew.
+### 5. Reply Roulette — `choice` · 3
+Shows the reply; guess what caused it. The only round that runs backwards.
 
-### 11. Real or fabricated ✍️
-Two messages, one real, one you wrote. Cruel and excellent.
-> *reveal:* `"The real one is B. You genuinely sent that."`
+### 6. What Happened Next — `choice` · 1
+Shows the message; guess the reply. **Under-built — the first place to add.**
+
+### 7. Date This — `month` · 22
+A real message. Slide to the month.
+
+- **Rejects:** answers in the outer 10% of the range — guessable from the
+  slider alone.
+
+### 8. Left Hanging — `number` or `binary` · 4
+A question that sat unanswered for six hours or more.
+
+- **Answer:** `g_unanswered` in `mine.py`.
+- The only archetype where the funny part is the silence, not the message.
 
 ---
 
-# `choice` — 2–4 options, all-or-nothing
+## B. The archive is the question  (90 / 169)
 
-### 12. Fill in the blank
-The single best mechanic in the game. `kind: "Fill in the blank"`
-```json
-{ "type": "choice", "kind": "Fill in the blank",
-  "prompt": "Nilu sent this. What's the missing word?",
-  "text": "come over later i am making that ▁▁▁▁▁ you liked with the lemon",
-  "options": ["pasta", "chicken", "risotto", "salmon"], "answer": 0,
-  "reveal": "“…that pasta you liked with the lemon.” May 2023. You asked for it every week after." }
-```
-*Mine:* blank a mid-frequency content word (not a stopword, not a hapax).
-Distractors from the same part of speech and similar length, drawn from the corpus.
+Computed over all 248,345 messages. Resolver-backed, so the answer is never in
+the file — these are the ones safe to read while unspoiled.
 
-### 13. Fill in the blank — emoji
-Same, blanking an emoji. Auto-renders as big emoji tiles.
+### 9. The Tell — `binary` · 8
+Same word, two spellings, one each. `yea`/`yeah`, `imma`/`ima`, `bc`/`cus`.
 
-### 14. What happened next
-```json
-{ "type": "choice", "kind": "Deep cut",
-  "prompt": "You sent this. What did she reply?",
-  "text": "i think i left my keys at your place can you check",
-  "options": ["“they're in the fridge”", "“no”", "“come get them”", "“i'm at work”"],
-  "answer": 0,
-  "reveal": "“they're in the fridge.” Still unexplained." }
-```
-*Mine:* messages whose reply is short and surprising. Distractors from other replies
-by the same sender.
+- **The strongest signal in this thread** — margins in the hundreds to one.
+- **Prompt may name both spellings.** That is not a mismatch; the lexicon
+  measures one side and the comparison is the question.
 
-### 15. Reply roulette
-Inverted #14: show the *reply*, guess which message prompted it.
+### 10. Who Does It More — `binary` · 33
+A habit, compared. `who_says_more` or `who_more`.
 
-### 16. Top emoji
-> "Which emoji have we used most?" — renders as four big emoji tiles.
+- **Prompt may claim:** the *category*, not a single phrase — unless the
+  lexicon contains only spellings of that phrase. "Who says `wait` more" is
+  wrong when the lexicon also holds *hold on*, *hang on*, *one sec*. Say "who
+  stalls more" or narrow the lexicon.
+- **Rejects:** anything closer than 1.25×. A coin flip in costume.
 
-### 17. Most-used word
-> "Which of these do we say most?" *Mine:* four content words from adjacent frequency bands.
+### 11. The Count — `number` · 33 (with #13)
+How many messages match a category.
 
-### 18. What was I complaining about ✍️
-Four options, one real. Pull from a genuinely unhinged rant.
+- **Prompt must say "how many messages"**, not "how many times" — `count`
+  counts *messages containing at least one match*, so a message saying
+  "goodnight goodnight" counts once. Say "how many times" only with
+  `mode = "occurrences"`.
+- **Rejects:** answers under 20. Proximity scoring on a small number is noise.
 
-### 19. Guess the year
-Cheaper cousin of `month` — four years as tiles. Good for very old messages where a
-month slider is unfairly precise.
+### 12. The First — `month` or `binary` · 4
+When, or by whom, something was said for the first time.
 
-### 20. Odd one out
-Three real messages, one fabricated. `prompt: "Which of these did we never send?"`
+### 13. The Arc — `number` · 6
+Something that *changed* across five years: reply speed, message length,
+vocabulary, reciprocation.
 
-### 21. Where were we
-> "This message was sent from where?" Four places. *Mine:* messages mentioning
-travel, plus your own memory for the answer. Mostly ✍️.
+- **The only archetype whose reveal is allowed to be sincere.** Every other
+  type scores a point; this one tells them something about themselves they
+  could not have stated out loud. **Worth more of the deck than it has.**
 
-### 22. Nickname origin ✍️
-> "Which of these came first?" — four nicknames, chronological.
-*Mine:* first appearance date of each term of endearment. Assembles itself.
+### 14. The Extremum — `number` (counted in #11)
+The single longest, biggest, quietest thing.
 
-### 23. Busiest day of the week
-> "Which day do we text most?" Seven becomes four options — include Sunday, it's usually the answer.
-
-### 24. The longest word
-> "What's the longest word either of us has ever texted?" Four options, three plausible.
-
-### 25. Whose phone died ✍️
-Any recurring domestic disaster, four candidates.
+- **`hits` must be `None`.** An extremum has one match by definition, and
+  reporting `1` makes the `min_hits` guard drop the question silently.
 
 ---
 
-# `number` — proximity-scored
+## C. The three that were blocked on client input
 
-Always give an **anchor** in the prompt (see DESIGN.md §2.3) — a blind number guess
-isn't a decision, it's a coin flip with extra steps.
+All three ship now. `PLAYABLE` in `app/game.py` holds every type, and the
+phone has an input for each.
 
-### 26. Total messages
-```json
-{ "type": "number", "kind": "By the numbers",
-  "prompt": "How many messages have we sent each other in five years?",
-  "answer": 48213,
-  "reveal": "48,213. About 26 a day, every day, since the day we met." }
-```
+| | | |
+| --- | --- | --- |
+| **Mutual** | `mutual` · 6 | No correct answer — you score 500 each by picking the *same* option. Both screens say so, because otherwise it reads as a trivia question you happened to both get wrong. The only round that is about the two of them rather than the archive. |
+| **Percent** | `percent` · 20 | A 0–100 slider, the same shape as the month one without the histogram. Scored on a flat 30-point band, and the phone's verdict reads off the same 30 so it can't call a near miss "wildly over" while paying out 500. |
+| **Wager / Final Receipt** | `wager` · 2 | Round 15 of 14, always last. Stake first, then answer: win the stake or lose it, no speed bonus, and a loss cannot take you below zero. See PLAN §S3.7. |
 
-### 27. Times we said "I love you"
-```json
-{ "type": "number", "kind": "Receipts",
-  "prompt": "How many times have we said “I love you”?",
-  "answer": 1877,
-  "reveal": "1,877. You said it first 1,102 of those times. Noted." }
-```
-
-### 28. Longest silence
-> "What's the longest we've gone without texting? (in hours)"
-*Reveal is the good part:* what was happening that week.
-
-### 29. Busiest single day
-> "Most messages in one day?" *Reveal:* the date, and why.
-
-### 30. Sorry count
-> "How many times has Shray said 'sorry'?" *Mine:* per-sender token count. Ask about
-whichever of you it's funnier for.
-
-### 31. Photos sent
-### 32. Longest message, in words
-### 33. Times we said "goodnight"
-### 34. Longest daily streak
-> "Most consecutive days in a row we both texted?" — a genuinely sweet number.
-### 35. Distinct emoji used
-### 36. Times we said each other's names
-### 37. Average messages per day
-### 38. 3am club
-> "How many messages have we sent between 2am and 5am?"
-### 39. Question marks
-> "How many questions has Nilu asked you?" *Mine:* count `?`-terminated messages.
-### 40. The "haha" index
-> "How many times has one of us typed 'haha' or some variant?" *Mine:* regex `ha(ha)+`.
+Two more wagers would be worth writing. There are only two, so the closer is
+the same question on the second night.
 
 ---
 
-# `month` — slider over `meta.months`, proximity-scored
+## Cut, and why
 
-With the density histogram behind it (DESIGN.md §2.3), these become the best-looking
-rounds in the game.
+Not archetypes. If a question is one of these, it does not belong in the bank.
 
-### 41. First "I love you"
-```json
-{ "type": "month", "kind": "First time we said it",
-  "prompt": "When did one of us first say “I love you”?",
-  "text": "ok i'm going to say it and you can do whatever you want with it. i love you",
-  "answer": 7,
-  "reveal": "October 2021. You sent it at 1:14am and then went offline for nine minutes." }
-```
+- **Topic counts** — "how many messages about food / pets / weather". An
+  arbitrary number with no payoff, and ten of them in a row is what made the
+  deck feel random. Eleven were removed.
+- **Anything with a margin under 1.25×** — a binary whose answer is 53/47 is
+  a coin flip wearing a question's clothes.
+- **Duplicate prompts** — four messages all asking "Who sent this?" reads as a
+  template. Every message question gets a prompt about *that* message.
+- **Any question whose reveal asserts a fact not drawn from a template var.**
+  "Sunday scaries are real" shipped on a thread whose busiest day was
+  Wednesday.
 
-### 42. First time we said [anything] ✍️
-The most generative archetype here. Nominate any phrase — a nickname, an inside joke,
-a city, "move in", "your mom", the name of your cat — and `mine.py` finds its first
-appearance and the message it appeared in. **One nominated word = one finished
-question.** Write a list of 20 words and you have 20 questions.
+## Mutual, when it lands
 
-### 43. Date this message
-> "When was this sent?" Any message with era-specific content.
+The three written already — funnier / more dramatic / worse texter — plus these
+if the mechanic ships:
 
-### 44. Our busiest month
-> "Which month did we text the most?" *Reveal:* what was going on.
-
-### 45. Our quietest month
-Same, inverted. Often the more interesting reveal.
-
----
-
-# `percent` — tug-of-war slider *(stage 3, `S3.6`)*
-
-```json
-{ "type": "percent", "kind": "By the numbers",
-  "prompt": "What share of our 48,213 messages did Shray send?",
-  "answer": 46, "unit": "%",
-  "reveal": "46%. She has out-texted you every single year." }
-```
-
-Good ones: share of messages by sender · share sent after midnight · share that are
-one word · share containing an emoji · share of your messages she replied to within
-a minute · share of days in five years with at least one message *(this one is the
-sweetest number in the game — get it in)*.
-
----
-
-# `mutual` — no correct answer, you score by matching *(stage 4, `S4.6`)*
-
-### The most "us" message
-Four candidate messages, both pick one, match to score.
-
-### Favourite era
-> "Which year was our best year?" — slider or four options. Matching is the point.
-
-### Predict her guess
-> "Nilu — how many times do you think Shray has said 'sorry'?" and
-> "Shray — what number will Nilu guess?" Deranged and very funny.
-
----
-
-# `wager` — the Final Receipt *(stage 3, `S3.7`)*
-
-Always round 14, exactly one per game. Stake, then answer. Make it a question
-that's *guessable but not certain* — a `binary` or a `choice`, never a `number`.
-
-```json
-{ "type": "wager", "kind": "Final receipt",
-  "prompt": "Final Receipt. Who sent the very first message between us?",
-  "text": "hey — this is Shray from saturday. hope this is the right number",
-  "options": ["Shray", "Nilu"], "answer": 0,
-  "reveal": "You. March 1, 2021, 4:47pm. She replied in under a minute. Five years ago tonight." }
-```
-
-Write 4–5 of these so replays don't end the same way. Save your single best reveal
-for one of them — it's the last thing either of you reads.
+- **Favourite era.** "Which year was our best year?" Matching is the point.
+- **Predict her guess.** "Nilu, how many times do you think Shray has said
+  sorry?" and "Shray, what number will Nilu guess?" Deranged, and very funny.
 
 ---
 
 # Bank composition
 
-For 14-round games with 5 distinct playthroughs:
+**169 shipping, 89 his.** Against a 60-question floor and 14-round games, the
+bank is not the constraint any more — balance is.
 
-| Type | Count | Notes |
+| | now | wanted |
 | --- | --- | --- |
-| `binary` | 24 | Archetypes 1–11. #7 alone generates a dozen. |
-| `choice` | 20 | Fill-in-the-blank should be half of these. |
-| `month` | 20 | #42 generates these in bulk from a word list. |
-| `number` | 16 | Every one needs an anchor. |
-| `percent` | 6 | |
-| `mutual` | 5 | If built. |
-| `wager` | 5 | One per game, drawn last. |
-| **Total** | **~90** | 60 is the hard floor. |
+| Shows a real message | 46% | **~50%** |
+| The Arc | 6 | **more** — best reveals in the deck |
+| What Happened Next | 1 | **more** — under-built |
+| Who Does It More | 33 | fine, do not add |
+| The Count | 33 | fine, do not add |
 
-Current state: **156 authored, 98 shippable.** The gap is 26 slots waiting on
-`curate.py` to drop a real message in, and 11 drafts waiting on you. Check with
-`python3 tools/status.py --bank`.
+Two shapes are over-represented and two are under-built. That is the whole
+brief for the rebuild: **no new counts, no new who-says-more.** Add message
+rounds and arc questions, and re-home anything that violates a contract above.
 
-**Fastest path to a full bank:** archetypes #7, #42, and the `number` family are
-close to automatic — a word list and a few queries produce 40+ questions. That
-leaves ~40 to curate and ~10 to hand-write, which is one evening plus three.
-
-**Author the reveals in one sitting at the end.** Reading 90 payoff lines back to
-back is the only way to catch the ones that are captions instead of punchlines, and
-it's the difference between a game and a gift.
+**Read the reveals in one sitting at the end.** Ninety payoff lines back to back
+is the only way to catch the ones that are captions instead of punchlines, and
+it is the difference between a game and a gift.

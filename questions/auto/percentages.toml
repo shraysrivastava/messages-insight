@@ -11,7 +11,8 @@ prompt = "Of our {total:,} messages, what share did {p1} send?"
 answer = { share_of_messages = "p1" }
 unit = "%"
 reveal = "{answer}%. Which means the other {answer}% belongs to someone else in this chat."
-status = "ready"
+# cut 2026-09-24: same number as arc-his-share
+status = "draft"
 
 [[q]]
 id = "share-days-covered"
@@ -33,7 +34,8 @@ prompt = "What share of our messages were sent after midnight?"
 answer = { share_between = [0, 5] }
 unit = "%"
 reveal = "{answer}%. A meaningful fraction of this relationship happened tired."
-status = "ready"
+# cut 2026-09-24: same number as my-late-night
+status = "draft"
 
 [[q]]
 id = "share-one-word"
@@ -55,7 +57,8 @@ prompt = "What share of our messages contain at least one emoji?"
 answer = { share_with_emoji = true }
 unit = "%"
 reveal = "{answer}%."
-status = "ready"
+# cut 2026-09-24: arc-emoji-2022 + arc-emoji-now already tell this
+status = "draft"
 
 [[q]]
 id = "share-quick-reply"

@@ -28,14 +28,15 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 from app.schema import Dataset
-from tools.resolvers import RESOLVERS
+from tools.resolvers import RESOLVERS, YEAR_AWARE
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QDIR = os.path.join(ROOT, "questions")
 G, Y, R, D, B, X = "\033[32m", "\033[33m", "\033[31m", "\033[2m", "\033[1m", "\033[0m"
 
 TYPES = {"binary", "choice", "number", "month", "percent", "wager", "mutual"}
-FORMATS = {"bubble", "blank", "redacted", "compare", "thread", "timestamp"}
+FORMATS = {"bubble", "blank", "redacted", "compare", "thread", "timestamp",
+           "photo"}
 STATUSES = {"ready", "draft", "mine"}
 FIELDS = {"id", "topic", "type", "kind", "area", "format", "prompt", "text",
           "options", "answer", "reveal", "status", "unit", "source",
@@ -43,7 +44,15 @@ FIELDS = {"id", "topic", "type", "kind", "area", "format", "prompt", "text",
           # curate.py bakes the surrounding thread into the block, and
           # Question.context carries it through to the reveal. It was missing
           # here, so every curated block with context linted as an error.
-          "context"}
+          "context",
+          # Normally derived by compile.py from the resolver behind the
+          # question; set it by hand only to force two questions apart or
+          # together when the resolvers can't see that they belong that way.
+          "subject",
+          # A photograph, by its file name. compile.py looks it up in the
+          # corpus and embeds the downscaled copy — the block holds the name,
+          # not the image, and not an index (see compile.load_photo).
+          "photo"}
 
 # One message inside a `context` array. Mirrors app.schema.ContextMsg — the
 # field is `who`, not `from`, and getting that wrong passed this linter twice
@@ -117,6 +126,12 @@ def lint(qdir: str = QDIR) -> tuple[list[str], list[str]]:
                 errors.append(f"{where}: bad status {q.get('status')!r}")
             if q.get("format", "bubble") not in FORMATS:
                 errors.append(f"{where}: unknown format {q.get('format')!r}")
+            # `format` is set to "photo" by compile.py when a block names one,
+            # so a block declaring the format without a picture is a question
+            # that will render an empty frame. The schema refuses it later;
+            # this says so before a compile.
+            if q.get("format") == "photo" and not q.get("photo"):
+                errors.append(f"{where}: format 'photo' with no `photo` name")
             for field in ("kind", "prompt", "reveal"):
                 if not str(q.get(field, "")).strip():
                     errors.append(f"{where}: missing {field}")
@@ -153,6 +168,27 @@ def lint(qdir: str = QDIR) -> tuple[list[str], list[str]]:
                     errors.append(
                         f"{where}: answer {ans} out of range for "
                         f"{len(q['options'])} options")
+
+            # A `year` handed to a resolver that ignores it gives the
+            # all-time number under a prompt that says "this year".
+            ans0 = q.get("answer")
+            if isinstance(ans0, dict) and "year" in ans0:
+                named = [k for k in ans0 if k in RESOLVERS]
+                if named and not any(k in YEAR_AWARE for k in named):
+                    errors.append(f"{where}: `{named[0]}` ignores `year` — the "
+                                  f"answer would be the all-time figure")
+
+            # Rule 8 (docs/QUESTIONS.md): the prompt may not claim more than
+            # the resolver computes. `count` counts MESSAGES containing a
+            # match, so "how many times" is a different question unless the
+            # spec opts into counting occurrences.
+            ans = q.get("answer")
+            if isinstance(ans, dict) and "count" in ans \
+                    and ans.get("mode") != "occurrences" \
+                    and re.search(r"how many times", q.get("prompt", ""), re.I):
+                warns.append(f"{where}: asks \"how many times\" but `count` "
+                             f"counts messages \u2014 say \"how many messages\", or "
+                             f"add mode = \"occurrences\"")
 
             ctx = q.get("context")
             if ctx is not None:

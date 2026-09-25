@@ -58,6 +58,9 @@ class Corpus:
     def __init__(self, raw: dict):
         self.meta = raw["meta"]
         self.messages = raw["messages"]
+        # Extracted before attachments were ever queried? Then there are none,
+        # and every corpus built before 2026-09-24 is in that position.
+        self.photos: list[dict] = raw.get("photos") or []
         self.months: list[str] = self.meta["months"]
         self.density: list[int] = self.meta.get("density") or []
         self.month_ix = {m: i for i, m in enumerate(self.months)}
@@ -223,18 +226,59 @@ def _pct(n, d):
 
 def r_share_of_messages(c, spec, *_):
     who = spec["share_of_messages"]
-    return Resolution(value=_pct(len(c.by[who]), len(c.messages)), hits=len(c.messages))
+    ms = _in_year(c, spec)
+    n = sum(1 for m in ms if m["from"] == who)
+    return Resolution(value=_pct(n, len(ms)), hits=len(ms))
+
+
+def _in_year(c, spec):
+    """The messages a share resolver should measure — all of them, or one
+    year, which is what turns a statistic into an arc."""
+    year = spec.get("year")
+    if not year:
+        return c.messages
+    return [m for m in c.messages if m["ts"][:4] == str(year)]
 
 
 def r_share_between(c, spec, *_):
     lo, hi = spec["share_between"]
-    n = sum(1 for m in c.messages if lo <= m["dt"].hour < hi)
-    return Resolution(value=_pct(n, len(c.messages)), hits=n)
+    ms = _in_year(c, spec)
+    n = sum(1 for m in ms if lo <= m["dt"].hour < hi)
+    return Resolution(value=_pct(n, len(ms)), hits=n)
 
 
 def r_share_with_emoji(c, spec, *_):
-    n = sum(1 for m in c.messages if EMOJI_RE.search(m["norm"]))
-    return Resolution(value=_pct(n, len(c.messages)), hits=n)
+    ms = _in_year(c, spec)
+    n = sum(1 for m in ms if EMOJI_RE.search(m["norm"]))
+    return Resolution(value=_pct(n, len(ms)), hits=n)
+
+
+def r_share_all_caps(c, spec, *_):
+    """Messages shouted, as a share. Twelve characters is the floor — below
+    that "OK" and "LOL" swamp it and the number stops meaning anything."""
+    ms = _in_year(c, spec)
+    n = sum(1 for m in ms if len(m["text"]) > 12 and m["text"].isupper())
+    return Resolution(value=_pct(n, len(ms)), hits=n)
+
+
+def r_opens_day_share(c, spec, *_):
+    """How often one of them sends the first message of the day.
+
+    Per year this is the most quietly telling number in the archive: it moves
+    a long way across five years, and neither of them would be able to say
+    which direction.
+    """
+    who = spec.get("by", "p1")
+    ms = _in_year(c, spec)
+    first = {}
+    for m in ms:
+        day = m["ts"][:10]
+        if day not in first:
+            first[day] = m["from"]
+    if len(first) < 30:
+        return Resolution(error=f"only {len(first)} days to measure")
+    n = sum(1 for v in first.values() if v == who)
+    return Resolution(value=_pct(n, len(first)), hits=len(first))
 
 
 def r_share_one_word(c, spec, *_):
@@ -559,9 +603,17 @@ def r_median_reply(c, spec, *_):
 
 
 def r_words_per_message(c, spec, *_):
-    """Mean words per message, optionally for one year or one person."""
+    """Mean words per message, optionally for one year or one person.
+
+    Photographs are messages with no words in them, and since extract.py
+    started keeping the captionless ones they are in `c.messages` too. Counting
+    them would report that the messages got shorter when what actually
+    happened is that more of them were pictures. Filtered here, at the point of
+    use, rather than at extraction.
+    """
     year, who = spec.get("year"), spec.get("by")
-    ms = [m for m in c.side(who) if not year or m["ts"][:4] == str(year)]
+    ms = [m for m in c.side(who)
+          if m["words"] and (not year or m["ts"][:4] == str(year))]
     if len(ms) < 200:
         return Resolution(error=f"only {len(ms)} messages")
     return Resolution(value=round(sum(m["words"] for m in ms) / len(ms), 1),
@@ -630,6 +682,14 @@ def r_era_word(c, spec, *_):
                       extras={"answer": answer})
 
 
+#: Resolvers that honour a `year` in their spec. A question passing `year` to
+#: anything else gets the all-time figure while its prompt says "this year" —
+#: which compiled silently until `share_of_messages` was caught doing exactly
+#: that. validate.py checks a spec against this set.
+YEAR_AWARE = {"median_reply", "words_per_message", "share_between",
+              "share_with_emoji", "share_all_caps", "opens_day_share",
+              "share_of_messages"}
+
 RESOLVERS: dict[str, Callable] = {
     "count": r_count, "count_phrase": r_count, "count_regex": r_count,
     "count_emoji": r_count,
@@ -655,6 +715,8 @@ RESOLVERS: dict[str, Callable] = {
     "words_per_message": r_words_per_message,
     "reciprocated": r_reciprocated,
     "era_word": r_era_word,
+    "share_all_caps": r_share_all_caps,
+    "opens_day_share": r_opens_day_share,
     "who_laughs_longer": r_who_laughs_longer,
 }
 

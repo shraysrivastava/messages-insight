@@ -20,25 +20,79 @@ python3 tools/status.py --bank      just the question bank
 
 ## ▶ Resume here
 
-**All 46 build tasks are done except `S2.7`, which needs a passphrase only you
-can choose.** The code is finished. What is left is a corpus, a deploy, and a
-pile of question writing — in that order, because the first blocks the other two.
+**All 52 build tasks are done.** Her thread is extracted, the deck compiles,
+the game is deployed, and as of 2026-09-24 every question type in the bank is
+playable — percent, mutual and the Final Receipt all have inputs, the clients
+read `format`, and photographs have a path from `chat.db` to the sealed
+dataset. The bank went 145 -> 173 without a question being written.
 
-### Phase 0 — the corpus (yours, 10 minutes, Terminal.app)
+**The one thing that needs your machine is the photos.** Everything else is a
+re-seal, a redeploy, and the manual checks.
 
-`corpus.json` is currently **your roommate's thread, not hers.** Probed on
-2026-09-21: zero hits for `kys`, zero for `shru`/`nu`/`bubba`, zero for
-"i love you", and six emoji from p2 in four years. Every question below is
-built against it, so every answer in `real.json` is currently wrong.
+### Next, in order
 
-```bash
-make corpus CHAT="+1555…,her@gmail.com" P1=Shray P2=Nilu
+1. **Re-extract, in Terminal.app.** The corpus has no `photos` list in it,
+   because nothing had ever queried the attachment tables. This is the only
+   step this shell cannot run.
+
+   ```bash
+   make corpus CHAT="+1555…,her@gmail.com" P1=Shray P2=Nilu
+   make photos                     # or LIMIT=200 for a look first
+   ```
+
+   `make corpus` will report how many photographs it found and how many have
+   no caption; `make photos` will report how many iCloud has offloaded. Both
+   are safe to watch — counts only, no message text, no answers.
+
+2. **Re-seal and redeploy.** `real.json` and `dev.json` both changed — 28 more
+   questions and a new `meta.deal` block. The deployed image is carrying the
+   old ciphertext.
+
+   ```bash
+   make compile && make dev && make seal
+   git add datasets/*.enc && git commit -m "Reseal: percent, mutual, the receipt"
+   fly deploy && fly status        # must show exactly ONE machine
+   ```
+
+3. **Play a 15-round game on the deployed URL, on `Dev`** — `M2.4`, `M2.5`,
+   `M2.6`, `M2.8`, and `M3.4` (the sliders on a real phone, not a desktop
+   window: there are two of them now).
+
+4. **`make audit`** over the 28 newly-playable questions. They have never been
+   looked at, because until now they could not be dealt.
+
+5. **`M4.1`–`M4.3`**, then game day.
+
+### Photo questions, once `make photos` has run
+
+None exist yet — the pipeline shipped, the questions did not. A block names a
+file and everything else is an ordinary question:
+
+```toml
+[[q]]
+id = "photo-rooftop"
+type = "binary"
+kind = "Deep cut"
+photo = "IMG_4417.HEIC"          # compile.py sets format = "photo"
+prompt = "Who took this one?"
+options = ["{p1}", "{p2}"]
+answer = 0
+reveal = "You did. Neither of you has admitted it since."
+status = "ready"
 ```
 
-Both identifiers, comma separated — the split thread is the likely cause. It
-prints a per-identifier breakdown; check both sides appear.
+`make lint` catches a name the corpus does not have, and `make compile`
+reports a photo that has not been downscaled yet rather than shipping a gap.
 
-### Phase 1 — the ship line (half a day, mostly yours)
+### Known, and not urgent yet
+
+- `data/history.jsonl` sits on the machine's ephemeral disk, so the shelf
+  empties on every redeploy. A Fly volume fixes it. Harmless before the first
+  game, and the thing that loses the first game before the second.
+- Two wager questions exist, so the closer repeats on the second night. A
+  third would fix it; `final-longest-day` is a draft away.
+
+### The ship line, for reference
 
 Three datasets ship. `demo` is fake and open; `dev` is the real deck with
 every answer blinded; `real` is the real thing. All three appear on the host
@@ -147,11 +201,11 @@ to work, and all of it lights up the moment real ones arrive.
   **[ Replay the receipts ]**.
 - **Sound** — synthesised, host only, mute in the top bar.
 
-### Content is now the only critical path
+### Content
 
-The bank is 122 shippable but only **8 are yours** (3 curated), and the dealer
-wants 9 of every 14 rounds from `mine.toml`. It backfills from `auto/`, so the
-game works either way — it is just less yours.
+The bank is 173 shipping with 140 of them yours, against a dealer that wants 9
+of every 14 rounds from `mine.toml`. Content stopped being the critical path
+somewhere around the second audit pass.
 
 **Before writing formats, run this in Terminal.app:**
 
@@ -246,6 +300,8 @@ lied to is worse than a red one.
 
 ### Stage 4 — The Arc
 
+- [x] `S4.8` Music beds under each phase
+- [x] `S4.9` The opener — five years on the lobby screen
 - [ ] `M4.1` Played three games; history shelf shows all three
 - [ ] `M4.2` Superlatives fired sensibly — no award off a rounding error
 - [ ] `M4.3` Read the receipts reel end to end
@@ -445,4 +501,246 @@ remember whether something got done.
             169 questions in both, identical ids and order, every dev reveal
             masked, every real reveal intact, wrong passphrase refused.
             280 tests green.
+2026-09-23  S4.8 music, S4.9 the opener — both verified in a real browser
+            over CDP, not just syntax-checked.
+            sound.js had five one-shot cues and no music. It now has beds:
+            a lookahead scheduler queues notes on the *audio* clock (setInterval
+            drifts and stalls while a reveal renders) through a bus that can be
+            ramped down as a group. lobby / question / outro; `reveal` gets
+            silence on purpose, because the 450ms before the answer is the
+            joke and a pad through it steps on the punchline. Driven through a
+            real round: countdown+question -> question bed, reveal -> none.
+            Two bugs found while wiring it: `cue()` returned early when S was
+            null, so no bed ever started on first load; and a bed started
+            against a *suspended* context schedules every note in the past, so
+            they all fire as one chord on resume. Both fixed — the queue holds
+            while suspended, and the first gesture of any kind unlocks it.
+            The opener draws meta.density on the lobby: 60 bars filling left
+            to right over 14s with the month and a running total. Costs no new
+            data. On her thread the shape is the story — a near-empty first
+            year, then it goes vertical. Cached, so a phone joining re-renders
+            the lobby without replaying it (verified: same element, animation
+            uninterrupted). 282 tests green.
+2026-09-23  Question types finalised. docs/QUESTIONS.md rewritten from a
+            45-item aspirational catalog into THIRTEEN shipping archetypes
+            plus three blocked on client input, each with a contract: what
+            the prompt may claim, what computes it, what it rejects.
+            The contract exists because the bank was breaking it. Audited all
+            217 ready questions and found 12 real mismatches (the other 28 my
+            checker flagged were spelling variants working as designed):
+            · 8 asked "how many times" but `count` counts MESSAGES, so
+              "goodnight goodnight" was one. Five now pass
+              mode = "occurrences"; three reworded to "how many messages"
+              because they count episodes, not utterances.
+            · 5 quoted one phrase but counted a category — "who says wait
+              more" against a lexicon holding hold on / hang on / one sec.
+              Reworded to name the category.
+            validate.py now enforces the checkable half as a warning.
+            Balance is the brief for the rebuild, not volume: 169 shipping,
+            46% show a real message, and two shapes (Who Does It More 33, The
+            Count 33) are over-represented while What Happened Next has 1 and
+            The Arc has 6. No new counts, no new who-says-more.
+            282 tests green.
+2026-09-23  Applied the bar he set: every question either shows something
+            or is fun to answer, nothing static unless it is genuinely
+            interesting. Cut 41 — 17 "who brings up X more" (a topic is not a
+            trait), 14 topic counts, 8 duplicates of questions already kept,
+            one number with no story, and `photos-sent`, which was actively
+            WRONG: extract.py drops photo-only messages so it reported ~460
+            against a real figure far higher.
+            Three new types, all on existing mechanics so no client work:
+            · CALLBACK — the same 4-word phrase in exactly two messages, 2+
+              years apart. Which came first. She said "u ever just not wanna
+              sleep cus u dont want it to be tomorrow" in 2022 and again,
+              almost word for word, in 2026.
+            · WHOSE TURN — a real three-message exchange, both sides, no
+              names. Who opened it. The opener is tell-filtered; the replies
+              are not, because by then the round is decided.
+            · ESCALATION — three consecutive messages from one person,
+              shuffled. The first cut returned any three in a row and the
+              order was unguessable, so it now requires the heat to actually
+              BUILD across the run.
+            Two lexicon bugs found while pulling examples, both of which had
+            been answering questions wrongly:
+            · the first "I love you" was a drunk happy-birthday text — "love
+              u homie" — four months before the real one. Six questions
+              pointed at a message sent to a friend. Platonic excludes added;
+              "girl" deliberately NOT excluded, they use it constantly.
+            · "nilu" counted as a pet name. It is her name.
+            Balance now: 152 shipping, 125 his, 67% show a real message (was
+            46%), 140 distinct prompts of 152. 282 tests green.
+2026-09-23  Rebalanced. Cut 14 more — five Who Said It bubbles that carry
+            no joke standing alone, four exact-duplicate messages across two
+            question types, and three lexicon misfires ("we can decide when
+            we eat" was standing in for the first talk about the far future).
+            Built up the two starved types: What Happened Next 1 -> 9,
+            The Arc 6 -> 15. Four new year-aware resolvers behind the arc
+            questions, and the best one is a genuine reversal — she sent the
+            first message of the day on 63% of days in 2022; he sends it on
+            60% now, and it flipped around 2024.
+            Two bugs, both the same shape as ones caught before: a guard
+            built for one thing misfiring on another.
+            · `share_of_messages` silently IGNORED `year`, so a question
+              saying "this year" reported the all-time figure. Fixed, and
+              validate.py now errors when `year` goes to a resolver that
+              does not honour it — there is a declared YEAR_AWARE set.
+            · the min_answer=20 guard was killing 11 arc questions whose
+              answers are legitimately small (2%, 5%, 9 seconds). Guard is
+              right for counts, wrong for rates: the eleven percentages are
+              now `percent`, which scores on a flat 30-point tolerance, and
+              the four durations keep `number` with an explicit override.
+            Bank: 145 shipping, 125 his, 65% show a real message, no type
+            over 17. 28 more questions are authored and waiting on client
+            input — 20 of them percent. 282 tests green.
+2026-09-23  THE CLIENT CAUGHT UP WITH THE SCORER. Every type in the bank is
+            now playable and `format` is finally read. 145 shipping -> 173.
+            · PERCENT (S3.6). A 0-100 slider on the phone, the month slider's
+              shape without the histogram. 20 questions, including the arc
+              ones. The verdict line was scoring it relatively while the
+              scorer scores it on a flat 30-point band — it called a guess
+              that paid out 565 "wildly over". Both read the same 30 now.
+            · MUTUAL (S4.6). In PLAYABLE, 6 questions. Both screens say out
+              loud that there is no right answer, or a round you both "lose"
+              reads as trivia you both got wrong. The host lights a tile only
+              when they agreed, and dims nothing when they didn't: neither of
+              them was wrong.
+            · THE FINAL RECEIPT (S3.7). Round 15 of 14. Wagers are held out of
+              the body of the game entirely and one is appended as the closer,
+              so it can never land at round 3. Stake, then pick, in one
+              message — two messages would let a client stake, watch the
+              board, and answer afterwards. No speed bonus, and a loss cannot
+              take you below zero, because there is no round after it and a
+              negative number is a bad last screen of the night.
+            · `format` (S3.11). It had been dead metadata: `redacted`,
+              `compare` and `thread` all rendered as one plain bubble, and for
+              the multi-message ones that meant three messages run together
+              into one sentence. `shared.js/messageBlock` is the only reader.
+              `thread` renders a column with nobody's name on it rather than
+              alternating sides — the format covers both a two-person exchange
+              and one person's run of three, and sides would be a guess that
+              gives the answer away on half of them.
+            Three bugs, all the same shape as ones caught before — a guard or
+            a check that was true for the wrong reason:
+            · `resolve_source` reported `hits=1`, so the min_hits guard of 3
+              dropped every `source` question. That silently included the
+              Final Receipt, invisible for as long as wagers were also being
+              dropped one step earlier as unplayable. hits=None now, same as
+              the extremum resolvers.
+            · `questions/config.toml [deal]` was never read by anything.
+              `main.py` built `DealRules()` from defaults, and `questions/` is
+              not in the Docker image, so `final_receipt` and `max_per_kind`
+              were decoration. The block rides in the dataset now
+              (`meta.deal`), which is the only channel that reaches the
+              server.
+            · the running clock under a `timestamp` question never ticked:
+              `S` is a top-level `let`, which does not put it on `window`, and
+              the guard tested `window.S`.
+            Also: three status.py checks were greps for a word in game.py
+            (`percent`, `wager`, `mutual`) — true from the day the scorer was
+            written and still true through months in which no client could
+            play any of them. They check PLAYABLE and the phone now.
+            295 tests green. Verified in Chrome over CDP, two phones and a
+            host: a percent round, an agreeing and a disagreeing mutual, a
+            full game to a Final Receipt that changed the lead on the last
+            round, and all six formats on both screens.
+2026-09-24  PHOTOS (S3.12). extract.py had known about `attachment` and
+            `message_attachment_join` for a year and queried neither, so every
+            photograph in five years was invisible — a picture with no caption
+            was dropped as "undecodable" and one with a caption kept nothing
+            but an `att` flag. Four steps now, each somewhere different:
+            extract joins the tables and records absolute paths in
+            corpus.json; `make photos` downscales into a gitignored `photos/`
+            with `sips` (macOS built-in, reads HEIC, and this can only ever run
+            on the Mac that has chat.db); compile.py embeds the ones a question
+            names into the dataset, so they seal with it; `/photo/current`
+            serves the round on screen.
+            Three decisions worth keeping:
+            · BY NAME, not by index. `k` renumbers on every re-extraction, and
+              a question pointing at the wrong photograph is the same failure
+              curate.py bakes context to avoid.
+            · NOT in the snapshot. That dict goes out on every heartbeat,
+              every answer and every reconnect; a 120 KB image in it would be
+              sent dozens of times a round. The client gets a flag and fetches
+              once. Verified: the round's snapshot is 120 bytes.
+            · NO `/photo/{id}`. An id is the only thing that would let a
+              player pull a picture out of a round nobody has played, and one
+              of the two players designed this deck unspoiled.
+            Keeping captionless messages means the corpus gains rows and
+            counts move slightly — correct, a photograph is a message. The one
+            place it would have lied is `words_per_message`, which would have
+            reported that the messages got shorter when what happened is that
+            more of them were pictures. Filtered at the point of use, per the
+            habit that has paid off twice before.
+            One bug, found in the browser and not by a test: the host rendered
+            the message block only `if (q.text)`, so a photo with no caption
+            put nothing on the big screen while the phone showed it fine.
+            311 tests green. The photo path is verified against a synthetic
+            chat.db and a real browser; it has never run against the real
+            thread, because chat.db is unreadable from this shell.
+2026-09-24  ALL IN and ICE IN THE VEINS. The two awards superlatives.py had
+            been carrying a docstring apology for since Stage 4 — both need
+            `PlayerResult.stake`, which the Final Receipt now sets. 20 awards
+            -> 22.
+            Measured against the CAP, not against the score. DESIGN says "≥90%
+            of their score", but Game.stake_cap floors everyone at 500, so a
+            player on 300 points who shoves 500 has put in everything they
+            were allowed to — against their score that reads as 166% and
+            against 90% of it the award would fire for a player who risked
+            nothing they could not afford. Against the cap it says the true
+            thing: you put in everything available to you.
+            Exclusive by construction rather than by suppression, the same way
+            wire_to_wire and quietly_devastating are: All In takes the ones
+            who shoved and lost, Ice in the Veins takes the ones who shoved
+            and won, and between them each player who went all in gets exactly
+            one card. Both can be shared when both of you shove.
+            320 tests green. Driven in a real browser both ways — a winning
+            shove fires Ice in the Veins first of five, a losing one fires All
+            In, and the cards render on the podium. The losing run also
+            confirmed the below-zero clamp live: 500 staked on 0 points landed
+            as +0, not -500.
+2026-09-24  Re-extracted against her thread with attachments on: 251,357
+            messages (was 248,345 — the difference is photo-only messages,
+            which used to be dropped) and 3,140 photographs.
+            DUPLICATE AUDIT, on his call that the bank repeats itself. The
+            finding that mattered was not repetition, it was a spoiler chain:
+            `lex.love_you` carried EIGHT questions, four of them built on the
+            same single message, and two of those put that message on screen
+            and dated it. The Final Receipt asks who said it first and always
+            plays, so a game could answer its own closer at round 4.
+            Cut 11, all reversible (`status = "draft"` with the reason above
+            it, so `git diff` and `make status` both show them):
+            · 5 pairs computing literally the same number under two prompts.
+              Where the pair spanned mine.toml and auto/, the auto one went —
+              provenance is the directory.
+            · `my-ily-first-who` and `my-ily-first-when`, which hand over the
+              closer.
+            · `top-word`, which names the word `same-page-overused` asks the
+              two of you to guess.
+            · `share-with-emoji`, a third telling of what the arc pair covers.
+            · two questions showing a bubble another question already showed.
+              251k messages; there is no excuse.
+            · `goodnight-count`, a third question on one word, and a bare count.
+            Reworded 14 rather than cutting them. callback/esc/turn had eight
+            questions each sharing four prompt templates — the messages were
+            all different, only the wording repeated, and cutting would have
+            thrown away twelve rounds that put a real message on the big
+            screen. Also `arc-emoji-now` ("And now?") and `arc-latenight-now`
+            ("And this year?"), whose pairs sit in different `kind` buckets, so
+            the interleave actively pushes them apart and either could be dealt
+            alone as a round with no question in it.
+            THE STRUCTURAL FIX, which is what stops this recurring:
+            `max_per_kind` caps the eyebrow label, not the fact. Three
+            questions about what gets sent after midnight, filed under Deep
+            cut, The archive and Chronically online, were free to land in the
+            same fourteen rounds. compile.py now derives `subject` from the
+            resolver behind each question — the lexicon, or the resolver plus
+            its argument — and `max_per_subject = 1` caps on it. A question
+            baked from one real message has no subject and is never blocked,
+            because it can only collide with itself. The Final Receipt is now
+            chosen BEFORE the body is drawn and owns its subject, so the closer
+            can no longer be pre-answered.
+            Verified over 400 deals of the real deck: zero games containing the
+            same subject twice, zero closers pre-answered, decks still 15
+            rounds. Bank 173 -> 163, all 163 prompts distinct, 96 showing a
+            real message. 340 tests green.
 ```

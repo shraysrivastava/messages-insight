@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play dev audit questions check extract corpus mine curate compile seal unseal poc fonts deploy clean
+.PHONY: status setup test lint demo play dev audit questions check extract corpus photos mine curate compile seal unseal poc fonts deploy clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -57,6 +57,9 @@ corpus:            ## chat.db -> $(CORPUS)   (CHAT=... P1=... P2=...)
 	@test -n "$(CHAT)" || (echo "usage: make corpus CHAT='+1555…' P1=Me P2=Them"; exit 1)
 	@$(PY) tools/extract.py --chat "$(CHAT)" --p1 "$(P1)" --p2 "$(P2)" --out $(CORPUS)
 	@echo "  next:  make compile && make real"
+
+photos:            ## downscale the thread's photos into photos/ (gitignored)
+	@$(PY) tools/photos.py --corpus $(CORPUS) --out photos $(if $(LIMIT),--limit $(LIMIT))
 
 mine:              ## $(CORPUS) -> candidates.json
 	@$(PY) tools/mine.py --corpus $(CORPUS) --out candidates.json
