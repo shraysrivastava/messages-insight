@@ -145,6 +145,7 @@
    "max_per_kind": 3,
    "max_per_subject": 1,
    "freshness": true,
+   "freshness_window": 3,
    "final_receipt": true
   },
   "total": 5243,
@@ -220,7 +221,7 @@
    "type": "wager",
    "kind": "Final receipt",
    "prompt": "Final Receipt. Who talked about the far-off future first?",
-   "reveal": "Nilu said it first, April 27, 2022 — back when it was still hypothetical.",
+   "reveal": "Nilu, April 27, 2022. Already thinking that far ahead.",
    "answer": 1,
    "text": "one day absolutely not",
    "options": [
@@ -309,7 +310,7 @@
    "id": "final-distance-first",
    "type": "wager",
    "kind": "Final receipt",
-   "prompt": "Final Receipt. Who mentioned the distance first?",
+   "prompt": "Final Receipt. Who brought up the distance first — flights, FaceTime, counting days?",
    "reveal": "Nilu, August 25, 2021. The first of a great many airports.",
    "answer": 1,
    "text": "cant wait to see you on my way ❤️",
@@ -368,6 +369,129 @@
    "origin": "auto",
    "topic": "final-busiest-year",
    "subject": "busiest_year"
+  },
+  {
+   "id": "same-page-late",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Which one of us is more likely to be the reason we're late?",
+   "reveal": "Agree and it's a confession. Disagree and one of you has been getting away with it for five years.",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "habits",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-late"
+  },
+  {
+   "id": "same-page-argument",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "After a fight, who caves and texts first?",
+   "reveal": "If you both picked the same person, that person already knew.",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "conflict",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-argument"
+  },
+  {
+   "id": "same-page-sick",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Who is the bigger baby about being ill?",
+   "reveal": "One of you is now deciding whether to be offended. Match, and you don't get to be.",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "health",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-sick"
+  },
+  {
+   "id": "same-page-dog",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "If we got a dog tomorrow, who would actually end up walking it?",
+   "reveal": "Worth knowing before the dog, rather than after.",
+   "options": [
+    "Shray",
+    "Nilu",
+    "Honestly neither of us"
+   ],
+   "area": "logistics",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-dog"
+  },
+  {
+   "id": "same-page-cook",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Who is the better cook? Be honest, you both have to agree.",
+   "reveal": "There is no diplomatic answer here, which is the point.",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "food",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-cook"
+  },
+  {
+   "id": "same-page-cry",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Who is more likely to cry at a film neither of us expected to cry at?",
+   "reveal": "Match and it's agreed. Miss and somebody is in denial.",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "media",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-cry"
+  },
+  {
+   "id": "same-page-phone",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Whose phone is more likely to be on 3% at any given moment?",
+   "reveal": "The thread has opinions about this. So, apparently, do you.",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "habits",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-phone"
+  },
+  {
+   "id": "same-page-decade",
+   "type": "mutual",
+   "kind": "Same page",
+   "prompt": "Ten years from now, which of these are we most likely to be doing?",
+   "reveal": "No way to check this one for another five years. Match, and at least you're planning the same life.",
+   "options": [
+    "Still texting this much",
+    "Living somewhere neither of us has been",
+    "Arguing about the same things",
+    "Owning far too many pets"
+   ],
+   "area": "milestones",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "same-page-decade"
   },
   {
    "id": "same-page-best-year",
