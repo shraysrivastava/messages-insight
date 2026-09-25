@@ -36,6 +36,7 @@ Client → server
     {t:"join",  id, name, code}                 code must match, else denied
     {t:"answer", id, value, at}                 `at` is client-estimated server time
     {t:"start"|"next"|"skip"|"reset"}           host only
+    {t:"drop", id}                              host only — remove a player
     {t:"reel", id}                              host only — a game's round log
     {t:"ping", c0}                              clock sync + keepalive
 
@@ -337,12 +338,25 @@ class Room:
             return                                  # everything below is control
 
         if kind == "start" and g.phase == "lobby" and g.players:
-            g.deal()
+            # Hand the dealer what the last few games already used, so a second
+            # night is a different set of questions rather than a re-roll that
+            # happens to differ. Without this `freshness` in config.toml is a
+            # rule nothing enforces.
+            seen = None
+            if self.history and g.rules.freshness:
+                which = self.library.current if self.library else "demo"
+                seen = self.history.seen(which, g.rules.freshness_window)
+            g.deal(seen=seen)
             await self.start_round(0)
         elif kind == "next" and g.phase == "reveal":
             await self.advance()
         elif kind == "skip" and g.phase == "question":
             await self.close_question()
+        elif kind == "drop":
+            # One device that opened the link twice is two players, and the
+            # spare never answers. The host needs to be able to say so.
+            if g.drop_player(str(msg.get("id") or "")):
+                await self.broadcast()
         elif kind == "reset":
             await self.restart()
         elif kind == "dataset":

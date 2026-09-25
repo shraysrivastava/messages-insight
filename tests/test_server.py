@@ -480,3 +480,38 @@ def test_the_photo_route_serves_only_the_round_on_screen(tmp_path):
         g.begin_round(other)
         g.open_question(now=1000.0)
         assert client.get("/photo/current").status_code == 404
+
+
+# ── the ghost player ──────────────────────────────────────────────────────
+
+def test_a_second_tab_becomes_a_third_player_and_the_host_can_drop_it():
+    """sessionStorage is per tab, so opening the link twice on one phone used
+    to add a player who never answers — which costs the tug of war (it draws
+    only for exactly two) and hands the ghost a run of zeros. The host needs a
+    way to say so, and dropping must clean the round log too or superlatives
+    will award Ice Cold to somebody who was never there."""
+    from app.game import Game, PlayerResult, RoundRecord
+    g = Game(make_dataset(), rounds=2, rng=random.Random(1))
+    g.add_player("real-1", "Shray")
+    g.add_player("real-2", "Nilu")
+    g.add_player("ghost", "Nilu")
+    assert len(g.players) == 3
+
+    g.log.append(RoundRecord(
+        index=0, question_id="q", kind="k", type="binary", prompt="p",
+        reveal="r", correct=0,
+        results={"real-1": PlayerResult(0, 500, 1.0, 2.0, 1),
+                 "ghost": PlayerResult(None, 0, 0.0, 20.0, 3)}))
+
+    assert g.drop_player("ghost") is True
+    assert set(g.players) == {"real-1", "real-2"}
+    assert "ghost" not in g.log[0].results          # and out of the history
+    assert g.drop_player("ghost") is False          # already gone
+
+
+def test_dropping_an_unknown_player_is_harmless():
+    from app.game import Game
+    g = Game(make_dataset(), rounds=2, rng=random.Random(1))
+    g.add_player("a", "Shray")
+    assert g.drop_player("nobody") is False
+    assert len(g.players) == 1

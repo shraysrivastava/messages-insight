@@ -848,4 +848,73 @@ remember whether something got done.
             verified from here at all — it needs a real iPhone, and if Apple
             has changed the behaviour the game simply has no haptics.
             343 tests green.
+2026-09-24  Professional-feel pass, on his call. The first item was not polish
+            at all — it was a bug that would have ruined the night.
+            · THE GHOST PLAYER. Phone identity lived in `sessionStorage`,
+              which is per TAB. Tapping the link a second time from iMessage —
+              how anyone reopens anything on a phone — minted a second
+              identity and joined as a THIRD player who never answers. Proved
+              it in a browser: three players, two called Nilu, and the tug of
+              war gone for the rest of the night because it draws only for
+              exactly two. Now localStorage, wrapped because Safari throws on
+              it in private browsing. One device is one player however it
+              arrives. Side effect worth knowing: two tabs in one browser
+              profile can no longer be two players, which broke the test
+              harness until it planted a distinct id per tab.
+            · HOST CONTROLS. `skip` had been in the protocol since main.py was
+              written and NOTHING EVER SENT IT, so a question that rendered
+              badly could only be waited out. There is now a `⋯` menu on the
+              topbar: skip this question, remove a player, start over.
+              `Game.drop_player` also purges the player from the round log —
+              leaving them in would hand a ghost a run of zeros that
+              superlatives.py would award Ice Cold for.
+            · The whole-screen `.fade` was unconditional, so a state message
+              arriving mid-reveal re-faded everything already on screen. It
+              now fires only when the phase or round actually changed. (The
+              earlier claim that phases hard-cut was wrong — the transition
+              was always there, it was just firing for data updates too.)
+            · Totals count up instead of teleporting, easing out over 620ms
+              from the score before the round, starting as the delta lands.
+              Verified climbing 4,200 -> 4,950 across 15 frames.
+            · theme-color, an SVG favicon and a 180px apple-touch-icon — a
+              message bubble with a delivered tick and a read one. Drawn as
+              SVG and rasterised through the headless Chrome already in use
+              rather than adding an image dependency. The phone tab title now
+              says what is happening: "Your turn 3/15", "Locked in", "The
+              answer".
+            · A round marker before each question — "Round 7 of 15 · Deep cut",
+              and "the last one" on the Final Receipt.
+            · The join screen asks for the name first, which is what its own
+              copy had been asking for while the code field sat above it, and
+              carries the photo so the first screen is a picture rather than a
+              form.
+            Deliberately NOT done: stripping the question text off the phone.
+            Proposed it twice; he likes it there.
+            345 tests green.
+2026-09-24  Two fixes off one question each.
+            · THE LOBBY ANIMATED TWICE. Measured it rather than guessed: two
+              `pop` animations firing at 61ms, the roster chip and the lobby
+              photograph. The chip popping means somebody arrived; the photo
+              is fixed decoration that never changes and had no business
+              having an entrance. Entry animation dropped from `.usphoto` and
+              `.joinphoto`. One animation on the lobby now.
+            · FRESHNESS WAS NEVER FED. `config.toml [deal] freshness` and
+              `freshness_window` have promised since Stage 3 that replays
+              would differ, and `main.py` called `g.deal()` with no `seen`
+              argument — so the parameter existed, the down-weighting existed,
+              and nothing ever passed the history in. Replays differed by luck.
+              `History.seen(dataset, window)` now counts question ids across
+              the recent games of that dataset (and only that dataset, so a
+              demo rehearsal cannot age the real deck), `freshness_window`
+              rides in `meta.deal` like the rest of the block, and start passes
+              it.
+              Measured over 300 three-game runs on the real deck: game two
+              repeated 1.5 of 15 questions before, 0.8 after; game three
+              repeated 2.8 before, 1.6 after. Small either way — 177 questions
+              against 15 rounds is a wide bank — but it is now the rule doing
+              it rather than the odds.
+              Worth remembering: this reads `data/history.jsonl`, which is on
+              the machine's ephemeral disk. Without a Fly volume every redeploy
+              wipes it and freshness starts cold again.
+            348 tests green.
 ```

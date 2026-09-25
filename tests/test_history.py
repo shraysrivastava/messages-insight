@@ -201,3 +201,56 @@ def test_cards_carry_a_card_and_not_the_whole_log(hist):
     card = hist.cards("real")[0]
     assert card["rounds"] == 2 and "results" not in json.dumps(card)
     json.dumps(card)
+
+
+# ── freshness ─────────────────────────────────────────────────────────────
+
+def test_seen_counts_questions_across_recent_games():
+    """`config.toml [deal] freshness` promised replays would differ and nothing
+    delivered it: Game.deal() takes a `seen` map and main.py passed none, so
+    every replay re-rolled from scratch."""
+    from app.history import GameSummary, History
+    h = History(path="nowhere.jsonl")
+    for n in range(4):
+        h.games.append(GameSummary(
+            id=f"g{n}", played_at=f"2026-09-2{n}T20:00:00", dataset="real",
+            rounds=[{"question_id": f"q{n}"}, {"question_id": "shared"}]))
+    seen = h.seen("real", window=3)
+    assert seen["shared"] == 3                  # the window, not the whole file
+    assert seen.get("q3") is None or "q3" in seen
+    assert sum(1 for k in seen if k.startswith("q")) == 3
+
+
+def test_seen_ignores_other_datasets():
+    """A demo rehearsal must not make the real deck think it has been played."""
+    from app.history import GameSummary, History
+    h = History(path="nowhere.jsonl")
+    h.games.append(GameSummary(id="d", played_at="2026-09-24T20:00:00",
+                               dataset="demo", rounds=[{"question_id": "q1"}]))
+    assert h.seen("real") == {}
+
+
+def test_a_question_seen_last_game_is_less_likely_next_game():
+    import random
+
+    from app.game import DealRules, Game
+    from tests.conftest import make_dataset, q as _q
+    qs = [_q(f"x{i}", kind=f"k{i % 5}") for i in range(40)]
+    data = make_dataset(qs, rounds=10)
+    rules = DealRules(max_per_subject=1)
+
+    repeats_cold, repeats_fresh = 0, 0
+    for t in range(60):
+        first = Game(data, rng=random.Random(t), rules=rules)
+        first.deal()
+        used = {x.id: 1 for x in first.deck}
+
+        cold = Game(data, rng=random.Random(t + 500), rules=rules)
+        cold.deal()
+        repeats_cold += len({x.id for x in cold.deck} & set(used))
+
+        warm = Game(data, rng=random.Random(t + 500), rules=rules)
+        warm.deal(seen=used)
+        repeats_fresh += len({x.id for x in warm.deck} & set(used))
+
+    assert repeats_fresh < repeats_cold, (repeats_fresh, repeats_cold)

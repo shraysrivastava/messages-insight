@@ -50,6 +50,7 @@ class Deal(BaseModel):
     max_per_kind: int = Field(default=3, ge=1)
     max_per_subject: int = Field(default=1, ge=1)
     freshness: bool = True
+    freshness_window: int = Field(default=3, ge=0)
     final_receipt: bool = True
 
 

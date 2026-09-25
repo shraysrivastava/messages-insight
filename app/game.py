@@ -111,6 +111,7 @@ class DealRules:
     max_per_kind: int = 3
     max_per_subject: int = 1
     freshness: bool = True
+    freshness_window: int = 3
     final_receipt: bool = True
 
 
@@ -274,6 +275,23 @@ class Game:
         p = Player(id=pid, name=(name or "").strip()[:18] or "Player", color=color)
         self.players[pid] = p
         return p
+
+    def drop_player(self, pid: str) -> bool:
+        """Remove a player, and every trace of them from the round log.
+
+        One device that opens the link twice becomes two players, and the
+        second one is a ghost that never answers. Leaving it in costs the tug
+        of war (it only draws for exactly two) and hands the ghost a run of
+        zeros that superlatives.py would happily award Ice Cold for. So this
+        purges the log as well: a player who was never really here should not
+        appear in the history of the night.
+        """
+        if pid not in self.players:
+            return False
+        del self.players[pid]
+        for rec in self.log:
+            rec.results.pop(pid, None)
+        return True
 
     @property
     def question(self) -> Question | None:

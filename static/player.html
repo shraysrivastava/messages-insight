@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <title>Read Receipts</title>
+<!-- Her phone puts browser chrome around this page; without a
+     theme-color that chrome is default white around a very dark
+     screen, and it looks like a link somebody sent rather than a
+     game. The icon is what it looks like if she keeps it. -->
+<meta name="theme-color" content="#191325">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Read Receipts">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/static/fonts.css">
 <link rel="stylesheet" href="/static/app.css">
 <style>
@@ -34,6 +43,12 @@
   h1.big{font-family:var(--display);font-weight:900;letter-spacing:-.03em;
     line-height:.95;font-size:clamp(40px,13vw,58px)}
   .lede{color:var(--muted);font-size:16px;max-width:32ch}
+  /* Same as the lobby's: a fixed photo does not need an entrance. */
+  .joinphoto{
+    display:block;width:100%;max-width:190px;aspect-ratio:3/2;object-fit:cover;
+    border-radius:14px;margin-bottom:22px;
+    box-shadow:0 10px 26px rgba(0,0,0,.45);
+  }
 
   .prompt{font-family:var(--display);font-variation-settings:"opsz" 40;
     font-weight:600;font-size:23px;line-height:1.22;letter-spacing:-.01em}
@@ -111,35 +126,51 @@
 const app = document.getElementById("app");
 let S = null, me = null, pending = null, lastKey = "";
 
-/* stable id so a refresh or a locked screen doesn't lose your score */
-let myId = sessionStorage.getItem("rr_id");
+/* A stable id so a refresh, a locked screen, or the link being opened a
+   second time doesn't lose your score.
+
+   localStorage, NOT sessionStorage. sessionStorage is per TAB, so tapping the
+   link again from iMessage — which is how anyone reopens anything on a phone —
+   used to mint a second identity and join as an extra player who never
+   answers. That costs the tug of war, which draws only for exactly two. One
+   device is now one player however it gets here. `store` because Safari throws
+   on localStorage in private browsing rather than returning null. */
+function store(key, val) {
+  try {
+    if (val === undefined) return localStorage.getItem(key);
+    localStorage.setItem(key, val);
+  } catch (e) { /* private browsing: fall back to living for this page only */ }
+  return val;
+}
+
+let myId = store("rr_id");
 if (!myId) {
   myId = Math.random().toString(36).slice(2, 10);
-  sessionStorage.setItem("rr_id", myId);
+  store("rr_id", myId);
 }
-let myName = sessionStorage.getItem("rr_name") || "";
+let myName = store("rr_name") || "";
 let denied = false;
 
 /* The QR carries the code, so a scan is the whole journey. Typing it is the
    fallback for the person who reads it off the big screen. */
 const fromUrl = new URLSearchParams(location.search).get("c");
-setCode(fromUrl || sessionStorage.getItem("rr_code") || "");
-if (joinCode) sessionStorage.setItem("rr_code", joinCode);
+setCode(fromUrl || store("rr_code") || "");
+if (joinCode) store("rr_code", joinCode);
 
 function onOpenExtra() {
   if (myName && joinCode) doJoin();
 }
 
 function doJoin() {
-  sessionStorage.setItem("rr_name", myName);
-  sessionStorage.setItem("rr_code", joinCode);
+  store("rr_name", myName);
+  store("rr_code", joinCode);
   send({ t: "join", id: myId, name: myName, code: joinCode });
 }
 
 function onDenied(why) {
   denied = true;
   if (why === "code") {
-    sessionStorage.removeItem("rr_code");
+    try { localStorage.removeItem("rr_code"); } catch (e) {}
     setCode("");
   }
   joinView();
@@ -162,8 +193,12 @@ function bar() {
   return b;
 }
 
+/* Same rule as the host: the screen transitions when the screen changes, not
+   every time a state message arrives. */
+let fadeNext = true;
+
 function stage(...kids) {
-  const s = h("div", "stage fade");
+  const s = h("div", "stage" + (fadeNext ? " fade" : ""));
   s.append(...kids.filter(Boolean));
   return s;
 }
@@ -221,17 +256,28 @@ function joinView() {
     el.onkeydown = e => { if (e.key === "Enter") submit(); };
   }
 
-  const kids = [title, lede];
+  /* The two of them, so the first screen is a picture of what she is joining
+     rather than a form. Gitignored, so it is allowed to be missing. */
+  const us = document.createElement("img");
+  us.src = "/static/us.jpg";
+  us.alt = "";
+  us.className = "joinphoto";
+  us.onerror = () => us.remove();
+
+  const kids = [us, title, lede];
   if (denied) {
     lede.textContent = "That code isn't right. It's on the big screen.";
     lede.style.color = "var(--wrong)";
   }
-  kids.push(joinCode ? known : code, input, go);
+  /* Name first, because that is what the line above asks for. The code came
+     first for months while the copy said "put in a name", and a scan supplies
+     the code anyway — so for most arrivals this field is the only one. */
+  kids.push(input, joinCode ? known : code, go);
   check();
 
   app.replaceChildren();
   app.append(stage(...kids));
-  setTimeout(() => (joinCode ? input : code).focus(), 120);
+  setTimeout(() => (myName ? (joinCode ? go : code) : input).focus(), 120);
 }
 
 function lobbyView() {
@@ -258,7 +304,14 @@ function lobbyView() {
 
 function countdownView() {
   const left = Math.max(1, Math.ceil(3 - (serverNow() - S.now)));
-  paint(h("div", "count", String(left)));
+  /* Which round this is, and what it is about — the thing every quiz show
+     says between questions and this one only ever implied. */
+  const mark = h("div", "roundmark");
+  mark.append(h("span", null, `Round ${S.round + 1} of ${S.rounds}`));
+  if (S.question && S.question.kind) {
+    mark.append(h("span", "dotsep", "·"), h("b", null, S.question.kind));
+  }
+  paint(mark, h("div", "count", String(left)));
   setTimeout(() => { if (S.phase === "countdown") countdownView(); }, 900);
 }
 
@@ -653,7 +706,29 @@ function runTimer(bar, fill) {
 
 /* ------------------------------------------------------------------ router */
 
+let lastPhase = null, lastRound = -1;
+
+/* The tab title, which on a phone is what the task switcher shows and what she
+   sees if she flicks to a message mid-game. "Read Receipts" told her nothing
+   about whether it was her turn. */
+function titleFor(s) {
+  if (!s) return "Read Receipts";
+  const r = `${s.round + 1}/${s.rounds}`;
+  if (s.phase === "lobby") return "Waiting to start · Read Receipts";
+  if (s.phase === "countdown") return `Get ready · Read Receipts`;
+  if (s.phase === "question") {
+    return s.answered.includes(myId) ? `Locked in ${r} · Read Receipts`
+                                     : `Your turn ${r} · Read Receipts`;
+  }
+  if (s.phase === "reveal") return `The answer ${r} · Read Receipts`;
+  if (s.phase === "final") return "Final scores · Read Receipts";
+  return "Read Receipts";
+}
+
 connect("player", s => {
+  fadeNext = s.phase !== lastPhase || s.round !== lastRound;
+  lastPhase = s.phase; lastRound = s.round;
+  document.title = titleFor(s);
   S = s;
   me = s.players.find(p => p.id === myId) || null;
 

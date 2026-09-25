@@ -119,6 +119,18 @@ body::before{
   width:100%}
 .convo .cm + .cm{border-top-left-radius:8px}
 
+/* The round marker, between rounds. Same pill language as the Same Page
+   banner, deliberately: they are both the game telling you what kind of round
+   this is before it starts. */
+.roundmark{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);
+  animation:fade .4s ease both;
+}
+.roundmark b{color:var(--cream);font-weight:700;letter-spacing:.08em}
+.roundmark .dotsep{opacity:.4}
+
 /* SAME PAGE. The one round with no right answer, which reads as an ordinary
    trivia question you both happened to get wrong unless it says otherwise —
    loudly, and before anyone answers. */

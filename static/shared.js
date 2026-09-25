@@ -179,6 +179,28 @@ setInterval(() => {
   els.forEach(el => { el.textContent = txt; });
 }, 1000);
 
+/* Count a number up instead of swapping it. A total that jumps from 4,200 to
+   4,950 in one frame reads as data arriving; the same number climbing over
+   half a second reads as points being won. Honours prefers-reduced-motion by
+   simply arriving. */
+function countUp(el, from, to, ms = 620) {
+  if (from === to) { el.textContent = to.toLocaleString(); return; }
+  const reduce = window.matchMedia
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { el.textContent = to.toLocaleString(); return; }
+  const t0 = performance.now();
+  const step = now => {
+    const k = Math.min(1, (now - t0) / ms);
+    /* Ease out: fast at the start, settling at the end, so the eye catches
+       the movement and the final number is readable rather than a blur. */
+    const v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+    el.textContent = v.toLocaleString();
+    if (k < 1 && el.isConnected) requestAnimationFrame(step);
+    else el.textContent = to.toLocaleString();
+  };
+  requestAnimationFrame(step);
+}
+
 /* --------------------------------------------------------------- haptics -- */
 
 /* A tap in the hand when something happens. Phone only — the host is a

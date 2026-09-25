@@ -174,6 +174,23 @@ class History:
         """Never mix the two. A demo run is not a meetaversary."""
         return [g for g in self.games if g.dataset == dataset]
 
+    def seen(self, dataset: str, window: int = 3) -> dict[str, int]:
+        """How often each question came up in the last `window` games.
+
+        This is what `config.toml [deal] freshness` has always promised and
+        never delivered: `Game.deal()` takes a `seen` map and down-weights what
+        is in it, and `main.py` called `deal()` with nothing for months, so
+        every replay re-rolled from scratch. With 177 questions and 15 rounds
+        the overlap was small by luck rather than by design.
+        """
+        out: dict[str, int] = {}
+        for game in self.shelf(dataset)[:max(0, window)]:
+            for r in game.rounds:
+                qid = r.get("question_id")
+                if qid:
+                    out[qid] = out.get(qid, 0) + 1
+        return out
+
     def find(self, game_id: str) -> GameSummary | None:
         return next((g for g in self.games if g.id == game_id), None)
 

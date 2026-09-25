@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Read Receipts — host</title>
+<!-- The tab and the icon, for the laptop doing the hosting. -->
+<meta name="theme-color" content="#191325">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Read Receipts">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/static/fonts.css">
 <link rel="stylesheet" href="/static/app.css">
 <style>
@@ -31,11 +37,13 @@
     display:block;font-weight:400;font-style:italic;font-size:.36em;
     color:var(--muted);letter-spacing:-.01em;margin-top:16px;
   }
+  /* No entry animation. It is a fixed photograph that never changes, and
+     popping it in alongside the roster chips read as the screen animating
+     twice. The container's own fade is the only motion this screen needs. */
   .usphoto{
     display:block;width:100%;max-width:260px;aspect-ratio:3/2;object-fit:cover;
     border-radius:16px;margin-bottom:22px;
     box-shadow:0 10px 30px rgba(0,0,0,.45);
-    animation:pop .5s cubic-bezier(.2,1.3,.4,1) both;
   }
   .joinbox{
     background:var(--raised);border-radius:24px;padding:26px;
@@ -72,6 +80,27 @@
      the options on screen without scrolling. */
   .photo img{max-height:46vh}
   .photo .cap{max-width:38ch}
+
+  /* host controls */
+  .hostmenu{position:relative}
+  .hostpanel{
+    position:absolute;right:0;top:calc(100% + 8px);z-index:40;min-width:230px;
+    background:var(--raised);border:1px solid var(--line);border-radius:14px;
+    padding:8px;display:flex;flex-direction:column;gap:2px;
+    box-shadow:0 18px 44px rgba(0,0,0,.55);
+    animation:pop .18s cubic-bezier(.2,1.3,.4,1) both;
+  }
+  .hostlab{
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);padding:10px 10px 4px;
+  }
+  .hostact{
+    text-align:left;background:none;border:none;color:var(--cream);
+    font-size:14px;padding:10px 10px;border-radius:9px;min-height:0;
+  }
+  .hostact:hover{background:rgba(255,255,255,.07)}
+  .hostact.drop::after{content:"  ✕";color:var(--muted);font-size:12px}
+  .hostact.danger{color:var(--wrong)}
 
   .opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .opt{
@@ -371,7 +400,7 @@ function topbar() {
        whatever is already on screen is allowed to start. */
     if (!off && S) cue(S, true);
   };
-  bar.append(mute);
+  bar.append(mute, hostMenu());
   S.players.forEach(p => {
     const chip = h("div", "pill");
     chip.style.color = p.color;
@@ -381,8 +410,72 @@ function topbar() {
   return bar;
 }
 
+/* The things that go wrong on a games night, and the two buttons that fix
+   them. `skip` has been in the protocol since main.py was written and nothing
+   ever sent it, so a question that rendered badly could only be waited out.
+   Dropping a player is the cure for the same phone joining twice.
+
+   Behind a menu because neither belongs on screen during a round, and on the
+   topbar because that is the one piece of chrome present in every phase. */
+let menuOpen = false;
+
+function hostMenu() {
+  const wrap = h("div", "hostmenu");
+  const btn = h("button", "mute", "⋯");
+  btn.title = "Host controls";
+  btn.setAttribute("aria-label", "Host controls");
+  btn.setAttribute("aria-expanded", String(menuOpen));
+  btn.onclick = e => { e.stopPropagation(); menuOpen = !menuOpen; render(); };
+  wrap.append(btn);
+  if (!menuOpen) return wrap;
+
+  const panel = h("div", "hostpanel");
+  panel.onclick = e => e.stopPropagation();
+
+  const act = (label, fn, cls) => {
+    const b = h("button", "hostact" + (cls ? " " + cls : ""), label);
+    b.onclick = () => { menuOpen = false; fn(); render(); };
+    panel.append(b);
+    return b;
+  };
+
+  if (S.phase === "question" || S.phase === "countdown") {
+    act("Skip this question", () => send({ t: "skip" }));
+  }
+  if (S.players.length) {
+    panel.append(h("div", "hostlab", "Remove a player"));
+    S.players.forEach(p => {
+      const b = act(`${p.name} — ${p.score}`, () => send({ t: "drop", id: p.id }),
+                    "drop");
+      b.style.color = p.color;
+    });
+  }
+  if (S.phase !== "lobby") {
+    act("Start over", () => {
+      if (confirm("Throw away this game and go back to the lobby?")) {
+        send({ t: "reset" });
+      }
+    }, "danger");
+  }
+  if (!panel.childNodes.length) panel.append(h("div", "hostlab", "Nothing to do"));
+  wrap.append(panel);
+  return wrap;
+}
+
+/* Anywhere else closes it. */
+document.addEventListener("click", () => {
+  if (menuOpen) { menuOpen = false; render(); }
+});
+
+/* The whole-screen transition, but only when the screen actually changed.
+   `.fade` used to be unconditional, so a state message arriving mid-reveal —
+   the second player's result landing, a phone reconnecting — re-faded
+   everything that was already on screen. The transition was right; firing it
+   for a data update was not. */
+let fadeNext = true;
+
 function main(...kids) {
-  const m = h("div", "main fade");
+  const m = h("div", "main" + (fadeNext ? " fade" : ""));
   m.append(...kids.filter(Boolean));
   return m;
 }
@@ -672,11 +765,25 @@ function askPass(id) {
   setTimeout(() => p.focus(), 60);
 }
 
+/* The round marker: which round, and the category, before the question lands.
+   The 3-2-1 was the only thing between rounds and it said nothing about what
+   was coming. */
+function roundMark() {
+  const mark = h("div", "roundmark");
+  mark.append(h("span", null, `Round ${S.round + 1} of ${S.rounds}`));
+  const q = S.question;
+  if (q && q.kind) mark.append(h("span", "dotsep", "·"), h("b", null, q.kind));
+  if (q && q.type === "wager") {
+    mark.append(h("span", "dotsep", "·"), h("b", null, "the last one"));
+  }
+  return mark;
+}
+
 function countdown() {
   const left = Math.max(1, Math.ceil(3 - (serverNow() - S.now)));
   const n = h("div", "count", String(left));
   setTimeout(render, 900);
-  return main(n);
+  return main(roundMark(), n);
 }
 
 /* What a player said, plus what they put on it. The stake is only interesting
@@ -882,13 +989,23 @@ function reveal() {
     const delta = h("div", "delta " + (pts > 0 ? "good" : "zero") +
                             (fresh ? " pop" : ""),
                     (pts < 0 ? "−" : "+") + Math.abs(pts).toLocaleString());
+    /* The total climbs from what it was before this round, starting as the
+       delta lands. Only on a fresh reveal — a re-render mid-ceremony should
+       show the number, not replay the climb. */
+    const total = h("div", "tot", (p.score - pts).toLocaleString());
+    if (fresh) {
+      setTimeout(() => countUp(total, p.score - pts, p.score),
+                 (BEAT.board + i * 0.12 + 0.34) * 1000);
+    } else {
+      total.textContent = p.score.toLocaleString();
+    }
     delta.style.animationDelay = ((fresh ? BEAT.board : 0) + i * 0.12 + 0.3) + "s";
     row.append(
       h("div", "rank", "#" + (i + 1)),
       textNode(p.name, "var(--cream)", "nm"),
       h("div", "said", p.last ? saidWith(q, p.last) : "—"),
       delta,
-      h("div", "tot", String(p.score))
+      total
     );
     board.append(row);
   });
@@ -1252,6 +1369,7 @@ connect("host", s => {
   }
   cue(s, phaseChanged);
   S = s;
+  fadeNext = phaseChanged;
   if (phaseChanged || s.phase !== "question") render();
   else refreshTicks();
 });
