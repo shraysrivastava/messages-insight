@@ -743,4 +743,109 @@ remember whether something got done.
             same subject twice, zero closers pre-answered, decks still 15
             rounds. Bank 173 -> 163, all 163 prompts distinct, 96 showing a
             real message. 340 tests green.
+2026-09-24  Six more Final Receipts, on his call that he liked the mechanic and
+            wanted better questions. 2 wagers -> 8, so the closer is a
+            different question on the second night.
+            All resolver-backed, which for the wager is a rule and not a
+            preference: an answer baked into the block cannot be audited by the
+            people playing it. `first_use_sender` on a milestone lexicon puts
+            the real first message on screen and works out the sender at
+            compile time — marriage, the far future, "I miss you", the
+            distance — plus `who_says_more` on reassurance and a `busiest_year`
+            choice for shape.
+            THREE OF THE SIX MISFIRED and the bubbles showed it, which is the
+            argument for reading the audit output rather than trusting a clean
+            compile:
+            · lex.future held "when we", which matched "we can decide when we
+              eat" — a subordinate clause, not a statement about the future.
+              The drift log had already recorded this exact phrase as a
+              misfire once.
+            · lex.long_distance held "call me", which matched "they call me
+              jeffrey" — the naming sense, not the telephone one.
+            · lex.marriage matched somebody else's wedding, because at their
+              age most early mentions are. Split: `marriage` still answers "how
+              often does it come up", and a new first-person `marriage_us`
+              answers "who raised it about US first".
+            One prompt reworded rather than chased: the first long-distance hit
+            is as likely to be a grumble about FaceTime as a declaration, so
+            the prompt names the category instead of promising a milestone.
+            Checked every closer bubble for tells — no names, no spelling the
+            deck asks about elsewhere, all under 28 words. Eight body questions
+            share a subject with some closer; over 300 deals not one was ever
+            dealt alongside it. 340 tests green.
+2026-09-24  Same Page, on his call: it is the round he likes and it was the
+            round that read as trivia you both got wrong.
+            · WHOEVER AGREES FIRST NOW SCORES MORE — 500 for matching, 750 if
+              you were first to lock in. The flat 500 was deliberate ("a co-op
+              round shouldn't reward buzzing in") and is now overruled, with
+              the reasoning left in the code so it reads as a decision rather
+              than a drift. The bonus is relative, not a speed curve: it goes
+              to whoever was earliest AMONG THOSE WHO AGREED, nobody who
+              disagreed can earn it, and an exact tie pays nobody — the same
+              tie rule superlatives.py uses. The phone works out who got it
+              from the board rather than from a new server field.
+            · A BANNER ON BOTH SCREENS, above the prompt, before anyone can
+              answer: "No right answer · match each other · first in scores
+              more". It leads with the rule because the eyebrow directly above
+              it already says Same page.
+            · 6 mutual questions -> 14. These carry no answer, so there is
+              nothing in them to spoil either player, and they filled three of
+              the areas status.py had been flagging as thin. All 14 share one
+              kind and max_per_kind is 3, so at most three land per game.
+2026-09-24  THE MUSIC IS GONE. sound.js had grown musical beds under the
+            lobby, the question and the outro — a lookahead scheduler, a bus
+            to ramp down, the lot. They were rewritten this same day from
+            ambient sine pads to a Kahoot-ish major-pentatonic pluck at
+            108 BPM, and then cut entirely on his call: the game wanted sound
+            effects and not a soundtrack. ~126 lines removed rather than left
+            dormant; git log has them.
+            What survives is every one-shot, including two the game never had:
+            `correct` when both of them scored and `wrong` when neither did,
+            fired 420ms after the reveal so the room hears what happened
+            rather than being told before it can see it. A split gets neither,
+            because that is not a moment. `tick` now CLIMBS through the last
+            five seconds instead of thudding flat, and `Sound.audition()`
+            plays every cue in order so they can be judged without playing a
+            whole game — which matters, because the one thing that cannot be
+            verified from here is whether any of it sounds good.
+            Verified instead by counting oscillators: the lobby schedules zero
+            notes and is still at zero four seconds later, the count holds
+            flat across three idle seconds mid-question, and 28 notes fire
+            across three rounds where the musical version fired 145. S4.8 kept
+            its ID and now checks the cue set and the *absence* of beds.
+            343 tests green.
+2026-09-24  A photograph of the two of them on the lobby, above the join code,
+            which is the answer the title has been asking for since Stage 0.
+            `static/us.jpg`, downscaled to 1200px with sips.
+            IT IS GITIGNORED, and that is the whole decision: this repo is
+            PUBLIC on GitHub and static/ is committed, so dropping it in would
+            have published a picture of them permanently — history keeps it
+            after a delete. The Dockerfile copies static/ wholesale at build
+            time and .dockerignore does not touch it, so an ignored file still
+            ships to Fly: the deployed game has the photo and the public repo
+            does not. The cost is that a fresh clone has no photo, so the
+            frame removes itself on error rather than leaving a broken box on
+            the first screen of the night. Verified both ways — present and
+            loaded at 1200x800, and absent with no console error.
+2026-09-24  Haptics on the phone: a tick when you pick an option, a firmer one
+            when the answer goes, a nudge when a question opens, and two
+            different patterns at the reveal depending on whether you scored.
+            Host gets none — it is a television.
+            THE OBVIOUS API DOES NOTHING ON THE PHONES THIS GAME IS FOR.
+            `navigator.vibrate` is Android and desktop Chrome; iOS Safari has
+            never implemented it, and a game built out of iMessage is a game
+            both players are holding an iPhone for. So there is a second
+            backend: since iOS 17.4 a checkbox with the `switch` attribute
+            fires the system haptic when it toggles, and a programmatic click
+            on its label counts. Undocumented, wrapped in try/catch, feature
+            detected with `"switch" in input`, and the element has to be
+            rendered so it is parked off-screen rather than display:none.
+            Everything degrades to silence.
+            Verified by spying on Haptic itself rather than on the browser:
+            every call site fires exactly once and in order, `tap` correctly
+            stays quiet on slider rounds that have no options to tap, and a
+            re-render mid-reveal does not buzz twice. The iOS path cannot be
+            verified from here at all — it needs a real iPhone, and if Apple
+            has changed the behaviour the game simply has no haptics.
+            343 tests green.
 ```

@@ -125,14 +125,47 @@ def test_answers_outside_question_phase_are_ignored(game):
 
 # ── mutual ────────────────────────────────────────────────────────────────
 
-def test_mutual_scores_on_matching_not_correctness(game):
+def test_mutual_scores_on_matching_and_pays_the_first_one_in(game):
     game.deck = [Q(type="mutual")]
     game.begin_round(0)
     game.open_question(now=1000.0)
     game.record_answer("a", 1, at=1001.0)
     game.record_answer("b", 1, at=1019.0)
     game.close_question()
-    # flat points: a co-op round shouldn't reward buzzing in
+    assert game.players["a"].score == 750      # agreed, and got there first
+    assert game.players["b"].score == 500      # agreed
+
+
+def test_the_mutual_bonus_is_relative_not_a_speed_curve(game):
+    """Both dawdled; one still got there first, and still earns it."""
+    game.deck = [Q(type="mutual")]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    game.record_answer("a", 1, at=1018.0)
+    game.record_answer("b", 1, at=1019.0)
+    game.close_question()
+    assert game.players["a"].score == 750
+    assert game.players["b"].score == 500
+
+
+def test_nobody_earns_the_bonus_for_being_first_to_disagree(game):
+    game.deck = [Q(type="mutual")]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    game.record_answer("a", 0, at=1001.0)
+    game.record_answer("b", 1, at=1019.0)
+    game.close_question()
+    assert game.players["a"].score == 0
+    assert game.players["b"].score == 0
+
+
+def test_an_exact_tie_earns_the_bonus_for_nobody(game):
+    game.deck = [Q(type="mutual")]
+    game.begin_round(0)
+    game.open_question(now=1000.0)
+    game.record_answer("a", 1, at=1005.0)
+    game.record_answer("b", 1, at=1005.0)
+    game.close_question()
     assert game.players["a"].score == 500
     assert game.players["b"].score == 500
 

@@ -46,10 +46,183 @@ answer = 0
 reveal = "TODO — {date}, and what happened."
 status = "draft"
 
+# ── MORE FINAL RECEIPTS  (written 2026-09-24) ─────────────────────────────
+#
+# Every one of these is resolver-backed on purpose. A wager whose answer is
+# baked into the block is a wager nobody can audit without being spoiled by it,
+# and both of the people playing this designed it. `first_use_sender` puts the
+# real first message on the screen and works out who sent it at compile time,
+# so the block you are reading contains no answer and neither does the person
+# who wrote it.
+#
+# Every reveal states only template vars. The rhetoric around them is true
+# whichever way the answer falls — that is rule 9 in docs/QUESTIONS.md, and the
+# last line of the night is the worst possible place to break it.
+
+[[q]]
+id = "final-marriage-first"
+type = "wager"
+kind = "Final receipt"
+area = "milestones"
+format = "bubble"
+prompt = "Final Receipt. Which one of us brought up getting married first?"
+answer = { first_use_sender = "marriage_us" }
+options = ["{p1}", "{p2}"]
+reveal = "{winner}. {date}. Everything after that was logistics."
+status = "ready"
+
+[[q]]
+id = "final-future-first"
+type = "wager"
+kind = "Final receipt"
+area = "milestones"
+format = "bubble"
+prompt = "Final Receipt. Who talked about the far-off future first?"
+answer = { first_use_sender = "future" }
+options = ["{p1}", "{p2}"]
+reveal = "{winner}, {date}. Already thinking that far ahead."
+status = "ready"
+
+[[q]]
+id = "final-miss-you-first"
+type = "wager"
+kind = "Final receipt"
+area = "affection"
+format = "bubble"
+prompt = "Final Receipt. Who admitted to missing the other one first?"
+answer = { first_use_sender = "miss_you" }
+options = ["{p1}", "{p2}"]
+reveal = "{winner}, on {date}. The other one was thinking it."
+status = "ready"
+
+[[q]]
+id = "final-distance-first"
+type = "wager"
+kind = "Final receipt"
+area = "long-distance"
+format = "bubble"
+# Names the category, not a phrase: the lexicon holds the whole apparatus of
+# being apart, and the first hit is as likely to be a grumble about FaceTime as
+# a declaration. Rule 8 — the prompt may not claim more than this computes.
+prompt = "Final Receipt. Who brought up the distance first — flights, FaceTime, counting days?"
+answer = { first_use_sender = "long_distance" }
+options = ["{p1}", "{p2}"]
+reveal = "{winner}, {date}. The first of a great many airports."
+status = "ready"
+
+[[q]]
+id = "final-reassurance"
+type = "wager"
+kind = "Final receipt"
+area = "affection"
+prompt = "Final Receipt. Over five years, which of us has done more of the reassuring?"
+answer = { who_says_more = "reassurance" }
+options = ["{p1}", "{p2}"]
+reveal = "{winner} — {n1:,} times to {n2:,}. Somebody had to be the calm one."
+status = "ready"
+
+[[q]]
+id = "final-busiest-year"
+type = "wager"
+kind = "Final receipt"
+area = "archive"
+prompt = "Final Receipt. Of the five, which year did we talk the most?"
+answer = { busiest_year = true }
+reveal = "{answer}. More of our {total:,} messages landed that year than any other."
+status = "ready"
+
 # ── SAME PAGE ─────────────────────────────────────────────────────────────
-# No correct answer. You both answer; you score if you MATCH. The only
-# category in the game that's about the two of you rather than one of you
-# beating the other.
+# No correct answer. You both answer; you score if you MATCH, and whoever got
+# there first scores more. The only category in the game that's about the two
+# of you rather than one of you beating the other.
+#
+# These need no resolver and no corpus, which is why there can be as many as
+# you like: there is no answer to be wrong about and nothing here can spoil
+# anyone. The only craft is that both readings have to be genuinely arguable —
+# an option nobody would ever pick is a wasted quarter of the screen.
+#
+# The reveal is written to work either way, because it has to: it is printed
+# whether you matched or not.
+
+[[q]]
+id = "same-page-late"
+type = "mutual"
+kind = "Same page"
+area = "habits"
+prompt = "Which one of us is more likely to be the reason we're late?"
+options = ["{p1}", "{p2}"]
+reveal = "Agree and it's a confession. Disagree and one of you has been getting away with it for five years."
+status = "ready"
+
+[[q]]
+id = "same-page-argument"
+type = "mutual"
+kind = "Same page"
+area = "conflict"
+prompt = "After a fight, who caves and texts first?"
+options = ["{p1}", "{p2}"]
+reveal = "If you both picked the same person, that person already knew."
+status = "ready"
+
+[[q]]
+id = "same-page-sick"
+type = "mutual"
+kind = "Same page"
+area = "health"
+prompt = "Who is the bigger baby about being ill?"
+options = ["{p1}", "{p2}"]
+reveal = "One of you is now deciding whether to be offended. Match, and you don't get to be."
+status = "ready"
+
+[[q]]
+id = "same-page-dog"
+type = "mutual"
+kind = "Same page"
+area = "logistics"
+prompt = "If we got a dog tomorrow, who would actually end up walking it?"
+options = ["{p1}", "{p2}", "Honestly neither of us"]
+reveal = "Worth knowing before the dog, rather than after."
+status = "ready"
+
+[[q]]
+id = "same-page-cook"
+type = "mutual"
+kind = "Same page"
+area = "food"
+prompt = "Who is the better cook? Be honest, you both have to agree."
+options = ["{p1}", "{p2}"]
+reveal = "There is no diplomatic answer here, which is the point."
+status = "ready"
+
+[[q]]
+id = "same-page-cry"
+type = "mutual"
+kind = "Same page"
+area = "media"
+prompt = "Who is more likely to cry at a film neither of us expected to cry at?"
+options = ["{p1}", "{p2}"]
+reveal = "Match and it's agreed. Miss and somebody is in denial."
+status = "ready"
+
+[[q]]
+id = "same-page-phone"
+type = "mutual"
+kind = "Same page"
+area = "habits"
+prompt = "Whose phone is more likely to be on 3% at any given moment?"
+options = ["{p1}", "{p2}"]
+reveal = "The thread has opinions about this. So, apparently, do you."
+status = "ready"
+
+[[q]]
+id = "same-page-decade"
+type = "mutual"
+kind = "Same page"
+area = "milestones"
+prompt = "Ten years from now, which of these are we most likely to be doing?"
+options = ["Still texting this much", "Living somewhere neither of us has been", "Arguing about the same things", "Owning far too many pets"]
+reveal = "No way to check this one for another five years. Match, and at least you're planning the same life."
+status = "ready"
 
 [[q]]
 id = "same-page-best-year"

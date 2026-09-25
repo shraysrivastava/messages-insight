@@ -17,6 +17,12 @@ data/
 # Downscaled copies of five years of photographs. The only ones that ever leave
 # this machine are the handful compile.py embeds in the sealed dataset.
 photos/
+# The lobby photograph. This repo is PUBLIC, and static/ is committed — so a
+# picture of the two of them would be on GitHub permanently, history and all.
+# The Dockerfile copies static/ wholesale at build time, so an ignored file
+# still ships to Fly: the deployed game has it and the public repo does not.
+# The lobby hides the frame if it is missing, so a fresh clone still works.
+static/us.jpg
 .env
 
 # Ciphertext IS committed on purpose — see docs/PLAN.md §4:

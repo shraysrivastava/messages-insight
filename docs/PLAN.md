@@ -483,7 +483,7 @@ happened is that more of them were pictures.
 | `S4.5` | Sound design | 3h |
 | `S4.6` | `mutual` type — Same Page rounds | 4h |
 | `S4.7` | Playwright smoke test in CI | 2h |
-| `S4.8` | Music beds under each phase | 2h |
+| `S4.8` | ~~Music beds under each phase~~ → a cue on every beat, no music | 2h |
 | `S4.9` | The opener — five years on the lobby screen | 1.5h |
 
 **Gate:** past games, awards, and a receipts reel.

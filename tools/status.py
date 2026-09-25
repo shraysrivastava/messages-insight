@@ -115,7 +115,14 @@ CHECKS = [
     (4, "S4.5", "sound design",                        lambda: _grep("static/sound.js", r"function voice") or bool(glob.glob(p("static/sounds/*")))),
     (4, "S4.6", "mutual type",                         lambda: _playable("mutual") and _grep("static/host.html", r"agreedOption")),
     (4, "S4.7", "end-to-end smoke test",               lambda: any_exists("tests/test_smoke.py", "tests/smoke.spec.js", "tests/e2e")),
-    (4, "S4.8", "music beds under each phase",        lambda: _grep("static/sound.js", r"const BEDS") and _grep("static/host.html", r"Sound\.bed")),
+    # Built as "music beds under each phase", then cut on 2026-09-24 — the game
+    # wanted sound effects and not a soundtrack. The ID stays and what it
+    # verifies moved with the decision: every beat that makes a noise has a cue
+    # behind it, and nothing loops.
+    (4, "S4.8", "a cue on every beat, no music",       lambda: all(
+        _grep("static/sound.js", rf"\n    {c}\(") for c in
+        ("send", "receive", "correct", "wrong", "tick", "ping", "flourish"))
+        and not _grep("static/sound.js", r"const BEDS")),
     (4, "S4.9", "the opener (five years, on the lobby)", lambda: _grep("static/host.html", r"function opener") and _grep("static/app.css", r"\.opener-bars")),
 ]
 

@@ -31,6 +31,12 @@
     display:block;font-weight:400;font-style:italic;font-size:.36em;
     color:var(--muted);letter-spacing:-.01em;margin-top:16px;
   }
+  .usphoto{
+    display:block;width:100%;max-width:260px;aspect-ratio:3/2;object-fit:cover;
+    border-radius:16px;margin-bottom:22px;
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+    animation:pop .5s cubic-bezier(.2,1.3,.4,1) both;
+  }
   .joinbox{
     background:var(--raised);border-radius:24px;padding:26px;
     display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;
@@ -505,6 +511,19 @@ function lobby() {
   left.append(roster, startWrap);
 
   const box = h("div", "joinbox");
+
+  /* The two of them, above the join code. The title asks "how well do you
+     remember us?" and this is the us. Gitignored (see .gitignore) — it ships
+     in the image but never to the public repo — so it can legitimately be
+     absent, and the frame removes itself rather than leaving a broken box on
+     the first screen of the night. */
+  const us = document.createElement("img");
+  us.src = "/static/us.jpg";
+  us.alt = "";
+  us.className = "usphoto";
+  us.onerror = () => us.remove();
+  box.append(us);
+
   box.append(h("div", "eyebrow", "Join from your phone"));
   const img = document.createElement("img");
   img.src = "/qr.svg?base=" + encodeURIComponent(location.origin);
@@ -683,6 +702,7 @@ function question(revealed) {
   const head = h("div", "qhead");
   head.append(h("div", "eyebrow", q.kind));
   rows.push(head);
+  if (q.type === "mutual") rows.push(samePageBanner());
   rows.push(h("h2", "prompt serif", q.prompt));
   /* At the reveal the context thread carries this same message, highlighted
      in place — showing it twice reads as a repeat rather than as "and here is
@@ -719,9 +739,6 @@ function question(revealed) {
                           : "Slide to a month on your phone."));
   }
 
-  if (q.type === "mutual" && !revealed) {
-    rows.push(h("div", "hint", "No right answer. You score by agreeing."));
-  }
   if (q.type === "wager" && !revealed) {
     rows.push(h("div", "hint", "Stake first, then answer. Win it or lose it."));
   }
@@ -1212,18 +1229,16 @@ function onDenied(why) {
   render();
 }
 
-/* Browsers will not make a sound until the page has been interacted with, and
-   the lobby — which is exactly where the bed matters, while two people settle
-   down — gets no interaction at all until someone presses Start. So the first
-   gesture of any kind unlocks the audio context and starts whatever bed the
-   current phase asks for. Once only; it removes itself.
+/* Browsers will not make a sound until the page has been interacted with, so
+   the first gesture of any kind builds the audio context — otherwise the first
+   cue of the night is the one that gets swallowed. Once only; it removes
+   itself.
  *
  * `Sound.init()` on its own is not enough on iOS Safari, where a context
  * created before a gesture is born suspended — hence the explicit resume. */
 function unlockAudio() {
   const ctx = Sound.init();
   if (ctx && ctx.state === "suspended") ctx.resume();
-  if (S) cue(S, true);
 }
 ["pointerdown", "keydown"].forEach(ev =>
   window.addEventListener(ev, unlockAudio, { once: true, capture: true }));
@@ -1252,19 +1267,28 @@ function cue(next, phaseChanged) {
   if (!phaseChanged) return;
 
   if (next.phase === "question") ticked = -1;
-  // the receive lands *after* the silence — the pause is the joke
-  if (next.phase === "reveal") setTimeout(() => Sound.receive(), BEAT.resolve * 1000);
+  /* The receive lands *after* the silence — the pause is the joke — and the
+     verdict lands after the tiles have resolved, so the room hears what
+     happened rather than being told before it can see it.
+
+     One noise for both of them, because there is one screen: everybody right
+     is a cheer, everybody wrong is a shared groan, and a split gets neither
+     because it is not a moment, it is just a round. */
+  if (next.phase === "reveal") {
+    setTimeout(() => Sound.receive(), BEAT.resolve * 1000);
+    const scored = next.players.filter(p => p.last).map(p => p.last.points > 0);
+    if (scored.length && scored.every(Boolean)) {
+      setTimeout(() => Sound.correct(), (BEAT.resolve + 0.42) * 1000);
+    } else if (scored.length && !scored.some(Boolean)) {
+      setTimeout(() => Sound.wrong(), (BEAT.resolve + 0.42) * 1000);
+    }
+  }
   if (next.phase === "final") setTimeout(() => Sound.flourish(), 350);
 
-  /* The bed under each phase. `reveal` gets silence on purpose: the 450ms of
-     nothing before the answer resolves is the whole point of the choreography
-     (DESIGN 2.5), and a pad playing through it steps on the punchline. The
-     outro starts after the flourish has had the stage to itself. */
-  if (next.phase === "lobby") Sound.bed("lobby");
-  else if (next.phase === "countdown" || next.phase === "question")
-    Sound.bed("question");
-  else if (next.phase === "reveal") Sound.bed(null);
-  else if (next.phase === "final") setTimeout(() => Sound.bed("outro"), 1400);
+  /* There were musical beds under each phase until 2026-09-24. They are gone
+     on purpose: the game wanted sound effects and not a soundtrack. Every
+     noise this screen makes is now a cue tied to something that happened,
+     which is also why the silence before a reveal needs no arranging. */
 }
 
 /* A low tick under the last few seconds. Driven from the timer's own frame
@@ -1273,7 +1297,7 @@ function tickClock(left) {
   const whole = Math.ceil(left / 1000);
   if (whole <= 5 && whole > 0 && whole !== ticked) {
     ticked = whole;
-    Sound.tick();
+    Sound.tick(whole);            // climbs as the clock runs out
   }
 }
 

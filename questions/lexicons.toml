@@ -160,9 +160,12 @@ any = ["its ok", "its okay", "dont worry", "no worries", "ill be there",
 
 [lex.long_distance]
 label = "long distance"
-any = ["facetime", "ft me", "video call", "call me", "time zone", "timezone",
-       "when do you land", "see you in", "countdown", "next visit",
-       "plane ticket", "how many days", "one more week", "cant wait to see you"]
+# "call me" used to be in here and matched "they call me jeffrey" — the naming
+# sense, not the telephone one. facetime / ft me / video call already carry it.
+any = ["facetime", "ft me", "video call", "call me when", "call me later",
+       "time zone", "timezone", "when do you land", "see you in", "countdown",
+       "next visit", "plane ticket", "how many days", "one more week",
+       "cant wait to see you"]
 
 [lex.travel]
 any = ["flight", "flying", "the airport", "landed", "boarding", "layover",
@@ -193,6 +196,24 @@ any = ["move in", "moving in", "live together", "living together",
        "get a place", "find a place", "our lease", "sign the lease",
        "same apartment", "same city", "move here", "move there"]
 
+# The m-word, but about THE TWO OF THEM. `lex.marriage` matches any mention,
+# which is what you want for "how often does it come up" and exactly what you
+# do not want for "who raised it first" — the first hit there was a garba
+# portion at somebody else's wedding. Second person or first person plural
+# only, and every third-party phrasing excluded.
+[lex.marriage_us]
+label = "marrying each other"
+any = [
+  "marry me", "marry you", "marry u", "marrying you", "marrying u",
+  "we get married", "we got married", "when we marry", "us getting married",
+  "our wedding", "propose to you", "propose to u",
+  "be my wife", "be my husband", "my future wife", "my future husband",
+]
+exclude = [
+  "their wedding", "his wedding", "her wedding", "the wedding",
+  "a wedding", "wedding season", "getting married next",
+]
+
 [lex.marriage]
 label = "the m-word"
 any = ["marry", "married", "marriage", "propose", "proposal", "engaged",
@@ -204,9 +225,12 @@ any = ["our place", "our apartment", "our apt", "our house", "our home",
        "our room", "our bed", "our couch", "coming home to you", "home to you"]
 
 [lex.future]
-any = ["one day", "someday", "when we", "our kids", "our future", "grow old",
-       "ten years", "five years from now", "the rest of my life",
-       "for a long time"]
+# "when we" used to be in here and matched "we can decide when we eat" — a
+# subordinate clause, not a statement about the future. Narrowed to the two
+# phrasings that actually mean it.
+any = ["one day", "someday", "when we're older", "when we get", "our kids",
+       "our future", "grow old", "ten years", "five years from now",
+       "the rest of my life", "for a long time"]
 
 [lex.holidays]
 any = ["christmas", "thanksgiving", "new years", "valentines", "halloween",

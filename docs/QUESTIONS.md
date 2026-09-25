@@ -263,10 +263,19 @@ phone has an input for each.
 | --- | --- | --- |
 | **Mutual** | `mutual` · 6 | No correct answer — you score 500 each by picking the *same* option. Both screens say so, because otherwise it reads as a trivia question you happened to both get wrong. The only round that is about the two of them rather than the archive. |
 | **Percent** | `percent` · 20 | A 0–100 slider, the same shape as the month one without the histogram. Scored on a flat 30-point band, and the phone's verdict reads off the same 30 so it can't call a near miss "wildly over" while paying out 500. |
-| **Wager / Final Receipt** | `wager` · 2 | Round 15 of 14, always last. Stake first, then answer: win the stake or lose it, no speed bonus, and a loss cannot take you below zero. See PLAN §S3.7. |
+| **Wager / Final Receipt** | `wager` · 8 | Round 15 of 14, always last. Stake first, then answer: win the stake or lose it, no speed bonus, and a loss cannot take you below zero. See PLAN §S3.7. |
 
-Two more wagers would be worth writing. There are only two, so the closer is
-the same question on the second night.
+**Every wager is resolver-backed, and that is not optional.** A wager whose
+answer is baked into the block cannot be audited by the people playing it, and
+both of them designed this deck. `first_use_sender` on a milestone lexicon is
+the shape that works: it puts the real first message on the screen, works the
+sender out at compile time, and the reveal says `{winner}` and `{date}` — so
+the block contains no answer and neither does whoever wrote it.
+
+The eight rotate, so the closer is a different question on the second night.
+`final-longest-day` is still a draft and should probably stay one: "was our
+loudest day a good day or a bad one" has no resolver behind it, so finishing it
+means somebody deciding the answer by hand and losing the ability to play it.
 
 ---
 

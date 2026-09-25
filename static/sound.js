@@ -5,6 +5,13 @@
  * envelope, built at the moment it plays: no files to vendor, nothing to
  * cache, nothing that can 404 on a sofa at 9pm with the lights off.
  *
+ * REWRITTEN 2026-09-24. The first version was deliberately ambient — sine
+ * waves, a minor pentatonic, "furniture, not music", sparse enough to talk
+ * over. It worked exactly as designed and the design was wrong: it made a
+ * party game sound like a spa. This one is a game show. Major pentatonic,
+ * plucked square waves through a lowpass, a real tempo, and a countdown that
+ * climbs. Loud enough to be part of the room.
+ *
  * Three rules from the design:
  *
  *   - **Host screen only.** Two devices playing the same cue at different
@@ -19,17 +26,11 @@ const Sound = (() => {
   let ctx = null;
   let muted = localStorage.getItem("rr_mute") === "1";
 
-  let bus = null;            // everything the beds play goes through this
-  let bed = null;            // { name, timer, until, stop() }
-
   function init() {
     if (ctx) return ctx;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
     ctx = new AC();
-    bus = ctx.createGain();
-    bus.gain.setValueAtTime(1, ctx.currentTime);
-    bus.connect(ctx.destination);
     return ctx;
   }
 
@@ -37,7 +38,7 @@ const Sound = (() => {
      couple of these stacked. `at` is an offset in seconds so a cue can be
      two notes without two timers. */
   function voice({ from, to = from, type = "sine", at = 0, dur = 0.12,
-                   peak = 0.18, curve = "exp", out = null }) {
+                   peak = 0.18, curve = "exp", out = null, cut = 0 }) {
     if (!ctx || muted) return;
     const t = ctx.currentTime + at;
     const osc = ctx.createOscillator();
@@ -53,124 +54,51 @@ const Sound = (() => {
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(peak, t + Math.min(0.02, dur / 3));
     gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(gain).connect(out || ctx.destination);
+
+    /* A square wave straight out is a buzzer. The same square under a lowpass
+       that closes as the note decays is a marimba-ish pluck, which is the
+       whole difference between "quiz show" and "smoke alarm". */
+    let node = gain;
+    if (cut) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(cut, t);
+      lp.frequency.exponentialRampToValueAtTime(Math.max(220, cut * 0.25),
+                                                t + dur);
+      lp.Q.setValueAtTime(6, t);
+      gain.connect(lp);
+      node = lp;
+    }
+    osc.connect(gain);
+    node.connect(out || ctx.destination);
     osc.start(t);
     osc.stop(t + dur + 0.05);
   }
 
+  /* The workhorse. A plucked note: square through a closing lowpass, short. */
+  function pluck(f, at, dur = 0.22, peak = 0.13, out = null) {
+    voice({ from: f, type: "square", at, dur, peak, out, cut: f * 7 });
+  }
 
-/* ── the beds ───────────────────────────────────────────────────────────────
+  /* Bass. Triangle keeps the low end round instead of farty. */
+  function bass(f, at, dur = 0.26, peak = 0.16, out = null) {
+    voice({ from: f, type: "triangle", at, dur, peak, out, cut: f * 9 });
+  }
+
+
+/* The note names the cues are built from. There used to be a bank of musical
+ * BEDS under here — a lookahead scheduler, a bus to ramp down, loops for the
+ * lobby, the question and the outro. All of it was cut on 2026-09-24: the game
+ * wanted sound effects and not a soundtrack, and background music under two
+ * people shouting at a television is something to turn off rather than
+ * something to listen to. `git log static/sound.js` has it if it is ever
+ * wanted back.
  *
- * The cues above are one-shots: fire and forget. A bed runs until something
- * stops it, which needs two things the cues don't have.
- *
- * **A lookahead scheduler.** `setInterval` is not accurate enough to place a
- * note on — it drifts and it stalls while the tab renders a reveal. So the
- * timer only ever *schedules*: every SCAN ms it queues whatever falls in the
- * next SCAN*2 window, at sample-accurate times taken from `ctx.currentTime`.
- * The audio clock keeps the beat; the JS timer just keeps the queue full.
- *
- * **A group to stop.** Notes already queued will play even after you stop the
- * timer, so every bed note goes through `bus` and stopping ramps the bus down
- * over 120ms. Ramped, not cut: an oscillator stopped at full amplitude clicks.
- *
- * The beds are deliberately sparse and low. This plays under two people
- * talking over each other, not in headphones, and the moment it asks to be
- * listened to it is wrong.
+ * Major pentatonic — C D E G A. No two of these can clash, so a cue built
+ * from them never needs to resolve.
  */
 
-  const SCAN = 250;                        // ms between scheduler wakeups
-
-  /* A minor pentatonic, which is the scale that cannot sound wrong against
-     itself — any two of these notes together are consonant, so the arpeggio
-     never needs to resolve and the loop never sounds like it restarted. */
-  const SCALE = [220.00, 261.63, 293.66, 349.23, 392.00, 440.00, 523.25, 587.33];
-
-  const BEDS = {
-    /* Lobby: warm, unhurried, no pulse. Two people are finding the remote and
-       arguing about where to sit; this is furniture, not music. */
-    lobby(step, at) {
-      const n = SCALE[(step * 3) % SCALE.length];
-      voice({ from: n, to: n, type: "sine", at, dur: 2.4, peak: 0.045, out: bus });
-      if (step % 4 === 0) {
-        voice({ from: 110, to: 110, type: "sine", at,
-                dur: 4.0, peak: 0.05, out: bus });
-      }
-      return step % 2 === 0 ? 1.6 : 2.4;        // uneven, so it never marches
-    },
-
-    /* Under the question. One low note per beat and nothing else — it exists
-       to make the silence when it stops feel like something happened. The
-       countdown `tick` plays over the top of it in the last seconds. */
-    question(step, at) {
-      voice({ from: step % 4 === 0 ? 98 : 73.42, type: "triangle", at,
-              dur: 0.5, peak: 0.05, out: bus });
-      return 1.0;
-    },
-
-    /* After the podium flourish, while the awards deal. Major, slow, resolved
-       — the only bed that is allowed to sound like it means it. */
-    outro(step, at) {
-      const maj = [261.63, 329.63, 392.00, 523.25];
-      const n = maj[step % maj.length];
-      voice({ from: n, to: n, type: "sine", at, dur: 3.2, peak: 0.05, out: bus });
-      if (step % 4 === 0) {
-        voice({ from: 130.81, to: 130.81, type: "sine", at,
-                dur: 5.0, peak: 0.045, out: bus });
-      }
-      return 2.0;
-    },
-  };
-
-  function stopBed() {
-    if (!bed) return;
-    clearInterval(bed.timer);
-    /* Ramp rather than disconnect: notes already queued are still coming, and
-       cutting the bus at full amplitude clicks. */
-    if (bus && ctx) {
-      const t = ctx.currentTime;
-      bus.gain.cancelScheduledValues(t);
-      bus.gain.setValueAtTime(bus.gain.value || 1, t);
-      bus.gain.linearRampToValueAtTime(0.0001, t + 0.12);
-      const dead = bus;
-      setTimeout(() => { try { dead.disconnect(); } catch (e) {} }, 400);
-      bus = ctx.createGain();
-      bus.gain.setValueAtTime(1, ctx.currentTime);
-      bus.connect(ctx.destination);
-    }
-    bed = null;
-  }
-
-  function startBed(name) {
-    if (bed && bed.name === name) return;     // already running; don't restart
-    stopBed();
-    if (muted || !BEDS[name]) return;
-    if (!init()) return;
-    const play = BEDS[name];
-    let step = 0;
-    /* `until` is the audio-clock time the queue is filled to. The scheduler
-       tops it up; it never plays anything itself. */
-    const state = { name, until: ctx.currentTime, timer: null };
-    const pump = () => {
-      if (muted) return stopBed();
-      /* A suspended context has a frozen `currentTime`, so scheduling against
-         it queues notes at times that are all in the past by the moment it
-         resumes — and they then fire as one chord. Hold the queue instead,
-         and keep `until` pinned to now so it resumes in time rather than
-         catching up. This is the state the lobby sits in until the first
-         click, which is exactly when it matters. */
-      if (ctx.state !== "running") { state.until = ctx.currentTime; return; }
-      const horizon = ctx.currentTime + (SCAN * 2) / 1000;
-      let guard = 0;
-      while (state.until < horizon && guard++ < 16) {
-        const wait = Math.max(0, state.until - ctx.currentTime);
-        state.until += play(step++, wait);   // `wait` is the offset
-      }
-    };
-    pump();
-    state.timer = setInterval(pump, SCAN);
-    bed = state;
-  }
+  const C = 261.63, D = 293.66, E = 329.63, G = 392.00, A = 440.00;
 
   const api = {
     init,
@@ -178,56 +106,81 @@ const Sound = (() => {
     toggle() {
       muted = !muted;
       localStorage.setItem("rr_mute", muted ? "1" : "0");
-      if (muted) stopBed();
-      else { init(); api.send(); }             // confirm you can hear it
+      if (!muted) { init(); api.send(); }      // confirm you can hear it
       return muted;
     },
 
-    /* The soundtrack under a phase. `Sound.bed(null)` for silence — which the
-       reveal needs, because the 450ms of nothing before the answer is the
-       joke and a bed playing through it steps on the punchline. */
-    bed(name) {
-      if (!name) stopBed();
-      else startBed(name);
-    },
-
-    get playing() { return bed && bed.name; },
-
-    /* An answer lands. Short, high, upward — the sound of something leaving. */
+    /* An answer lands. A quick blip up — something leaving the phone. */
     send() {
       init();
-      voice({ from: 720, to: 1180, dur: 0.1, peak: 0.12 });
+      pluck(G * 2, 0, 0.09, 0.10);
+      pluck(C * 4, 0.05, 0.10, 0.07);
     },
 
-    /* The reveal. Two notes, the second lower: something arriving. This is the
-       one that has to land after the silence, because the pause is the joke. */
+    /* The reveal, landing after the 450ms of silence. Deliberately neutral:
+       who was right is `correct`/`wrong`, a beat later, once the tiles have
+       resolved. */
     receive() {
       init();
-      voice({ from: 1320, to: 1320, dur: 0.09, peak: 0.16 });
-      voice({ from: 880, to: 880, at: 0.1, dur: 0.22, peak: 0.16 });
+      pluck(C * 2, 0, 0.12, 0.15);
+      pluck(G * 2, 0.08, 0.26, 0.13);
     },
 
-    /* Under the last few seconds. Low and short enough to sit beneath a room
-       of two people shouting at a television. */
-    tick() {
+    /* Everybody got it. A rising major arpeggio, the most unsubtle happy noise
+       five oscillators can make, which is the correct amount of subtlety. */
+    correct() {
       init();
-      voice({ from: 190, to: 150, type: "triangle", dur: 0.05, peak: 0.09 });
+      [C * 2, E * 2, G * 2, C * 4].forEach((f, i) =>
+        pluck(f, i * 0.075, i === 3 ? 0.5 : 0.16, i === 3 ? 0.16 : 0.12));
+    },
+
+    /* Nobody got it. Two notes down and flat, the pantomime "wrong" — this is
+       a shared groan, not a punishment, so it is comic rather than harsh. */
+    wrong() {
+      init();
+      voice({ from: 233, to: 220, type: "square", dur: 0.18, peak: 0.13, cut: 900 });
+      voice({ from: 185, to: 138, type: "square", at: 0.15, dur: 0.34,
+              peak: 0.14, cut: 700 });
+    },
+
+    /* Under the last few seconds, and it CLIMBS — `left` is how many whole
+       seconds remain, so the pitch rises as the clock runs out and the last
+       one is the highest and hardest. The old tick was a flat low thud, which
+       told you the clock existed but never that it was nearly gone. */
+    tick(left = 5) {
+      init();
+      const step = Math.max(0, Math.min(4, 5 - left));   // 0 at 5s, 4 at 1s
+      const f = [D, E, G, A, C * 2][step];
+      pluck(f, 0, 0.11, 0.09 + step * 0.015);
+      if (left <= 1) pluck(f * 2, 0.04, 0.16, 0.09);
     },
 
     /* One award card dealt. */
     ping() {
       init();
-      voice({ from: 1046, to: 1046, type: "triangle", dur: 0.1, peak: 0.1 });
-      voice({ from: 1568, to: 1568, at: 0.06, dur: 0.14, peak: 0.07 });
+      pluck(C * 4, 0, 0.1, 0.10);
+      pluck(G * 4, 0.06, 0.16, 0.06);
     },
 
-    /* The podium. One flourish, not a loop — a rising major triad and a fifth
-       on top, which is as close to a fanfare as four oscillators get. */
+    /* The podium. A proper little fanfare: a rising triad, then the octave
+       held over a bass root. */
     flourish() {
       init();
-      [523, 659, 784, 1046].forEach((f, i) =>
-        voice({ from: f, to: f, type: "triangle", at: i * 0.11,
-                dur: i === 3 ? 0.55 : 0.2, peak: i === 3 ? 0.17 : 0.13 }));
+      [C * 2, E * 2, G * 2].forEach((f, i) => pluck(f, i * 0.1, 0.26, 0.14));
+      pluck(C * 4, 0.3, 0.75, 0.17);
+      bass(C / 2, 0.3, 0.9, 0.16);
+    },
+
+    /* Every cue in order, for judging them without playing a whole game.
+       Open the host screen, click once so the browser allows audio, then run
+       `Sound.audition()` in the console. */
+    audition() {
+      init();
+      const seq = ["send", "receive", "correct", "wrong", "ping", "flourish"];
+      seq.forEach((n, i) => setTimeout(() => { console.log(n); api[n](); },
+                                       i * 1100));
+      [5, 4, 3, 2, 1].forEach((n, i) =>
+        setTimeout(() => api.tick(n), seq.length * 1100 + i * 450));
     },
   };
   return api;

@@ -130,6 +130,21 @@ function messageBlock(q, cls) {
   return one;
 }
 
+/* The Same Page banner. Both screens, above the prompt, before anyone has
+   answered — a round with no right answer has to announce itself or it reads
+   as trivia you both got wrong. Says the two rules that differ from every
+   other round: match each other, and first in earns more. */
+function samePageBanner() {
+  const b = h("div", "samepage");
+  /* Leads with the rule, not the category — the eyebrow above it already says
+     "Same page", and the thing worth announcing is that this round does not
+     work like the other fourteen. */
+  b.append(h("span", null, "No right answer"), h("span", "dotsep", "·"),
+           h("b", null, "match each other"), h("span", "dotsep", "·"),
+           h("b", null, "first in scores more"));
+  return b;
+}
+
 /* A photograph, and its caption if it had one.
 
    The bytes are not in the state snapshot — `q.photo` is a flag and the image
@@ -163,6 +178,88 @@ setInterval(() => {
   const txt = Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0");
   els.forEach(el => { el.textContent = txt; });
 }, 1000);
+
+/* --------------------------------------------------------------- haptics -- */
+
+/* A tap in the hand when something happens. Phone only — the host is a
+ * television.
+ *
+ * TWO BACKENDS, BECAUSE THE OBVIOUS ONE DOES NOTHING ON THE PHONES THIS GAME
+ * IS FOR. `navigator.vibrate` is Android and desktop Chrome; iOS Safari has
+ * never implemented it and shows no sign of starting. This game is built out
+ * of iMessage, so both players are almost certainly on iPhones, where that API
+ * is a no-op.
+ *
+ * The fallback is a trick rather than an API: since iOS 17.4 a checkbox with
+ * the `switch` attribute plays the system haptic when it toggles, and a
+ * programmatic click on its label counts as a toggle. It is undocumented
+ * behaviour that Apple could remove in any release, so it is wrapped in a
+ * try/catch and nothing depends on it. The element has to be rendered to
+ * work — `display:none` kills it — so it is parked off-screen instead.
+ *
+ * Everything degrades to silence. A missed haptic is not a bug anybody can
+ * see, which is why this is allowed to rest on a trick at all.
+ */
+const Haptic = (() => {
+  const canVibrate = typeof navigator !== "undefined"
+    && typeof navigator.vibrate === "function";
+  let sw = null, label = null, tried = false;
+
+  /* Built on first use, not on load: it inserts two nodes into the page and
+     there is no reason to do that for a browser that will never need them. */
+  function iosSwitch() {
+    if (tried) return label;
+    tried = true;
+    try {
+      const probe = document.createElement("input");
+      probe.type = "checkbox";
+      // Unsupported anywhere else, which is exactly the feature test.
+      if (!("switch" in probe)) return null;
+      sw = probe;
+      sw.setAttribute("switch", "");
+      sw.id = "rr-haptic";
+      sw.setAttribute("aria-hidden", "true");
+      sw.tabIndex = -1;
+      label = document.createElement("label");
+      label.htmlFor = "rr-haptic";
+      label.setAttribute("aria-hidden", "true");
+      const box = document.createElement("div");
+      box.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;"
+        + "height:1px;overflow:hidden;pointer-events:none";
+      box.append(sw, label);
+      document.body.append(box);
+      return label;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* `pattern` is the Vibration API's own shape: [buzz, pause, buzz, ...] in
+     ms. The iOS path can only produce one fixed tick, so it fires once per
+     buzz segment and ignores how long each was meant to be. */
+  function fire(pattern) {
+    const p = Array.isArray(pattern) ? pattern : [pattern];
+    if (canVibrate) {
+      try { navigator.vibrate(p); return; } catch (e) { /* fall through */ }
+    }
+    const el = iosSwitch();
+    if (!el) return;
+    let at = 0;
+    p.forEach((ms, i) => {
+      if (i % 2 === 0) setTimeout(() => { try { el.click(); } catch (e) {} }, at);
+      at += ms;
+    });
+  }
+
+  return {
+    get supported() { return canVibrate || !!iosSwitch(); },
+    tap()  { fire(8); },                    // an option selected
+    lock() { fire([16, 50, 24]); },         // the answer is gone
+    open() { fire(22); },                   // a new question — look up
+    good() { fire([14, 55, 14, 55, 26]); }, // you scored
+    bad()  { fire(60); },                   // you didn't
+  };
+})();
 
 /* ---------------------------------------------------------------- clock -- */
 

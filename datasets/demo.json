@@ -216,6 +216,160 @@
    "subject": "love_you"
   },
   {
+   "id": "final-future-first",
+   "type": "wager",
+   "kind": "Final receipt",
+   "prompt": "Final Receipt. Who talked about the far-off future first?",
+   "reveal": "Nilu said it first, April 27, 2022 — back when it was still hypothetical.",
+   "answer": 1,
+   "text": "one day absolutely not",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "milestones",
+   "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "not true 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "same",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "one day absolutely not",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "deal cant wait to see you",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "genuinely obsessed with the playlist you made me last weekend",
+     "self": false
+    }
+   ],
+   "origin": "auto",
+   "topic": "final-future-first",
+   "subject": "future"
+  },
+  {
+   "id": "final-miss-you-first",
+   "type": "wager",
+   "kind": "Final receipt",
+   "prompt": "Final Receipt. Who admitted to missing the other one first?",
+   "reveal": "Nilu, on June 30, 2021. The other one was thinking it.",
+   "answer": 1,
+   "text": "miss you absolutely not",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "affection",
+   "format": "bubble",
+   "context": [
+    {
+     "who": "p2",
+     "text": "fine",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "can we please go back to that place with the tiny chairs",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "miss you absolutely not",
+     "self": true
+    },
+    {
+     "who": "p2",
+     "text": "just got out of the meeting and it went so much better than expected",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "please",
+     "self": false
+    }
+   ],
+   "origin": "auto",
+   "topic": "final-miss-you-first",
+   "subject": "miss_you"
+  },
+  {
+   "id": "final-distance-first",
+   "type": "wager",
+   "kind": "Final receipt",
+   "prompt": "Final Receipt. Who mentioned the distance first?",
+   "reveal": "Nilu, August 25, 2021. The first of a great many airports.",
+   "answer": 1,
+   "text": "cant wait to see you on my way ❤️",
+   "options": [
+    "Shray",
+    "Nilu"
+   ],
+   "area": "long-distance",
+   "format": "bubble",
+   "context": [
+    {
+     "who": "p1",
+     "text": "i know",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "goodnight please",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "cant wait to see you on my way ❤️",
+     "self": true
+    },
+    {
+     "who": "p1",
+     "text": "on my way 🥺 lol",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "can we please go back to that place with the tiny chairs",
+     "self": false
+    }
+   ],
+   "origin": "auto",
+   "topic": "final-distance-first",
+   "subject": "long_distance"
+  },
+  {
+   "id": "final-busiest-year",
+   "type": "wager",
+   "kind": "Final receipt",
+   "prompt": "Final Receipt. Of the five, which year did we talk the most?",
+   "reveal": "2025. More of our 5,243 messages landed that year than any other.",
+   "answer": 0,
+   "options": [
+    "2025",
+    "2023",
+    "2022",
+    "2024"
+   ],
+   "area": "archive",
+   "format": "bubble",
+   "origin": "auto",
+   "topic": "final-busiest-year",
+   "subject": "busiest_year"
+  },
+  {
    "id": "same-page-best-year",
    "type": "mutual",
    "kind": "Same page",

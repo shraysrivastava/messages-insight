@@ -269,18 +269,20 @@ function questionView() {
 
   if (locked) return lockedView();
   if (key === lastKey && app.querySelector(".opts, input, .slider-val")) return;
+  /* One nudge per round, not per render: `lastKey` already exists to stop a
+     re-render rebuilding the inputs, and it is the same guard this wants. */
+  if (key !== lastKey) Haptic.open();
   lastKey = key;
   pending = null;
 
   const tint = me ? me.color : "var(--cream)";
-  const kids = [h("div", "eyebrow", q.kind), h("h2", "prompt", q.prompt)];
+  const kids = [h("div", "eyebrow", q.kind)];
+  /* Before the prompt, not after: the rules of this round change what the
+     prompt even means. */
+  if (q.type === "mutual") kids.push(samePageBanner());
+  kids.push(h("h2", "prompt", q.prompt));
   const block = messageBlock(q, "bubble");   // `format`, read — see shared.js
   if (block) kids.push(block);
-  /* The one round with no correct answer. Say so, or it reads as a trivia
-     question you happened to both get wrong. */
-  if (q.type === "mutual") {
-    kids.push(h("p", "lede", "No right answer — you score by picking the same one."));
-  }
 
   const lock = h("button", "cta", "Lock it in");
   lock.disabled = true;
@@ -328,6 +330,7 @@ function questionView() {
         wrap.querySelectorAll("button").forEach(x => x.classList.remove("sel"));
         b.classList.add("sel");
         picked = i;
+        Haptic.tap();
         enable(q.type === "wager" ? { pick: i, stake } : i);
       };
       wrap.append(b);
@@ -399,6 +402,7 @@ function questionView() {
        receipt time — otherwise the slower connection pays for its latency on
        every round. The server clamps it into the question window. */
     send({ t: "answer", id: myId, value: pending, at: serverNow() });
+    Haptic.lock();
     sent = { round: S.round, value: pending };
     lockedView();
   };
@@ -507,7 +511,16 @@ function verdict(q, mine, acc, S) {
   if (!mine || mine.answer === null || mine.answer === undefined) return "No answer";
 
   /* Mutual has no truth to be near, so "Nailed it" would be claiming one. */
-  if (q.type === "mutual") return acc >= 0.999 ? "Same brain" : "You two disagreed";
+  if (q.type === "mutual") {
+    if (acc < 0.999) return "You two disagreed";
+    /* Who got the first-in bonus, worked out from the board rather than from a
+       number the server would have to send: on a round everyone agreed on, the
+       one who was first is the one who scored most. */
+    const others = S.players.filter(p => p.id !== myId && p.last);
+    const best = Math.max(0, ...others.map(p => p.last.points));
+    return mine.points > best ? "Same brain — and you got there first"
+                              : "Same brain";
+  }
 
   if (q.type === "wager") {
     const st = (mine.stake || 0).toLocaleString();
@@ -556,11 +569,19 @@ function verdict(q, mine, acc, S) {
   return acc > 0 ? "Close" : "Not even close, love";
 }
 
+let buzzedReveal = -1;
+
 function revealView() {
   lastKey = "";
   const q = S.question;
   const mine = me && me.last ? me.last : null;
   const pts = mine ? mine.points : 0;
+  /* Once per round. A phone reconnecting mid-reveal re-renders this view, and
+     being buzzed twice for the same answer reads as a bug. */
+  if (buzzedReveal !== S.round) {
+    buzzedReveal = S.round;
+    if (pts > 0) Haptic.good(); else Haptic.bad();
+  }
   const acc = mine ? mine.accuracy : 0;
 
   const v = h("div", "verdict");

@@ -38,7 +38,13 @@ PLAYABLE = {"binary", "choice", "number", "month", "percent", "mutual", "wager"}
 # Types whose answer is an index into `options`.
 INDEXED = {"binary", "choice", "wager", "mutual"}
 
-MUTUAL_POINTS = 500      # flat — a co-op round shouldn't reward buzzing in
+# Agreeing is what scores; getting there first is what scores more. The flat
+# 500 came first, on the argument that a co-op round shouldn't reward buzzing
+# in — overruled on 2026-09-24, because a round where speed is worth nothing is
+# a round where two people sit and think, and the bonus only ever lands on
+# somebody who *agreed*. Disagree and you both still get nothing.
+MUTUAL_POINTS = 500          # for landing on the same answer
+MUTUAL_FIRST_BONUS = 250     # to whoever got there first, if they agreed
 
 # The Final Receipt. You stake before you answer, you win or lose the stake,
 # and speed is worth nothing — the whole round is the decision, not the reflex.
@@ -428,7 +434,15 @@ class Game:
         return rec
 
     def _grade_mutual(self) -> dict[str, tuple[float, int]]:
-        """No correct answer — you score by matching the other players."""
+        """No correct answer — you score by matching the other players, and the
+        one who got there first scores more.
+
+        The bonus is relative, not a speed curve: it goes to whoever locked in
+        earliest *among the people who agreed*, which is the only reading of
+        "first" that means anything on a round with no right answer. Nobody
+        who disagreed can earn it, and an exact tie earns it for nobody, the
+        same way every tie in superlatives.py goes unawarded.
+        """
         live = [p for p in self.live() if p.answer is not None]
         out: dict[str, tuple[float, int]] = {}
         for p in self.players.values():
@@ -439,6 +453,14 @@ class Game:
             matched = sum(1 for o in others if o.answer == p.answer)
             acc = matched / len(others)
             out[p.id] = (acc, round(MUTUAL_POINTS * acc))
+
+        agreed = sorted((p for p in live if out[p.id][0] > 0),
+                        key=lambda p: p.answered_at or 0.0)
+        if len(agreed) > 1:
+            first, second = agreed[0], agreed[1]
+            if (first.answered_at or 0.0) < (second.answered_at or 0.0):
+                acc, pts = out[first.id]
+                out[first.id] = (acc, pts + MUTUAL_FIRST_BONUS)
         return out
 
     def _grade_wager(self) -> dict[str, tuple[float, int]]:
