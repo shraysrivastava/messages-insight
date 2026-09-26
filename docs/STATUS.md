@@ -917,4 +917,70 @@ remember whether something got done.
               the machine's ephemeral disk. Without a Fly volume every redeploy
               wipes it and freshness starts cold again.
             348 tests green.
+2026-09-25  THE THREAD UNDER EVERY QUOTED MESSAGE (tools/rethread.py,
+            `make rethread`). Half the deck put a bubble on the big screen at
+            the reveal with no conversation around it: 100 questions showed a
+            message and only 50 showed where it came from. curate.py bakes
+            context at mint time; the families written by script — escalation,
+            whose turn, what happened next, finish the sentence — never did.
+            The repair could not use the ids. Several of them END IN the
+            corpus index they were minted from, and after the September
+            re-extraction EVERY ONE OF THOSE 36 INDICES WAS WRONG — pointing
+            at a different evening, exactly the failure curate.py bakes
+            context to avoid. Text is the only anchor that survives, and it
+            has to be fuzzy: the quoted lines differ from the corpus by an
+            apostrophe or an emoji, enough to break an exact compare and not
+            enough to be a different message. Measured the near-misses at 0.97
+            and 0.98 before trusting them.
+            24 of 48 baked; 50 -> 72 of the 100 message-showing questions now
+            carry their conversation. The other 24 are left alone and say why,
+            because a thread on the wrong evening is worse than none:
+            · 15 are Finish the Sentence, which quotes a PHRASE said over and
+              over — 144 messages start with one of them. There is no single
+              conversation behind a habit. This is the honest "does not make
+              sense" case, not a matcher that gave up.
+            · the rest are too short to identify or have several equally close
+              candidates.
+            Skipped by design: `compare` (Callback), where two messages sit
+            years apart and showing one thread would say which came first; and
+            every question with no message at all — counts, shares, Same Page.
+            Still reveal-only. Context during the question would hand over who
+            sent what, which is the answer to half the deck.
+            Verified in a browser: nothing at question time, five messages at
+            the reveal with the source highlighted and the standalone bubble
+            removed so it is not shown twice. 362 tests green.
+2026-09-25  The reveal thread is TEN either side, and it scrolls. Two proved
+            the message was real; ten is enough to read the evening it happened
+            in, which is what the reveal is for. Span changed in compile.py,
+            curate.py and rethread.py, and `make rethread RESPAN=1 WRITE=1`
+            rebuilt the ones already baked narrower — anchored on the
+            `self = true` entry, which names the exact message better than any
+            probe could. 72 threads, 18-21 messages each, and real.json is
+            still 0.23 MB.
+            On the host it opens centred on the message the question was about
+            and scrolls both ways, with a mask fade top and bottom so a
+            television does not need a scrollbar to say there is more. Only the
+            three either side of the source stagger in — at 0.09s each,
+            twenty-one would take two seconds to finish arriving.
+            Three bugs on the way there, each found by measuring rather than
+            by looking:
+            · the regex that replaces a `context = [...]` ended `\s*$`, and
+              being greedy it ate the newline after the bracket — pulling the
+              next `[[q]]` onto the same line. It only showed on blocks where
+              context was the last field. The rollback guard caught it and
+              refused the write rather than corrupting mine.toml, which is why
+              that guard is there.
+            · `offsetTop` is measured from the nearest POSITIONED ancestor, and
+              `.thread` was not one, so the centring arithmetic was against the
+              wrong element.
+            · then the arithmetic was right and the scroll still would not
+              take, because it ran in `requestAnimationFrame` — WHICH DOES NOT
+              FIRE IN A TAB THAT IS NOT BEING PAINTED. Every test tab, and any
+              window sitting behind another. Moved to a retrying setTimeout,
+              which is also more robust for the real thing.
+            And one layout consequence: at 1920x1080 a 34vh thread pushed
+            "Next round" off the bottom of the screen. A control the host has
+            to scroll to find is a control that does not exist. 20vh — about
+            five messages visible, sixteen a scroll away — and the page fits.
+            364 tests green.
 ```

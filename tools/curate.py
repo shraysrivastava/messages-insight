@@ -332,8 +332,14 @@ def bake(template: str, vals: dict) -> str:
 CLOCK_RE = re.compile(r"\b\d{1,2}:\d{2}\s*[ap]\.?m\.?", re.I)
 
 
-def context_for(corpus: Corpus, i: int | None, span: int = 2) -> list[dict] | None:
-    """The messages either side of this one, for the reveal's context thread."""
+def context_for(corpus: Corpus, i: int | None, span: int = 10) -> list[dict] | None:
+    """The messages either side of this one, for the reveal's context thread.
+
+    Ten either side, not two. Two was enough to prove the message was real;
+    ten is enough to actually read the evening it happened in, which is what
+    the reveal is for. The host thread scrolls, so the extra length costs
+    screen space only if you go looking for it.
+    """
     if i is None:
         return None
     msgs = getattr(corpus, "messages", None)

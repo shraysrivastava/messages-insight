@@ -187,6 +187,46 @@
    "format": "bubble",
    "context": [
     {
+     "who": "p1",
+     "text": "one more episode and then i swear im going to bed youre the best lol",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "good morning stop",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "absolutely not good morning 😭",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "five minutes 😭",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "traffic was insane i am going to be like fifteen minutes late",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "youre the best the dog would not stop barking at absolutely nothing for an hour 🥺",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine lol",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "you're kidding",
+     "self": false
+    },
+    {
      "who": "p2",
      "text": "i keep laughing about what you said in the car yesterday 🫠",
      "self": false
@@ -209,6 +249,46 @@
     {
      "who": "p2",
      "text": "the dog would not stop barking at absolutely nothing for an hour ❤️",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "you're kidding goodnight haha",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "please remind me to actually book the tickets this time",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "just got out of the meeting and it went so much better than expected 😂",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "thank you please",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine goodnight",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "obviously 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "genuinely obsessed with the playlist you made me last weekend 🥺",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "on my way",
      "self": false
     }
    ],
@@ -233,6 +313,46 @@
    "context": [
     {
      "who": "p2",
+     "text": "ok but you have to admit the second one was better than the first good morning 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "why did nobody tell me the season finale was going to do that haha",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "stop obsessed",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "stop",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "five minutes",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "deal i love you",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "i know goodnight",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "ok haha",
+     "self": false
+    },
+    {
+     "who": "p2",
      "text": "not true 😂",
      "self": false
     },
@@ -255,6 +375,46 @@
      "who": "p2",
      "text": "genuinely obsessed with the playlist you made me last weekend",
      "self": false
+    },
+    {
+     "who": "p1",
+     "text": "the cat next door was on our windowsill again staring at me judgmentally good morning",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "i cannot stop thinking about those dumplings we had on tuesday",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "please",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "i keep laughing about what you said in the car yesterday",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "reading your text from this morning again because it made my whole day 🥺",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "i cannot stop thinking about those dumplings we had on tuesday",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "goodnight five minutes",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "reading your text from this morning again because it made my whole day i love you",
+     "self": false
     }
    ],
    "origin": "auto",
@@ -276,6 +436,46 @@
    "area": "affection",
    "format": "bubble",
    "context": [
+    {
+     "who": "p1",
+     "text": "obviously lol",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "you're kidding",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "reading your text from this morning again because it made my whole day",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "deal good morning",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "one more episode and then i swear im going to bed",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "fine",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "absolutely not 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "fine",
+     "self": false
+    },
     {
      "who": "p2",
      "text": "fine",
@@ -300,6 +500,46 @@
      "who": "p1",
      "text": "please",
      "self": false
+    },
+    {
+     "who": "p1",
+     "text": "goodnight im making the pasta tonight the one with too much lemon 🥺",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "haha",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "i keep laughing about what you said in the car yesterday thank you",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "obviously",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "come outside i have something ridiculous to show you right now",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "please remind me to actually book the tickets this time",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "genuinely obsessed with the playlist you made me last weekend",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "genuinely obsessed with the playlist you made me last weekend 😭",
+     "self": false
     }
    ],
    "origin": "auto",
@@ -323,6 +563,46 @@
    "context": [
     {
      "who": "p1",
+     "text": "just got out of the meeting and it went so much better than expected good morning",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "the cat next door was on our windowsill again staring at me judgmentally 😭 haha",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "i know goodnight",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "i cannot stop thinking about those dumplings we had on tuesday",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "im making the pasta tonight the one with too much lemon miss you",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "you left your charger here again this is the third time this month haha",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "please remind me to actually book the tickets this time",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "the cat next door was on our windowsill again staring at me judgmentally",
+     "self": false
+    },
+    {
+     "who": "p1",
      "text": "i know",
      "self": false
     },
@@ -344,6 +624,46 @@
     {
      "who": "p2",
      "text": "can we please go back to that place with the tiny chairs",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "i know",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "absolutely not cant wait to see you 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "reading your text from this morning again because it made my whole day",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "sorry i fell asleep mid sentence apparently that was very rude of me 💀",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "good morning we are never letting me pick the restaurant again after that 😂 lol",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "come outside i have something ridiculous to show you right now 🥺",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "sorry i fell asleep mid sentence apparently that was very rude of me",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "genuinely obsessed with the playlist you made me last weekend",
      "self": false
     }
    ],
@@ -555,6 +875,46 @@
    "format": "bubble",
    "context": [
     {
+     "who": "p1",
+     "text": "one more episode and then i swear im going to bed youre the best lol",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "good morning stop",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "absolutely not good morning 😭",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "five minutes 😭",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "traffic was insane i am going to be like fifteen minutes late",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "youre the best the dog would not stop barking at absolutely nothing for an hour 🥺",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine lol",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "you're kidding",
+     "self": false
+    },
+    {
      "who": "p2",
      "text": "i keep laughing about what you said in the car yesterday 🫠",
      "self": false
@@ -578,6 +938,46 @@
      "who": "p2",
      "text": "the dog would not stop barking at absolutely nothing for an hour ❤️",
      "self": false
+    },
+    {
+     "who": "p2",
+     "text": "you're kidding goodnight haha",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "please remind me to actually book the tickets this time",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "just got out of the meeting and it went so much better than expected 😂",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "thank you please",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine goodnight",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "obviously 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "genuinely obsessed with the playlist you made me last weekend 🥺",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "on my way",
+     "self": false
     }
    ],
    "origin": "auto",
@@ -595,6 +995,46 @@
    "area": "milestones",
    "format": "bubble",
    "context": [
+    {
+     "who": "p1",
+     "text": "sorry on my way 😂 lol",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "can we please go back to that place with the tiny chairs",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "reading your text from this morning again because it made my whole day",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "you were right about the shoes and i hate admitting it",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "the flight got delayed two hours so im just sitting at the gate miss you 🙃",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "everyone at dinner asked about you and i talked for too long 😂",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "goodnight please remind me to actually book the tickets this time 😭",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "found an old picture of us from that first summer and im emotional",
+     "self": false
+    },
     {
      "who": "p2",
      "text": "can we please go back to that place with the tiny chairs one day",
@@ -619,6 +1059,46 @@
      "who": "p1",
      "text": "good morning you left your charger here again this is the third time this month",
      "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "i keep laughing about what you said in the car yesterday good morning",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "good morning sorry i fell asleep mid sentence apparently that was very rude of me",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "my parents why did nobody tell me the season finale was going to do that ❤️",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "im on the train now should be home in like forty minutes 😭",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "me too 😭",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "no our place",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "i think im getting sick my throat has been weird all day",
+     "self": false
     }
    ],
    "origin": "auto",
@@ -636,6 +1116,46 @@
    "area": "milestones",
    "format": "bubble",
    "context": [
+    {
+     "who": "p1",
+     "text": "venmo'd you for the tickets let me know if thats wrong",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "its raining so hard here i can barely see across the street 😭",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "thank you found an old picture of us from that first summer and im emotional",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "me too",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "cant wait to see you im making the pasta tonight the one with too much lemon 🥺",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "yeah",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "everyone at dinner asked about you and i talked for too long sorry",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "obviously goodnight",
+     "self": false
+    },
     {
      "who": "p2",
      "text": "reading your text from this morning again because it made my whole day 🙃",
@@ -660,6 +1180,46 @@
      "who": "p2",
      "text": "ok but you have to admit the second one was better than the first haha",
      "self": false
+    },
+    {
+     "who": "p2",
+     "text": "one more episode and then i swear im going to bed 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "on my way sorry 🫠",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "goodnight reading your text from this morning again because it made my whole day haha",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "wait thank you",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "ok",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "found an old picture of us from that first summer and im emotional 😂",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "me too",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "can we please go back to that place with the tiny chairs 🥺 lol",
+     "self": false
     }
    ],
    "origin": "auto",
@@ -677,6 +1237,46 @@
    "area": "milestones",
    "format": "bubble",
    "context": [
+    {
+     "who": "p2",
+     "text": "the dog would not stop barking at absolutely nothing for an hour ❤️",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "sorry i fell asleep mid sentence apparently that was very rude of me",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "good morning obviously",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "please when do you land",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "venmo'd you for the tickets let me know if thats wrong goodnight 😭 haha",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "why did nobody tell me the season finale was going to do that lol",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "the dog would not stop barking at absolutely nothing for an hour good morning",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "the flight got delayed two hours so im just sitting at the gate 🥺",
+     "self": false
+    },
     {
      "who": "p1",
      "text": "you left your charger here again this is the third time this month 😂",
@@ -700,6 +1300,46 @@
     {
      "who": "p2",
      "text": "thank you obviously",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "why 😂",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "so good good morning",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "five minutes goodnight",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "genuinely obsessed with the playlist you made me last weekend good morning lol",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "good morning obviously 🥺",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "same",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "why did nobody tell me the season finale was going to do that",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine",
      "self": false
     }
    ],
@@ -815,6 +1455,46 @@
    "format": "bubble",
    "context": [
     {
+     "who": "p1",
+     "text": "one more episode and then i swear im going to bed youre the best lol",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "good morning stop",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "absolutely not good morning 😭",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "five minutes 😭",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "traffic was insane i am going to be like fifteen minutes late",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "youre the best the dog would not stop barking at absolutely nothing for an hour 🥺",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine lol",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "you're kidding",
+     "self": false
+    },
+    {
      "who": "p2",
      "text": "i keep laughing about what you said in the car yesterday 🫠",
      "self": false
@@ -837,6 +1517,46 @@
     {
      "who": "p2",
      "text": "the dog would not stop barking at absolutely nothing for an hour ❤️",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "you're kidding goodnight haha",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "please remind me to actually book the tickets this time",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "just got out of the meeting and it went so much better than expected 😂",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "thank you please",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "fine goodnight",
+     "self": false
+    },
+    {
+     "who": "p1",
+     "text": "obviously 😂",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "genuinely obsessed with the playlist you made me last weekend 🥺",
+     "self": false
+    },
+    {
+     "who": "p2",
+     "text": "on my way",
      "self": false
     }
    ],

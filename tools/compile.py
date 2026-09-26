@@ -102,7 +102,7 @@ def render(text: str, ctx: dict, qid: str) -> str:
         raise ValueError(f"{qid}: bad template ({e})") from None
 
 
-def thread_around(corpus, i: int | None, span: int = 2) -> list[dict] | None:
+def thread_around(corpus, i: int | None, span: int = 10) -> list[dict] | None:
     """The messages either side of the one a question came from.
 
     Only for questions the corpus can point at — a count has no source message

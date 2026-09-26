@@ -356,16 +356,28 @@ class _Corpus:
 
 
 def test_context_is_the_messages_either_side_with_the_source_marked():
+    """Span is explicit here so the test says what it means rather than
+    tracking whatever the default happens to be this month."""
     from tools.curate import context_for
     c = _Corpus(["a", "b", "c", "d", "e", "f", "g"])
-    ctx = context_for(c, 3)
+    ctx = context_for(c, 3, span=2)
     assert [m["text"] for m in ctx] == ["b", "c", "d", "e", "f"]
     assert [m["self"] for m in ctx] == [False, False, True, False, False]
 
 
+def test_the_thread_is_ten_either_side_by_default():
+    """Two proved the message was real; ten is enough to read the evening it
+    happened in, which is what the reveal is for. The host thread scrolls."""
+    from tools.curate import context_for
+    c = _Corpus([str(n) for n in range(40)])
+    ctx = context_for(c, 20)
+    assert len(ctx) == 21
+    assert ctx[10]["self"] is True
+
+
 def test_context_at_the_very_start_of_the_thread_is_just_shorter():
     from tools.curate import context_for
-    ctx = context_for(_Corpus(["a", "b", "c", "d"]), 0)
+    ctx = context_for(_Corpus(["a", "b", "c", "d"]), 0, span=2)
     assert [m["text"] for m in ctx] == ["a", "b", "c"]
 
 

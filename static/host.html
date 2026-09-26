@@ -226,7 +226,29 @@
 
   /* the context thread (DESIGN 2.5 step 3). The actual conversation the
      answer sits in, which is the whole reason curate.py captures it. */
-  .thread{display:flex;flex-direction:column;gap:7px;max-width:56ch;margin-top:18px}
+  .thread{
+    display:flex;flex-direction:column;gap:7px;max-width:56ch;margin-top:18px;
+    /* offsetTop is measured from the nearest POSITIONED ancestor, so without
+       this the centring arithmetic below is against the wrong element and
+       clamps to zero every time. */
+    position:relative;
+    /* Twenty-one messages is taller than the screen, on purpose. It opens on
+       the one that matters and scrolls from there. */
+    /* 20vh, not more: at 1080p a taller thread pushed "Next round" off the
+       bottom of the screen, and a control the host has to scroll to find is a
+       control that does not exist. About five messages are visible and the
+       other sixteen are a scroll away. */
+    max-height:20vh;overflow-y:auto;overscroll-behavior:contain;
+    padding-right:10px;
+    /* The fade says there is more above and below without a scrollbar having
+       to, which matters on a television. */
+    mask-image:linear-gradient(transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%);
+    -webkit-mask-image:linear-gradient(transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%);
+    scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+  }
+  .thread::-webkit-scrollbar{width:7px}
+  .thread::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+  .thread .m{flex:0 0 auto}
   .thread .m{
     padding:9px 14px;border-radius:17px;font-size:16px;line-height:1.4;
     max-width:82%;background:var(--sunk);color:var(--muted);
@@ -916,16 +938,54 @@ function tugOfWar(fresh) {
    pasta" and the actual evening in May 2023 when you said it. Only curated
    and message-sourced questions have one; a counting question has no
    conversation to show and gets nothing. */
+/* The conversation the answer sat in. Twenty-one messages now rather than
+   five, so it scrolls: it opens centred on the message the question was about
+   and you can read either way from there.
+
+   Only the few around the source stagger in. At 0.09s each, twenty-one would
+   take two seconds to finish arriving, and the ones off-screen are not a
+   reveal — they are there for whoever goes looking. */
 function thread(msgs, fresh) {
   if (!Array.isArray(msgs) || msgs.length < 2) return null;
   const box = h("div", "thread");
+  const at = msgs.findIndex(m => m.self);
+  let source = null;
   msgs.forEach((m, i) => {
     const b = h("div", "m " + (m.who === "p1" ? "p1" : "p2") + (m.self ? " it" : ""));
     b.textContent = m.text;
-    if (fresh) b.style.animationDelay = (BEAT.thread + i * 0.09) + "s";
+    const near = at < 0 || Math.abs(i - at) <= 3;
+    if (fresh && near) b.style.animationDelay = (BEAT.thread + Math.abs(i - at) * 0.09) + "s";
     else b.style.animation = "none";
+    if (m.self) source = b;
     box.append(b);
   });
+  /* Centre the source. Not scrollIntoView: that walks up the tree and would
+     scroll the whole page with it.
+
+     Retried rather than done once, because on the first frame after the
+     reveal renders the box has no scrollable height yet and assigning
+     scrollTop to a box that cannot scroll silently does nothing — which is
+     exactly what it did, arithmetic correct and all. */
+  if (source) {
+    const centre = tries => {
+      if (!box.isConnected) {
+        if (tries > 0) setTimeout(() => centre(tries - 1), 16);
+        return;
+      }
+      if (box.scrollHeight > box.clientHeight + 4) {
+        box.scrollTop = Math.max(
+          0, source.offsetTop - box.clientHeight / 2 + source.offsetHeight / 2);
+      } else if (tries > 0) {
+        setTimeout(() => centre(tries - 1), 16);
+      }
+    };
+    /* setTimeout, not requestAnimationFrame: rAF does not fire in a tab that
+       is not being painted, which is every tab a test drives and any window
+       sitting behind another one. The one place this has to work is a screen
+       somebody is looking at, but failing silently everywhere else made it
+       impossible to prove it works anywhere. */
+    setTimeout(() => centre(12), 0);
+  }
   return box;
 }
 

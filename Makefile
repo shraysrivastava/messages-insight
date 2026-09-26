@@ -2,7 +2,7 @@
 PY := ./.venv/bin/python
 
 .DEFAULT_GOAL := status
-.PHONY: status setup test lint demo play dev audit questions check extract corpus photos mine curate compile seal unseal poc fonts deploy clean
+.PHONY: status setup test lint demo play dev audit questions check extract corpus photos rethread mine curate compile seal unseal poc fonts deploy clean
 
 status:            ## what's done, what's left
 	@$(PY) tools/status.py
@@ -60,6 +60,9 @@ corpus:            ## chat.db -> $(CORPUS)   (CHAT=... P1=... P2=...)
 
 photos:            ## downscale the thread's photos into photos/ (gitignored)
 	@$(PY) tools/photos.py --corpus $(CORPUS) --out photos $(if $(LIMIT),--limit $(LIMIT))
+
+rethread:          ## find the conversation around every quoted message (WRITE=1 to bake)
+	@$(PY) tools/rethread.py --corpus $(CORPUS) $(if $(WRITE),--write) $(if $(RESPAN),--respan)
 
 mine:              ## $(CORPUS) -> candidates.json
 	@$(PY) tools/mine.py --corpus $(CORPUS) --out candidates.json
